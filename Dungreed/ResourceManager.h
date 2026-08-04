@@ -64,6 +64,6 @@ public:
     const std::vector<sf::IntRect>& getAnimationFrames(const std::string& atlasKey, const std::string& animName) const;
     
     
-    void loadImages(); // Load resources from files
+    
 };
 
