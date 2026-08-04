@@ -15,3 +15,12 @@
 
 # Dungreed_SFML
 sfml을 활용한 던그리드 게임 모작
+
+## 🏗️ 시스템 아키텍처 (Class Diagram)
+![Class Diagram](class.png)
+
+위 클래스 다이어그램은 게임의 전반적인 구조를 나타냅니다:
+* **ResourceLoader (ResourceManager)**: 싱글톤으로 구현되어 텍스처, 타일셋 등 게임 내 모든 그래픽 자원을 관리합니다.
+* **Actor & 상속 구조**: `Status`(체력, 공격력 등)를 가진 `Actor` 기본 클래스를 정의하고, 이를 `player`, `Monster`, `Boss`가 상속받아 각각의 고유 상태와 동작(장비, 아이템 드롭 등)을 처리합니다.
+* **Map & Room 시스템**: `MapManager`가 전체 맵의 `Room`을 생성하고 `door`를 통해 서로 연결(link)합니다. 각 `Room`은 `RoomInfo`를 바탕으로 몬스터와 보물상자를 배치합니다.
+* **Collision 시스템**: 맵 충돌, 공격 판정, 피격 판정을 전담하여 처리합니다.
