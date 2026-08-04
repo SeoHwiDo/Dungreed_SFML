@@ -1,0 +1,17 @@
+root = true
+
+# All files
+[*]
+indent_style = space
+
+# Xml files
+[*.xml]
+indent_size = 2
+
+# 모든 파일
+[*]
+charset = utf-8
+
+# C++ 파일
+[*.{cpp,h,hpp,cc,cxx}]
+charset = utf-8-bom
