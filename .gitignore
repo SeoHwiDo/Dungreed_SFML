@@ -94,3 +94,5 @@ x86/
 
 # Publish Web Output
 *.[Pp]ublish.xml
+SFML-3.1.0
+JSON
