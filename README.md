@@ -16,6 +16,14 @@
 # Dungreed_SFML
 sfml을 활용한 던그리드 게임 모작
 
+## 💻 개발 환경 및 기술 스택 (Environment & Tech Stack)
+* **OS**: Windows 11
+* **IDE**: Visual Studio 2022
+* **Language**: C++ (C++17 이상 권장)
+* **Library/Framework**: 
+  * SFML 3.1.0 (Simple and Fast Multimedia Library)
+  * Nlohmann JSON (JSON for Modern C++)
+  
 ## 🏗️ 시스템 아키텍처 (Class Diagram)
 ![Class Diagram](class.png)
 
