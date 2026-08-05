@@ -1,5 +1,5 @@
 ﻿#include "MapManager.h"
-
+#include<iostream>
 #include <algorithm>
 #include <functional>
 #include <stdexcept>
@@ -28,16 +28,6 @@ bool MapManager::owns(const Room& room) const {
         });
 }
 
-void MapManager::collectConnectableRooms(const std::vector<Room*>& source, std::vector<Room*>& result) const {
-    result.clear();
-    result.reserve(source.size());
-
-    for (Room* room : source) {
-        if (room->canAddDoor()) {
-            result.push_back(room);
-        }
-    }
-}
 
 Room* MapManager::pickRandomConnectableRoom(const std::vector<Room*>& rooms, const Room* exclude) {
     std::vector<Room*> candidates;
@@ -266,6 +256,7 @@ bool MapManager::genRoom(std::size_t normalRoomCount, const MonsterSpawnConfig& 
             room->genChest();
         }
     } catch (...) {
+        std::cerr << "문제 발생. 맵 생성 오류, 기존의 맵을 재사용합니다\n";
         m_rooms = std::move(previousRooms);
         m_start = previousStart;
         m_boss = previousBoss;
