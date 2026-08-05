@@ -141,9 +141,11 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="resources\images\player_atlas.json" />
+    <None Include="resources\images\tilemap_atlas.json" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="resources\images\player_atlas.png" />
+    <Image Include="resources\images\tilemap_atlas.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

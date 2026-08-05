@@ -63,7 +63,8 @@ public:
     // 3. 애니메이션 클립의 전체 프레임 배열 참조 (Actor, Monster의 Animator에 전달용)
     const std::vector<sf::IntRect>* getAnimationFrames(const std::string& atlasKey, const std::string& animName) const;
     
-    
+    // 4. 등록된 아틀라스의 모든 애니메이션 이름 목록 반환 (테스트 및 순회용)
+    std::vector<std::string> getAnimationNames(const std::string& atlasKey) const;
     
 };
 

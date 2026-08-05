@@ -107,4 +107,16 @@ const std::vector<sf::IntRect>* ResourceManager::getAnimationFrames(const std::s
     return nullptr;
 }
 
+std::vector<std::string> ResourceManager::getAnimationNames(const std::string& atlasKey) const {
+    std::vector<std::string> names;
+    auto it = m_atlases.find(atlasKey);
+    if (it != m_atlases.end()) {
+        for (const auto& pair : it->second->animations) {
+            names.push_back(pair.first); // 애니메이션 이름(키 값) 추출
+        }
+    }
+    return names;
+}
+
+
 
