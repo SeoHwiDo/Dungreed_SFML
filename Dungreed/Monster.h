@@ -1,16 +1,28 @@
-#pragma once
-
+﻿#pragma once
+#include"Actor.h"
 #include <string>
 #include <utility>
+enum class MonsterState {
+    Idle,
+    Patrol,
+    Chase,
+    Attack,
+    Dead
+};
 
-// Temporary gameplay entity owned by Room. This can later be replaced by an
-// object borrowed from MonsterPoolingManager without changing Room's API.
-class Monster {
+class Monster : public Actor {
 public:
-    explicit Monster(std::string type) : m_type(std::move(type)) {}
+    Monster(std::string type) :m_type(type) {}
+    MonsterState state = MonsterState::Idle;
+   
 
-    const std::string& getType() const { return m_type; }
+    Monster() = default;
 
+    void update(float dt) override {
+        // FSM에 따른 행동 결정 로직
+        Actor::update(dt);
+    }
 private:
     std::string m_type;
+    int dropGold = 0;
 };
