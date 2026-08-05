@@ -8,12 +8,17 @@ using json = nlohmann::json;
 
 std::string ResourceManager::extractAnimationName(const std::string& frameName) const
 {
-    size_t hypenPos = frameName.find_last_of('-');//스트링에서 마지막 언더스코어 위치 찾기, size_t인 이유는 find_last_of는 찾지 못하면 npos를 반환하기 때문
+    std::string animName = frameName;
+    size_t slashPos = animName.find_last_of('/');
+    if (slashPos != std::string::npos) {
+        animName = animName.substr(slashPos + 1);
+    }
+    size_t hypenPos = animName.find_last_of('-');//스트링에서 마지막 언더스코어 위치 찾기, size_t인 이유는 find_last_of는 찾지 못하면 npos를 반환하기 때문
     if (hypenPos != std::string::npos) {
         //프레임 이름에서 마지막 언더스코어까지의 부분 문자열을 반환
-        return frameName.substr(0, hypenPos);
+        return animName.substr(0, hypenPos);
     }
-    return frameName;
+    return animName;
 }
 
 bool ResourceManager::loadAtlas(const std::string& atlasKey, const std::string& jsonPath, const std::string& imagePath)
@@ -46,6 +51,10 @@ bool ResourceManager::loadAtlas(const std::string& atlasKey, const std::string& 
             atlas->frameRects[frameName] = std::make_unique<sf::IntRect>(rect);
             //프레임 애니메이션 저장
             std::string animName = extractAnimationName(frameName);
+            if (atlas->animations.find(animName) == atlas->animations.end()) {
+                atlas->animations[animName] = std::make_unique<std::vector<sf::IntRect>>();
+            }
+            atlas->animations[animName]->push_back(rect);
             atlas->animations[animName]->push_back(rect);
         }
     }
@@ -68,8 +77,13 @@ const sf::Texture* ResourceManager::getAtlasTexture(const std::string& atlasKey)
 //단일 리소스 누락의 사소한 건으로 게임 전체를 정지시키는것은 X
 const sf::IntRect* ResourceManager::getFrameRect(const std::string& atlasKey, const std::string& frameName) const
 {
-    //atlaskey 없으면 out_of_range. 아틀라스 자체가 없으면 게임 속행이 불가
-    const auto& atlas = m_atlases.at(atlasKey);
+    //아틀라스 자체가 없으면 게임 속행이 불가
+    auto atlasIt = m_atlases.find(atlasKey);
+    if (atlasIt == m_atlases.end()) {
+        std::cerr << "[ResourceManager] 아틀라스 키를 찾을 수 없음: " << atlasKey << std::endl;
+        return nullptr;
+    }
+    const auto& atlas = atlasIt->second;
     //단순한 객체 하나정도 없는경우는 게임 속행
     auto it = atlas->frameRects.find(frameName);
     if (it != atlas->frameRects.end()) {
@@ -80,7 +94,12 @@ const sf::IntRect* ResourceManager::getFrameRect(const std::string& atlasKey, co
 
 const std::vector<sf::IntRect>* ResourceManager::getAnimationFrames(const std::string& atlasKey, const std::string& animName) const
 {
-    const auto& atlas = m_atlases.at(atlasKey);
+    auto atlasIt = m_atlases.find(atlasKey);
+    if (atlasIt == m_atlases.end()) {
+        std::cerr << "[ResourceManager] 아틀라스 키를 찾을 수 없음: " << atlasKey << std::endl;
+        return nullptr;
+    }
+    const auto& atlas = atlasIt->second;
     auto it = atlas->animations.find(animName);
     if (it != atlas->animations.end()) {
         return it->second.get();
