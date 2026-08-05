@@ -1,14 +1,9 @@
 ﻿#include "MapManager.h"
 
-#include <SFML/Graphics/Color.hpp>
-#include <SFML/Graphics/RectangleShape.hpp>
-#include <SFML/Graphics/Vertex.hpp>
-#include <SFML/Graphics/VertexArray.hpp>
-
 #include <algorithm>
 #include <functional>
 #include <stdexcept>
-
+#include <queue>
 MapManager& MapManager::getInstance() {
     static MapManager instance;
     return instance;
@@ -30,9 +25,100 @@ Room& MapManager::createRoom(RoomType type) {
 bool MapManager::owns(const Room& room) const {
     return std::any_of(m_rooms.begin(), m_rooms.end(), [&room](const std::unique_ptr<Room>& candidate) {
         return candidate.get() == &room;
-    });
+        });
 }
 
+void MapManager::collectConnectableRooms(const std::vector<Room*>& source, std::vector<Room*>& result) const {
+    result.clear();
+    result.reserve(source.size());
+
+    for (Room* room : source) {
+        if (room->canAddDoor()) {
+            result.push_back(room);
+        }
+    }
+}
+
+Room* MapManager::pickRandomConnectableRoom(const std::vector<Room*>& rooms, const Room* exclude) {
+    std::vector<Room*> candidates;
+    candidates.reserve(rooms.size());
+
+    for (Room* room : rooms) {
+        if (!room->canAddDoor())
+            continue;
+
+        if (exclude) {
+            if (room == exclude)
+                continue;
+
+            if (exclude->isConnectedTo(*room))
+                continue;
+        }
+
+        candidates.push_back(room);
+    }
+
+    if (candidates.empty()) {
+        return nullptr;
+    }
+
+    std::uniform_int_distribution<std::size_t> pick(
+        0,
+        candidates.size() - 1);
+
+    return candidates[pick(m_random)];
+}
+
+
+BFSResult MapManager::bfs(Room* start) const {
+
+    BFSResult result;
+
+    if (!start)
+        return result;
+
+    std::queue<Room*> queue;
+    queue.push(start);
+
+    result.distance[start] = 0;
+    if (start->canAddDoor()) {
+        result.farthestRoom = start;
+    }
+
+    while (!queue.empty()) {
+        Room* current = queue.front();
+
+        queue.pop();
+
+        const std::size_t currentDistance = result.distance[current];
+        //방을 추가 가능하면서
+        if (current->canAddDoor()) {
+            //현재 가장 먼 방으로 지정된게 아니면서 거리가 더 멀경우에만
+            if (!result.farthestRoom ||
+                currentDistance > result.distance[result.farthestRoom]) {
+                result.farthestRoom = current;
+            }
+        }
+
+        for (const Door& door : current->getInfo()->doors) {
+            Room* next = door.next;
+            //다음방이 없음
+            if (!next)
+                continue;
+            //이미 체크한 방
+            if (result.distance.find(next) != result.distance.end()) {
+                continue;
+            }
+
+            //다음 방까지의 거리 계산
+            result.distance[next] = currentDistance + 1;
+            //해당 방에 연결된 방도 조사하기위해 큐에 삽입
+            queue.push(next);
+        }
+    }
+
+    return result;
+}
 bool MapManager::linkRoom(Room& first, Room& second) {
     if (!owns(first) || !owns(second) || &first == &second || !first.canAddDoor() || !second.canAddDoor() ||
         first.isConnectedTo(second)) {
@@ -68,38 +154,113 @@ bool MapManager::genRoom(std::size_t normalRoomCount, const MonsterSpawnConfig& 
     m_boss = nullptr;
 
     try {
-        m_start = &createRoom(RoomType::Start);
+
         std::vector<Room*> normalRooms;
         normalRooms.reserve(normalRoomCount);
         for (std::size_t index = 0; index < normalRoomCount; ++index) {
             normalRooms.push_back(&createRoom(RoomType::Normal));
         }
         Room& hut = createRoom(RoomType::Hut);
-        m_boss = &createRoom(RoomType::Boss);
 
-        if (!linkRoom(*m_start, *normalRooms.front())) {
-            throw std::logic_error("Unable to link Town to the dungeon.");
+
+        //연결된 방
+        std::vector<Room*> connected;
+        connected.reserve(normalRooms.size());
+        connected.push_back(normalRooms.front());
+
+        //연결 안된 방
+        std::vector<Room*> unconnected;
+        unconnected.reserve(normalRooms.size() - 1);
+        for (std::size_t i = 1; i < normalRooms.size(); ++i) {
+            unconnected.push_back(normalRooms[i]);
         }
-        for (std::size_t index = 1; index < normalRooms.size(); ++index) {
-            if (!linkRoom(*normalRooms[index - 1], *normalRooms[index])) {
-                throw std::logic_error("Unable to link normal rooms.");
+        //연결 안된 방 벡터를 순회하면서 연결에 추가
+        while (!unconnected.empty()) {
+            //연결된 방 중 랜덤 방 선택하여 부모방으로 지정
+            Room* parent = pickRandomConnectableRoom(connected);
+            std::uniform_int_distribution<std::size_t> pick(0, unconnected.size() - 1);
+            Room* child = unconnected[pick(m_random)];
+
+            if (!parent || !child) {
+                throw std::logic_error("No connectable rooms.");
             }
+            //두 방이 이미 연결상태면 스킵
+            if (!linkRoom(*parent, *child))
+                continue;
+
+            //연결 완료 후 자식 방도 이제 연결된 방 목록에 포함
+            connected.push_back(child);
+
+            //연결 안된 방 리스트 갱신
+            unconnected.erase(
+                std::remove(unconnected.begin(), unconnected.end(), child),
+                unconnected.end());
         }
-        if (!linkRoom(*normalRooms.back(), *m_boss)) {
+        //랜덤 간선 추가
+
+
+        //추가 간선의 갯수는 전체 방 갯수의 절반
+        const int extraEdges = static_cast<int>(normalRoomCount / 2);
+        int created = 0;
+        int retry = 0;
+
+        while (created < extraEdges && retry < extraEdges * 10) {
+            ++retry;
+
+
+            Room* a = pickRandomConnectableRoom(normalRooms);
+            if (!a)
+                break;
+
+            Room* b = pickRandomConnectableRoom(normalRooms, a);
+            if (!b)
+                continue;
+
+            if (!linkRoom(*a, *b))
+                continue;
+
+            ++created;
+        }
+
+        //서로 가장 먼 방 탐색
+        //시간 나면 해당 알고리즘 재확인
+        auto first = bfs(normalRooms.front());
+
+        if (!first.farthestRoom) {
+            throw std::logic_error("Unable to find start room.");
+        }
+
+        auto second = bfs(first.farthestRoom);
+
+        if (!second.farthestRoom) {
+            throw std::logic_error("Unable to find boss room.");
+        }
+
+        Room* startRoom = first.farthestRoom;
+        Room* bossRoom = second.farthestRoom;
+
+        Room& start = createRoom(RoomType::Start);
+        Room& boss = createRoom(RoomType::Boss);
+
+        m_start = &start;
+        m_boss = &boss;
+        if (!linkRoom(*m_start, *startRoom)) {
+            throw std::logic_error("Unable to link Start room.");
+        }
+
+        if (!linkRoom(*bossRoom, *m_boss)) {
             throw std::logic_error("Unable to link Boss room.");
         }
+        
+        Room* hutRoom = pickRandomConnectableRoom(normalRooms);
 
-        std::uniform_int_distribution<std::size_t> firstBonus(0, normalRooms.size() - 1);
-        const std::size_t shopIndex = firstBonus(m_random);
-        std::uniform_int_distribution<std::size_t> secondBonus(0, normalRooms.size() - 2);
-        std::size_t hutIndex = secondBonus(m_random);
-        if (hutIndex >= shopIndex) {
-            ++hutIndex;
-        }
-        if (!linkRoom(*normalRooms[shopIndex], shop) || !linkRoom(*normalRooms[hutIndex], hut)) {
-            throw std::logic_error("Unable to link bonus rooms.");
+        if (!hutRoom) {
+            throw std::logic_error("Unable to find Hut room.");
         }
 
+        if (!linkRoom(*hutRoom, hut)) {
+            throw std::logic_error("Unable to link Hut room.");
+        }
         for (const std::unique_ptr<Room>& room : m_rooms) {
             room->genMonster(spawnConfig, m_random);
             room->genChest();
@@ -114,76 +275,4 @@ bool MapManager::genRoom(std::size_t normalRoomCount, const MonsterSpawnConfig& 
     return true;
 }
 
-sf::Color MapManager::minimapColor(RoomType type) const {
-    switch (type) {
-    case RoomType::Start: return sf::Color(80, 180, 255);
-    case RoomType::Normal: return sf::Color(180, 180, 180);
-    case RoomType::Shop: return sf::Color(255, 210, 80);
-    case RoomType::Hut: return sf::Color(120, 210, 130);
-    case RoomType::Boss: return sf::Color(235, 80, 80);
-    }
-    return sf::Color::White;
-}
 
-void MapManager::minimap(sf::RenderTarget& target, sf::Vector2f origin) const {
-    constexpr float roomSize = 14.f;
-    constexpr float stepX = 28.f;
-    constexpr float mainY = 18.f;
-    constexpr float bonusY = 46.f;
-
-    const auto roomPosition = [this, origin, stepX, mainY, bonusY](const Room& room) {
-        const auto& info = *room.getInfo();
-        const auto normalBegin = m_rooms.begin() + (m_rooms.empty() ? 0 : 1);
-        const auto normalEnd = std::find_if(normalBegin, m_rooms.end(), [](const std::unique_ptr<Room>& candidate) {
-            return candidate->getInfo()->type != RoomType::Normal;
-        });
-        const auto normalCount = static_cast<float>(std::distance(normalBegin, normalEnd));
-
-        if (info.type == RoomType::Town) return origin + sf::Vector2f(0.f, mainY);
-        if (info.type == RoomType::Boss) return origin + sf::Vector2f((normalCount + 1.f) * stepX, mainY);
-
-        if (info.type == RoomType::Normal) {
-            const auto normal = std::find_if(normalBegin, normalEnd, [&room](const std::unique_ptr<Room>& candidate) {
-                return candidate.get() == &room;
-            });
-            return origin + sf::Vector2f((static_cast<float>(std::distance(normalBegin, normal)) + 1.f) * stepX, mainY);
-        }
-
-        const Room* connection = info.doors.empty() ? nullptr : info.doors.front().next;
-        sf::Vector2f position = origin;
-        if (connection) {
-            const auto connectedNormal = std::find_if(normalBegin, normalEnd, [connection](const std::unique_ptr<Room>& candidate) {
-                return candidate.get() == connection;
-            });
-            if (connectedNormal != normalEnd) {
-                position += sf::Vector2f((static_cast<float>(std::distance(normalBegin, connectedNormal)) + 1.f) * stepX, mainY);
-            }
-        }
-        position.y += info.type == RoomType::Shop ? bonusY : -bonusY;
-        return position;
-    };
-
-    for (const std::unique_ptr<Room>& room : m_rooms) {
-        const sf::Vector2f from = roomPosition(*room) + sf::Vector2f(roomSize / 2.f, roomSize / 2.f);
-        for (const Door& door : room->getInfo()->doors) {
-            if (door.next && std::less<const Room*>{}(room.get(), door.next)) {
-                sf::VertexArray line(sf::PrimitiveType::Lines, 2);
-                line[0].position = from;
-                line[0].color = sf::Color(120, 120, 120);
-                line[1].position = roomPosition(*door.next) + sf::Vector2f(roomSize / 2.f, roomSize / 2.f);
-                line[1].color = sf::Color(120, 120, 120);
-                target.draw(line);
-            }
-        }
-    }
-
-    for (const std::unique_ptr<Room>& room : m_rooms) {
-        const auto& info = *room->getInfo();
-        const sf::Vector2f position = roomPosition(*room);
-
-        sf::RectangleShape marker({ roomSize, roomSize });
-        marker.setPosition(position);
-        marker.setFillColor(minimapColor(info.type));
-        target.draw(marker);
-    }
-}

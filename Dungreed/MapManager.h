@@ -2,16 +2,17 @@
 
 #include "Room.h"
 
-#include <SFML/Graphics/Color.hpp>
-#include <SFML/Graphics/RenderTarget.hpp>
-#include <SFML/System/Vector2.hpp>
-
 #include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <random>
 #include <vector>
-
+#include <unordered_map>
+struct BFSResult
+{
+    Room* farthestRoom = nullptr;
+    std::unordered_map<Room*, std::size_t> distance;
+};
 class MapManager {
 public:
 //=============================== Singleton Pattern ==============================
@@ -28,7 +29,6 @@ public:
     bool genRoom(std::size_t normalRoomCount, const MonsterSpawnConfig& spawnConfig = {});
     bool linkRoom(Room& first, Room& second);
 
-    void minimap(sf::RenderTarget& target, sf::Vector2f origin = { 24.f, 24.f }) const;
 
     const std::vector<std::unique_ptr<Room>>& getRooms() const { return m_rooms; }
     Room* getStart() const { return m_start; }
@@ -41,10 +41,11 @@ private:
 
     bool owns(const Room& room) const;
     Room& createRoom(RoomType type);
-    sf::Color minimapColor(RoomType type) const;
-
+    void collectConnectableRooms(const std::vector<Room*>& rooms, std::vector<Room*>& result) const;
+    Room* pickRandomConnectableRoom(const std::vector<Room*>& rooms,const Room* exclude=nullptr);
     std::vector<std::unique_ptr<Room>> m_rooms;
     Room* m_start = nullptr;
     Room* m_boss = nullptr;
     std::mt19937 m_random;
+    BFSResult bfs(Room* start) const;
 };
