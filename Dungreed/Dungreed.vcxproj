@@ -153,6 +153,7 @@
     <ClInclude Include="Monster.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\README.md" />
     <None Include="resources\images\player_atlas.json" />
     <None Include="resources\images\tilemap_atlas.json" />
   </ItemGroup>

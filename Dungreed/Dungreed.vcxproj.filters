@@ -75,6 +75,7 @@
   <ItemGroup>
     <None Include="resources\images\player_atlas.json" />
     <None Include="resources\images\tilemap_atlas.json" />
+    <None Include="..\README.md" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="resources\images\player_atlas.png">
