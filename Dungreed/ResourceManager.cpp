@@ -2,7 +2,8 @@
 #include <fstream>
 #include <algorithm>
 #include <nlohmann/json.hpp>
-
+#include<iostream>
+#include<stdexcept>
 using json = nlohmann::json;
 
 std::string ResourceManager::extractAnimationName(const std::string& frameName) const
@@ -17,9 +18,9 @@ std::string ResourceManager::extractAnimationName(const std::string& frameName) 
 
 bool ResourceManager::loadAtlas(const std::string& atlasKey, const std::string& jsonPath, const std::string& imagePath)
 {
-    AtlasData atlas;
+    std::unique_ptr<AtlasData> atlas=std::make_unique<AtlasData>();
     //atlas에 텍스쳐 로드, 실패시 에러 메시지 출력 후 false 반환
-    if(!atlas.texture.loadFromFile(imagePath)){
+    if(!atlas->texture.loadFromFile(imagePath)){
         std::cerr << "텍스쳐 로드 실패: " << imagePath << std::endl;
         return false;
     }
@@ -42,10 +43,10 @@ bool ResourceManager::loadAtlas(const std::string& atlasKey, const std::string& 
                 { f["w"].get<int>(), f["h"].get<int>() }
             );
             //프레임 이름과 IntRect 저장
-            atlas.frameRects[frameName] = rect;
+            atlas->frameRects[frameName] = std::make_unique<sf::IntRect>(rect);
             //프레임 애니메이션 저장
             std::string animName = extractAnimationName(frameName);
-            atlas.animations[animName].push_back(rect);
+            atlas->animations[animName]->push_back(rect);
         }
     }
     //최종 관리책임 이양
@@ -53,39 +54,38 @@ bool ResourceManager::loadAtlas(const std::string& atlasKey, const std::string& 
     return true;
 }
 
-const sf::Texture& ResourceManager::getAtlasTexture(const std::string& atlasKey) const
+const sf::Texture* ResourceManager::getAtlasTexture(const std::string& atlasKey) const
 {
     //아틀라스 존재하는지 확인
     auto it = m_atlases.find(atlasKey);
     if (it == m_atlases.end()) {
         std::cerr << "아틀라스 키를 찾을 수 없음:" << atlasKey << std::endl;
-        return;
+        return nullptr;
     }
-    return it->second.texture;
+    return &(it->second->texture);
 }
 //try-catch는 stack 언와인딩 동반하므로 연산이 비쌈
 //단일 리소스 누락의 사소한 건으로 게임 전체를 정지시키는것은 X
-sf::IntRect ResourceManager::getFrameRect(const std::string& atlasKey, const std::string& frameName) const
+const sf::IntRect* ResourceManager::getFrameRect(const std::string& atlasKey, const std::string& frameName) const
 {
     //atlaskey 없으면 out_of_range. 아틀라스 자체가 없으면 게임 속행이 불가
     const auto& atlas = m_atlases.at(atlasKey);
     //단순한 객체 하나정도 없는경우는 게임 속행
-    auto it = atlas.frameRects.find(frameName);
-    if (it != atlas.frameRects.end()) {
-        return it->second;
+    auto it = atlas->frameRects.find(frameName);
+    if (it != atlas->frameRects.end()) {
+        return it->second.get();
     }
-    return sf::IntRect({ 0, 0 }, { 0, 0 });
+    return nullptr;
 }
 
-const std::vector<sf::IntRect>& ResourceManager::getAnimationFrames(const std::string& atlasKey, const std::string& animName) const
+const std::vector<sf::IntRect>* ResourceManager::getAnimationFrames(const std::string& atlasKey, const std::string& animName) const
 {
     const auto& atlas = m_atlases.at(atlasKey);
-    auto it = atlas.animations.find(animName);
-    if (it != atlas.animations.end()) {
-        return it->second;
+    auto it = atlas->animations.find(animName);
+    if (it != atlas->animations.end()) {
+        return it->second.get();
     }
-    static const std::vector<sf::IntRect> emptyVec;
-    return emptyVec;
+    return nullptr;
 }
 
 
