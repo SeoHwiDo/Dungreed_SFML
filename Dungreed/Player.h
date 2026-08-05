@@ -1,24 +1,24 @@
 ﻿#pragma once
 #include "Actor.h"
-enum class PlayerState {
-    Idle,
-    RUN,
-    JUMP,
-    FALL,
-    ATTACK,
-    DEAD
+#include "Controller.h"
+#include <cstdint> // uint32_t 사용, 모든 상황에서 고정된 비트수를사용하기 위함
+enum PlayerState : uint32_t {
+    Idle   = 1 << 0, // 1
+    Run    = 1 << 1, // 2
+    Jump   = 1 << 2, // 4
+    Dash   = 1 << 3, // 8
+    Attack = 1 << 4, // 16
+    Dead   = 1 << 5  // 32
 };
 
 class Player : public Actor {
 public:
-    PlayerState state = PlayerState::Idle;
+    uint32_t state = PlayerState::Idle;
     // std::list<Item> Inventory;       
     // std::shared_ptr<Equip> equipment; 
 
-    Player() = default;
 
-    inline void update(float dt) override {
-        // 키보드 입력에 따른 상태 변경 로직 (컨트롤러 역할)
-        Actor::update(dt);
-    }
+    void update(float dt, const sf::RenderWindow& window);
+private:
+    Controller controller;
 };
