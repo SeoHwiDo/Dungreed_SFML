@@ -18,7 +18,18 @@ void Player::init(const std::string& atlasKey) {
                 isLoop = false;
             }
 
-            AnimationClip clip(frames, 0.1f, isLoop);
+            float frameDuration = 0.15f; // 기본 속도
+
+            if (animName.find("Idle") != std::string::npos) {
+                frameDuration = 0.2f;  // 대기는 천천히 (초당 5프레임)
+            } else if (animName.find("Run") != std::string::npos) {
+                frameDuration = 0.12f; // 걷기/뛰기는 조금 빠르게
+            } else if (animName.find("Attack") != std::string::npos) {
+                frameDuration = 0.08f; // 공격은 아주 역동적이고 빠르게
+            } else if (animName.find("Jump") != std::string::npos) {
+                frameDuration = 0.15f;
+            }
+            AnimationClip clip(frames, frameDuration, isLoop);
             animator.addAnimation(animName, clip);
         }
     }

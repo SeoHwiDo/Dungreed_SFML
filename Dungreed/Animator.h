@@ -11,7 +11,7 @@ struct AnimationClip {
     float frameDuration;//각 프레임 출력되는 시간
     bool isLoop;//반복 여부
 
-    AnimationClip() :frames(nullptr),frameDuration(0.1f), isLoop(true) {};
+    AnimationClip() :frames(nullptr),frameDuration(0.5f), isLoop(true) {};
     AnimationClip(const std::vector<sf::IntRect>* f, float duration, bool loop):frames(f),frameDuration(duration),isLoop(loop) {};
 };
 
@@ -19,7 +19,7 @@ class Animator{
 private:
     std::unordered_map<std::string, AnimationClip> m_animations;
     std::string m_currentAnimation;
-
+    float m_speedMultiplier = 1.0f; // 추가: 애니메이션 배속 비율
     float m_currentTime;
     size_t m_currentFrame;
     bool m_isPlaying;

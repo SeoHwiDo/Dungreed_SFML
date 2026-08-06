@@ -36,7 +36,7 @@ void Animator::update(float dt, sf::Sprite& sprite) {
     if (!clip.frames || clip.frames->empty()) return;
 
     // 객체 자신의 독립적인 시간에 dt를 누적 (비동기적 프레임 갱신)
-    m_currentTime += dt;
+    m_currentTime += dt * m_speedMultiplier;
 
     // 프레임 전환 시간이 지났을 경우
     while (m_currentTime >= clip.frameDuration) {
