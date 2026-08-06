@@ -1,4 +1,9 @@
 ﻿#include "Player.h"
+#include"ResourceManager.h"
+Player::Player(Status _status,sf::Sprite playerSprite) {
+    status = _status;
+    sprite = playerSprite;
+}
 void Player::update(float dt, const sf::RenderWindow& window)  {
     state = 0;
     if (status.tmpHp <= 0) {

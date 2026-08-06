@@ -14,8 +14,7 @@ enum PlayerState : uint32_t {
 class Player : public Actor {
 public:
     uint32_t state = PlayerState::Idle;
-    // std::list<Item> Inventory;       
-    // std::shared_ptr<Equip> equipment; 
+    Player(Status _status, sf::Sprite playerSprite);
 
 
     void update(float dt, const sf::RenderWindow& window);
