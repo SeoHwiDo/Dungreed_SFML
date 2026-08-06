@@ -12,16 +12,10 @@ enum class MonsterState {
 
 class Monster : public Actor {
 public:
-    Monster(std::string type) :m_type(type) {}
+    Monster(std::string type, Status _status, sf::Sprite monsterSprite);
     MonsterState state = MonsterState::Idle;
    
-
-    Monster() = default;
-
-    void update(float dt) override {
-        // FSM에 따른 행동 결정 로직
-        Actor::update(dt);
-    }
+    void update(float dt) override;
 private:
     std::string m_type;
     int dropGold = 0;
