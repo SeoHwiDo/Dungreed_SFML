@@ -14,8 +14,9 @@ enum PlayerState : uint32_t {
 class Player : public Actor {
 public:
     uint32_t state = PlayerState::Idle;
-    Player(Status _status, sf::Sprite playerSprite);
-
+    void init(const std::string& atlasKey = "Player") override;
+    Player(Status _status = { MAXHP, MAXHP, POWER, DEX }) :Actor(_status) { init("Player"); };
+    
 
     void update(float dt, const sf::RenderWindow& window);
 private:

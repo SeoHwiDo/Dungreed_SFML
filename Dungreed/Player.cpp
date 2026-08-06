@@ -1,9 +1,32 @@
 ﻿#include "Player.h"
 #include"ResourceManager.h"
-Player::Player(Status _status,sf::Sprite playerSprite) {
-    status = _status;
-    sprite = playerSprite;
+
+void Player::init(const std::string& atlasKey) {
+    Actor::init(atlasKey);
+    
+    //애니메이션 가져오기
+    auto& resMgr = ResourceManager::getInstance();
+    std::vector<std::string> allAnims = resMgr.getAnimationNames(atlasKey);
+
+    for (const auto& animName : allAnims) {
+        const auto* frames = resMgr.getAnimationFrames(atlasKey, animName);
+        if (frames) {
+            // 이름에 "Attack"이나 "Dead"가 들어가면 반복(Loop) 재생을 끕니다.
+            bool isLoop = true;
+            if (animName.find("Attack") != std::string::npos ||
+                animName.find("Dead") != std::string::npos) {
+                isLoop = false;
+            }
+
+            AnimationClip clip(frames, 0.1f, isLoop);
+            animator.addAnimation(animName, clip);
+        }
+    }
+
+    // 4. 초기 상태 애니메이션 실행
+    animator.play("Player_Idle");
 }
+
 void Player::update(float dt, const sf::RenderWindow& window)  {
     state = 0;
     if (status.tmpHp <= 0) {
