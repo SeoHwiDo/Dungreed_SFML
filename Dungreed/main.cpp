@@ -68,8 +68,7 @@ int main() {
 
         // 업데이트 처리
         player.update(dt, window);
-        monster.setTargetPos(player.getPosition());
-        monster.update(dt);
+        monster.update(dt, player);
 
         // 충돌 처리
         Collision::resolveMapCollision(player, tileMap);

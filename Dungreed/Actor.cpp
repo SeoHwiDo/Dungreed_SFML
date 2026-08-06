@@ -16,6 +16,7 @@ void Actor::init(const std::string& atlasKey) {
         if (!sprite.has_value()) {
             sprite.emplace(*tex);
             setBottomCenterOrigin();
+            col.updateHitbox(sprite->getGlobalBounds());
         }
 
     }
@@ -36,6 +37,27 @@ std::optional<sf::FloatRect> Actor::getAttackHitbox() const {
         return sprite->getGlobalBounds();
     }
     return std::nullopt;
+}
+
+void Actor::takeDamage(float damage) {
+    // 공격자 정보가 없는 기존 호출도 기본 방향으로 넉백을 적용합니다.
+    const sf::Vector2f center = getCenterPosition();
+    takeDamage(damage, { center.x - 1.f, center.y });
+}
+
+void Actor::takeDamage(float damage, const sf::Vector2f& attackerPosition) {
+    if (dead()) return;
+
+    status.tmpHp -= damage;
+    const float knockbackDirection =
+        (getCenterPosition().x >= attackerPosition.x) ? 1.f : -1.f;
+    m_knockbackVelocity = { knockbackDirection * KNOCKBACK_SPEED, 0.f };
+    m_knockbackTimer = KNOCKBACK_DURATION;
+    m_hitTimer = HIT_COLOR_DURATION;
+
+    if (sprite) {
+        sprite->setColor(sf::Color(255, 96, 96));
+    }
 }
 
 //=================기본 액션 함수=====================
@@ -74,8 +96,12 @@ void Actor::updatePhysics(float dt) {
         movement.velocity.y += movement.gravity * dt;
     }
 
-    // 2. 이동 적용
-    move(movement.velocity.x * dt, movement.velocity.y * dt);
+    // 2. 이동 적용 (피격 넉백은 일반 이동과 합산)
+    sf::Vector2f totalVelocity = movement.velocity;
+    if (m_knockbackTimer > 0.f) {
+        totalVelocity += m_knockbackVelocity;
+    }
+    move(totalVelocity.x * dt, totalVelocity.y * dt);
 }
 
 void Actor::playAnimation(const std::string& animationName) {
@@ -83,6 +109,24 @@ void Actor::playAnimation(const std::string& animationName) {
         return;
 
     animator.play(animationName);
+}
+
+void Actor::updateHitFeedback(float dt) {
+    if (m_knockbackTimer > 0.f) {
+        m_knockbackTimer -= dt;
+        if (m_knockbackTimer <= 0.f) {
+            m_knockbackTimer = 0.f;
+            m_knockbackVelocity = { 0.f, 0.f };
+        }
+    }
+
+    if (m_hitTimer > 0.f) {
+        m_hitTimer -= dt;
+        if (m_hitTimer <= 0.f && sprite) {
+            m_hitTimer = 0.f;
+            sprite->setColor(sf::Color::White);
+        }
+    }
 }
 //============기본 로직===============
 void Actor::update(float dt) {
@@ -93,7 +137,10 @@ void Actor::update(float dt) {
     if (sprite) {
         animator.update(dt, *sprite);
         setBottomCenterOrigin();
+        col.updateHitbox(sprite->getGlobalBounds());
     }
+
+    updateHitFeedback(dt);
 }
 
 void Actor::render(sf::RenderWindow& window) {

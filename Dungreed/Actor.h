@@ -38,10 +38,12 @@ public:
     virtual ~Actor() = default;
 
     virtual void init(const std::string& atlasKey);
-    inline void move(float dx, float dy) { if (sprite)sprite->move({ dx,dy }); }
+    inline void move(float dx, float dy) { if (sprite) { sprite->move({ dx,dy }); col.updateHitbox(sprite->getGlobalBounds()); } }
     inline bool dead() const { return status.tmpHp <= 0; }
     inline float attack() const { return status.power; };
-    virtual void takeDamage(float damage) { status.tmpHp -= damage; };
+    virtual void takeDamage(float damage);
+    virtual void takeDamage(float damage, const sf::Vector2f& attackerPosition);
+    inline bool isHit() const { return m_hitTimer > 0.f; }
     //점프중일때 true;
     bool jump();
     sf::Vector2f getCenterPosition() const;
@@ -59,6 +61,7 @@ public:
     inline sf::Vector2f getPosition() const { return sprite ? sprite->getPosition() : sf::Vector2f{ 0.f, 0.f }; }
     inline sf::FloatRect getGlobalBounds() const { return sprite ? sprite->getGlobalBounds() : sf::FloatRect{}; }
     inline MovementData& getMovement() { return movement; }
+    inline const Collision& getCollision() const { return col; }
 
     virtual void update(float dt);
     virtual void render(sf::RenderWindow& window);
@@ -76,6 +79,15 @@ protected:
     std::string m_currentAnimation;
 
     void playAnimation(const std::string& animationName);
+    void updateHitFeedback(float dt);
+
+    float m_hitTimer = 0.f;
+    float m_knockbackTimer = 0.f;
+    sf::Vector2f m_knockbackVelocity{ 0.f, 0.f };
+    static constexpr float HIT_COLOR_DURATION = 0.15f;
+    static constexpr float KNOCKBACK_DURATION = 0.12f;
+    static constexpr float KNOCKBACK_SPEED = 350.f;
+
 private:
    
     void setBottomCenterOrigin();

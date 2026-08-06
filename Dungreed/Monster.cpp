@@ -1,4 +1,5 @@
 ﻿#include "Monster.h"
+#include "Player.h"
 #include "ResourceManager.h"
 #include <iostream>
 #include <cmath>   // std::sqrt
@@ -70,7 +71,7 @@ void Monster::changeState(MonsterState newState) {
     }
 }
 
-void Monster::handleFSM(float dt) {
+void Monster::handleFSM(float dt, const Player& player) {
     // 1. 사망 체크
     if (status.tmpHp <= 0 && state != MonsterState::Dead) {
         changeState(MonsterState::Dead);
@@ -80,26 +81,19 @@ void Monster::handleFSM(float dt) {
 
     fsm.m_stateTimer += dt;
     sf::Vector2f centerPos = getCenterPosition();
-    float attackRangeX = sprite ? (sprite->getGlobalBounds().size.x / 2.f) : 30.f;
 
     // 2. 타겟과의 거리 및 방향 계산
-    float distToTarget = 9999.f;
-    float dirToTargetX = 0.f;
-    float dx = 0.f;
-    float dy = 0.f;
-    if (fsm.m_hasTarget) {
-        dx = fsm.m_targetPos.x - centerPos.x;
-        dy = fsm.m_targetPos.y - centerPos.y;
-        //삼각함수로 거리계산
-        distToTarget = std::sqrt(dx * dx + dy * dy);
-        dirToTargetX = (dx > 0.f) ? 1.f : -1.f;
-    }
+    const sf::Vector2f targetCenter = player.getCenterPosition();
+    const float dx = targetCenter.x - centerPos.x;
+    const float dy = targetCenter.y - centerPos.y;
+    const float distToTarget = std::sqrt(dx * dx + dy * dy);
+    const float dirToTargetX = (dx > 0.f) ? 1.f : -1.f;
 
     // 3. 상태별 로직 처리
     switch (state) {
     case MonsterState::Idle:
         // 시야 범위 내에 타겟이 들어오면 추적 시작
-        if (fsm.m_hasTarget && distToTarget <= fsm.DETECT_RANGE) {
+        if (distToTarget <= fsm.DETECT_RANGE) {
             changeState(MonsterState::Chase);
         }
         // 2초 정도 대기 후 순찰 시작
@@ -116,22 +110,19 @@ void Monster::handleFSM(float dt) {
             sprite->setScale({ fsm.m_patrolDir, 1.f });
         }
 
-        if (fsm.m_hasTarget && distToTarget <= fsm.DETECT_RANGE) {
+        if (distToTarget <= fsm.DETECT_RANGE) {
             changeState(MonsterState::Chase);
         }
         // 3초간 순찰 후 다시 대기
-        else if (fsm.m_stateTimer > 3.0f) {
+        else if (fsm.m_stateTimer > 1.0f) {
             changeState(MonsterState::Idle);
         }
         break;
 
     case MonsterState::Chase:
         // 타겟을 상실했거나 추적 범위를 크게 벗어나면 포기
-        if (!fsm.m_hasTarget || distToTarget > fsm.DETECT_RANGE * 1.5f) {
+        if (distToTarget > fsm.DETECT_RANGE * 1.5f) {
             changeState(MonsterState::Idle);
-        }
-        else if (std::abs(dx) <= attackRangeX && std::abs(dy) <= 50.f) {
-            changeState(MonsterState::Attack);
         }
         // 계속 추적 (전속력)
         else {
@@ -157,10 +148,22 @@ void Monster::handleFSM(float dt) {
     }
 }
 
-void Monster::update(float dt) {
+void Monster::update(float dt, const Player& player) {
     // 1. 상태 머신 로직 업데이트
-    handleFSM(dt);
+    handleFSM(dt, player);
 
-    // 2. 부모 클래스(Actor)의 물리 연산 및 애니메이션 갱신 처리
+    // 2. 이동 후 플레이어의 콜라이더로 실제 충돌 여부를 판정합니다.
     Actor::update(dt);
+    if (state != MonsterState::Chase || !player.getCollision().checkHit(getGlobalBounds())) {
+        return;
+    }
+
+    // 겹침이 발생했으면 몬스터만 수평으로 분리한 뒤 공격 상태로 전환합니다.
+    const sf::FloatRect monsterBounds = getGlobalBounds();
+    const sf::FloatRect playerBounds = player.getGlobalBounds();
+    if (const auto overlap = monsterBounds.findIntersection(playerBounds)) {
+        const float pushDirection = (getCenterPosition().x < player.getCenterPosition().x) ? -1.f : 1.f;
+        move(pushDirection * overlap->size.x, 0.f);
+    }
+    changeState(MonsterState::Attack);
 }
