@@ -4,10 +4,6 @@
 #include <functional>
 #include <stdexcept>
 #include <queue>
-MapManager& MapManager::getInstance() {
-    static MapManager instance;
-    return instance;
-}
 
 MapManager::MapManager() : m_random(std::random_device{}()) {}
 

@@ -41,7 +41,6 @@ private:
 
     bool owns(const Room& room) const;
     Room& createRoom(RoomType type);
-    void collectConnectableRooms(const std::vector<Room*>& rooms, std::vector<Room*>& result) const;
     Room* pickRandomConnectableRoom(const std::vector<Room*>& rooms,const Room* exclude=nullptr);
     std::vector<std::unique_ptr<Room>> m_rooms;
     Room* m_start = nullptr;
