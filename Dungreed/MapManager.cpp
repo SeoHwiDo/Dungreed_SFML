@@ -1,4 +1,5 @@
 ﻿#include "MapManager.h"
+#include "MonsterManager.h"
 #include<iostream>
 #include <algorithm>
 #include <functional>
@@ -248,7 +249,6 @@ bool MapManager::genRoom(std::size_t normalRoomCount, const MonsterSpawnConfig& 
             throw std::logic_error("Unable to link Hut room.");
         }
         for (const std::unique_ptr<Room>& room : m_rooms) {
-            room->genMonster(spawnConfig, m_random);
             room->genChest();
         }
     } catch (...) {

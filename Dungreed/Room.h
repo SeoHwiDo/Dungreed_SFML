@@ -72,12 +72,9 @@ public:
     bool isConnectedTo(const Room& room) const;
     bool addDoor(Room& room);
 
-    const std::vector<std::unique_ptr<Monster>>& getMonsters() const { return m_monsters; }
-    void genMonster(const MonsterSpawnConfig& config, std::mt19937& random);
     void genChest();
     void update();
 
 private:
     std::unique_ptr<RoomInfo> m_info;
-    std::vector<std::unique_ptr<Monster>> m_monsters;
 };
