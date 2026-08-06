@@ -15,8 +15,8 @@ struct MonsterFSMData {
     sf::Vector2f m_targetPos{ 0.f, 0.f }; // 타겟(플레이어)의 위치
     bool m_hasTarget = false;     
     // 시야 및 공격 반경 (필요시 몬스터 타입별로 설정할 수도 있습니다)
-    const float DETECT_RANGE = 400.f;
-    const float ATTACK_RANGE = 80.f;// 타겟 유무 플래그
+    float DETECT_RANGE = 200.f;
+    float ATTACK_RANGE = 50.f;
 };
 class Monster : public Actor {
 public:

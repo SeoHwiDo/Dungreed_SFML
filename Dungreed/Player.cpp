@@ -1,6 +1,6 @@
 ﻿#include "Player.h"
 #include"ResourceManager.h"
-
+#include"Equip.h"
 void Player::init(const std::string& atlasKey) {
     Actor::init(atlasKey);
     
@@ -33,7 +33,7 @@ void Player::init(const std::string& atlasKey) {
             animator.addAnimation(animName, clip);
         }
     }
-
+    equi
     // 4. 초기 상태 애니메이션 실행
     animator.play("Player_Idle");
 }

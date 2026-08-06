@@ -56,7 +56,11 @@ void Monster::changeState(MonsterState newState) {
 
     case MonsterState::Attack:
         setHorizontalInput(0.f); // 공격 시 일단 정지
-        animator.play(m_type + "_Attack");
+        if (animator.hasAnimation(m_type + "_Attack")) {
+            animator.play(m_type + "_Attack");
+        } else {
+            animator.play(m_type + "_Idle");
+        }
         break;
 
     case MonsterState::Dead:
@@ -76,14 +80,16 @@ void Monster::handleFSM(float dt) {
 
     fsm.m_stateTimer += dt;
     sf::Vector2f centerPos = getCenterPosition();
+    float attackRangeX = sprite ? (sprite->getGlobalBounds().size.x / 2.f) : 30.f;
 
     // 2. 타겟과의 거리 및 방향 계산
     float distToTarget = 9999.f;
     float dirToTargetX = 0.f;
-
+    float dx = 0.f;
+    float dy = 0.f;
     if (fsm.m_hasTarget) {
-        float dx = fsm.m_targetPos.x - centerPos.x;
-        float dy = fsm.m_targetPos.y - centerPos.y;
+        dx = fsm.m_targetPos.x - centerPos.x;
+        dy = fsm.m_targetPos.y - centerPos.y;
         //삼각함수로 거리계산
         distToTarget = std::sqrt(dx * dx + dy * dy);
         dirToTargetX = (dx > 0.f) ? 1.f : -1.f;
@@ -124,8 +130,7 @@ void Monster::handleFSM(float dt) {
         if (!fsm.m_hasTarget || distToTarget > fsm.DETECT_RANGE * 1.5f) {
             changeState(MonsterState::Idle);
         }
-        // 공격 사거리 내에 들어왔을 경우
-        else if (distToTarget <= fsm.ATTACK_RANGE) {
+        else if (std::abs(dx) <= attackRangeX && std::abs(dy) <= 50.f) {
             changeState(MonsterState::Attack);
         }
         // 계속 추적 (전속력)
@@ -142,6 +147,11 @@ void Monster::handleFSM(float dt) {
         if (animator.isFinished()) {
             // 공격 후 잠시 대기 상태로 전환 (연속 공격 방지 쿨타임 역할)
             changeState(MonsterState::Idle);
+        } else {
+            // 공격 애니메이션이 없어 Idle 중인 경우, 1초의 임시 쿨타임 후 상태 전환
+            if (fsm.m_stateTimer > 1.0f) {
+                changeState(MonsterState::Idle);
+            }
         }
         break;
     }

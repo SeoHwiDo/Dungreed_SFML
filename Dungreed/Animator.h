@@ -39,6 +39,8 @@ public:
     // 애니메이션 정지
     void stop();
 
+    bool hasAnimation(const std::string& name) const;
+
     // 매 프레임 호출되어 스프라이트의 TextureRect를 갱신
     void update(float dt, sf::Sprite& sprite);
 

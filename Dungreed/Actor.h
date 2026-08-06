@@ -6,7 +6,7 @@
 #include"Animator.h"
 #include "ResourceManager.h"
 #include"Collision.h"
-
+#include"Equip.h"
 constexpr float MAXHP = 100.0f;
 constexpr float POWER = 10.0f;
 constexpr float DEX = 1.0f;
@@ -36,8 +36,8 @@ public:
 
     virtual void init(const std::string& atlasKey);
     inline void move(float dx, float dy) { if (sprite)sprite->move({ dx,dy }); }
-    inline bool dead() { return status.tmpHp <= 0; }
-    inline float attack() { return status.power; };
+    inline bool dead() const { return status.tmpHp <= 0; }
+    inline float attack() const { return status.power; };
     virtual void takeDamage(float damage) { status.tmpHp -= damage; };
     //점프중일때 true;
     bool jump();
@@ -59,7 +59,7 @@ protected:
     Animator animator;
     MovementData movement;
     // std::list<Item> Inventory;       
-    // std::shared_ptr<Equip> equipment; 
+    std::shared_ptr<Equip> equipment; 
     Collision col;
     void updatePhysics(float dt);
     std::string m_currentAnimation;
