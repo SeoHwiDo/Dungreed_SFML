@@ -142,6 +142,7 @@
     <ClCompile Include="ResourceManager.cpp" />
     <ClCompile Include="Room.cpp" />
     <ClCompile Include="MapManager.cpp" />
+    <ClCompile Include="TileMap.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Actor.h" />
@@ -154,6 +155,7 @@
     <ClInclude Include="Room.h" />
     <ClInclude Include="MapManager.h" />
     <ClInclude Include="Monster.h" />
+    <ClInclude Include="TileMap.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md" />
