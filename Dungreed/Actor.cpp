@@ -14,12 +14,9 @@ void Actor::init(const std::string& atlasKey) {
     const sf::Texture* tex = resourceManager.getAtlasTexture(atlasKey);
     if (tex) {
         if (!sprite.has_value()) {
-            sprite.emplace();
+            sprite.emplace(*tex);
+            setBottomCenterOrigin();
         }
-        sprite->setTexture(*tex);
-        setBottomCenterOrigin();
-    }
-}
 
     }
 }
