@@ -1,7 +1,9 @@
 ﻿#pragma once
 
 #include <SFML/Graphics.hpp>
-
+#include <optional>
+class Actor;
+class TileMap;
 
 class Collision {
 public:
@@ -16,6 +18,8 @@ public:
 
     inline const sf::FloatRect& getHitbox() const { return m_hitbox; }
 
+    // 추가: 맵 충돌 처리 (Update -> Collision 분리)
+    static void resolveMapCollision(Actor& actor, const TileMap& map);
 private:
     sf::FloatRect m_hitbox;
 };

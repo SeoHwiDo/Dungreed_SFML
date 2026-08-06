@@ -44,8 +44,10 @@ public:
     sf::Vector2f getCenterPosition() const;
     void setHorizontalInput(float dirX);
 
-    // 외부에서 피격 판정 후 호출될 데미지 처리 함수
-   
+    // 추가: 충돌 연산을 위해 물리/트랜스폼 데이터 노출
+    inline sf::Vector2f getPosition() const { return sprite ? sprite->getPosition() : sf::Vector2f{ 0.f, 0.f }; }
+    inline sf::FloatRect getGlobalBounds() const { return sprite ? sprite->getGlobalBounds() : sf::FloatRect{}; }
+    inline MovementData& getMovement() { return movement; }
 
     virtual void update(float dt);
     virtual void render(sf::RenderWindow& window);

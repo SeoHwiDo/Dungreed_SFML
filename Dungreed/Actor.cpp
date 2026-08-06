@@ -58,13 +58,6 @@ void Actor::updatePhysics(float dt) {
 
     // 2. 이동 적용
     move(movement.velocity.x * dt, movement.velocity.y * dt);
-
-    // 3. [임시 처리] 바닥 충돌 보정 (타일맵 충돌 연동 전 테스트용)
-    if (sprite && sprite->getPosition().y >= 800.f) {
-        sprite->setPosition({ sprite->getPosition().x, 800.f });
-        movement.velocity.y = 0.f;
-        movement.isGrounded = true;
-    }
 }
 
 //============기본 로직===============
@@ -75,6 +68,7 @@ void Actor::update(float dt) {
     // 애니메이션 갱신
     if (sprite) {
         animator.update(dt, *sprite);
+        setBottomCenterOrigin();
     }
 }
 
