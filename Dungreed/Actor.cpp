@@ -60,6 +60,12 @@ void Actor::updatePhysics(float dt) {
     move(movement.velocity.x * dt, movement.velocity.y * dt);
 }
 
+void Actor::playAnimation(const std::string& animationName) {
+    if (animator.getCurrentAnimation() == animationName)
+        return;
+
+    animator.play(animationName);
+}
 //============기본 로직===============
 void Actor::update(float dt) {
     // 물리 연산 수행

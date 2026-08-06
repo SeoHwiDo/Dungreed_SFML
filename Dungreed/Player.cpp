@@ -23,7 +23,7 @@ void Player::init(const std::string& atlasKey) {
             if (animName.find("Idle") != std::string::npos) {
                 frameDuration = 0.2f;  // 대기는 천천히 (초당 5프레임)
             } else if (animName.find("Run") != std::string::npos) {
-                frameDuration = 0.12f; // 걷기/뛰기는 조금 빠르게
+                frameDuration = 0.05f; // 걷기/뛰기는 조금 빠르게
             } else if (animName.find("Attack") != std::string::npos) {
                 frameDuration = 0.08f; // 공격은 아주 역동적이고 빠르게
             } else if (animName.find("Jump") != std::string::npos) {
@@ -94,14 +94,13 @@ void Player::update(float dt, const sf::RenderWindow& window)  {
         // 바닥이 아니면 무조건 점프(공중) 상태 포함
         state |= PlayerState::Jump;
     }
+
     if (state & PlayerState::Jump) {
-         animator.play("Player_Jump");
-    }
-    else if (state & PlayerState::Run) {
-         animator.play("Player_Run");
-    }
-    else if (state & PlayerState::Idle) {
-         animator.play("Player_Idle");
+        playAnimation("Player_Jump");
+    } else if (state & PlayerState::Run) {
+        playAnimation("Player_Run");
+    } else {
+        playAnimation("Player_Idle");
     }
     if (state & PlayerState::Attack) {
         // 무기 공격 명령 전달

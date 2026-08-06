@@ -4,6 +4,14 @@
 #include<unordered_map>
 #include<vector>
 
+enum class AnimState
+{
+    Idle,
+    Run,
+    Jump,
+    Attack,
+    Dead
+};
 
 //애니메이션 객체 정보
 struct AnimationClip {
@@ -27,7 +35,7 @@ public:
     Animator(): m_currentTime(0.f), m_currentFrame(0), m_isPlaying(false) {}
     void addAnimation(const std::string& name, const AnimationClip& clip);
     void play(const std::string& name);
-
+    inline const std::string& getCurrentAnimation() const {return m_currentAnimation;}
     // 애니메이션 정지
     void stop();
 

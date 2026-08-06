@@ -62,6 +62,9 @@ protected:
     // std::shared_ptr<Equip> equipment; 
     Collision col;
     void updatePhysics(float dt);
+    std::string m_currentAnimation;
+
+    void playAnimation(const std::string& animationName);
 private:
    
     void setBottomCenterOrigin();
