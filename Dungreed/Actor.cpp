@@ -1,5 +1,14 @@
 ﻿#include "Actor.h"
 
+
+
+Actor::Actor() {
+    status.maxHp = MAXHP;
+    status.tmpHp = status.maxHp;
+    status.dex = DEX;
+    status.power = POWER;
+}
+
 void Actor::init(const std::string& atlasKey) {
     auto& resourceManager = ResourceManager::getInstance();
     const sf::Texture* tex = resourceManager.getAtlasTexture(atlasKey);
@@ -12,31 +21,20 @@ void Actor::init(const std::string& atlasKey) {
     }
 }
 
-
-
-void Actor::move(float dx, float dy)
-{
-    if (sprite) {
-        sprite->move({ dx, dy });
     }
 }
-bool Actor::dead() {
-    return status.tmpHp <= 0;
-}
-float Actor::attack() {
-    return status.power;
-}
-
+//=================기본 액션 함수=====================
 
 bool Actor::jump() {
     if (movement.isGrounded) {
-        movement.velocity.y = -500.f; // 점프 시 위로 솟구침
+        movement.velocity.y = movement.jumpForce; // 점프 시 위로 솟구침
         movement.isGrounded = false;
     }
     // 바닥에 닿지 않았으면 점프(공중) 상태이므로 true 반환
     return !movement.isGrounded;
 }
 
+//=================물리연산용 함수=====================
 sf::Vector2f Actor::getCenterPosition()const {
     if (!sprite) return { 0.f, 0.f };
     sf::Vector2f pos = sprite->getPosition();
@@ -71,6 +69,8 @@ void Actor::updatePhysics(float dt) {
         movement.isGrounded = true;
     }
 }
+
+//============기본 로직===============
 void Actor::update(float dt) {
     // 물리 연산 수행
     updatePhysics(dt);
