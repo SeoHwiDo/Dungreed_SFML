@@ -91,12 +91,16 @@
     <None Include="resources\images\player_atlas.json" />
     <None Include="resources\images\tilemap_atlas.json" />
     <None Include="..\README.md" />
+    <None Include="resources\images\monster_atlas.json" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="resources\images\player_atlas.png">
       <Filter>리소스 파일</Filter>
     </Image>
     <Image Include="resources\images\tilemap_atlas.png">
+      <Filter>리소스 파일</Filter>
+    </Image>
+    <Image Include="resources\images\monster_atlas.png">
       <Filter>리소스 파일</Filter>
     </Image>
   </ItemGroup>
