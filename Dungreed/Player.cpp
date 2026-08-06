@@ -39,6 +39,9 @@ void Player::init(const std::string& atlasKey) {
 }
 
 void Player::update(float dt, const sf::RenderWindow& window)  {
+    // Actor::update에서 updatePhysics(dt)가 실행됨
+    Actor::update(dt);
+
     state = 0;
     if (status.tmpHp <= 0) {
         state |= PlayerState::Dead;
@@ -110,6 +113,5 @@ void Player::update(float dt, const sf::RenderWindow& window)  {
         // 예: EffectManager::spawnTrail(sprite->getPosition()); (잔상 이펙트)
         // 예: movement.velocity.x = dashSpeed * input.moveDirX; (순간 가속)
     }
-    // Actor::update에서 updatePhysics(dt)가 실행됨
-    Actor::update(dt);
+
 }

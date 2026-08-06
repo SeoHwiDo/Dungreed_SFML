@@ -20,44 +20,66 @@ std::optional<sf::Vector2f> Collision::checkHit(const sf::FloatRect& attackBox) 
 
 void Collision::resolveMapCollision(Actor& actor, const TileMap& map) {
     sf::FloatRect bounds = actor.getGlobalBounds();
+
     auto& movement = actor.getMovement();
-    bool wasGrounded = false;
+
+    movement.isGrounded = false;
+
+    constexpr float GroundEpsilon = 2.f;
 
     for (const auto& tile : map.getCollisionTiles()) {
         if (tile.type == TileType::None) continue;
 
         // SFML 3.1.0 기준 반환값 optional 
         auto intersection = bounds.findIntersection(tile.bounds);
-        if (intersection.has_value()) {
-            sf::FloatRect overlap = intersection.value();
+        if (!intersection)
+            continue;
 
-            // 겹친 영역 중 더 작은 쪽을 밀어내는 방향으로 결정 (AABB 충돌 해결)
-            if (overlap.size.x < overlap.size.y) {
-                // 수평(좌우) 충돌 해결
-                if (bounds.position.x < tile.bounds.position.x) {
-                    actor.move(-overlap.size.x, 0.f);
-                } else {
-                    actor.move(overlap.size.x, 0.f);
-                }
-                movement.velocity.x = 0.f;
-            } else {
-                // 수직(상하) 충돌 해결
-                if (bounds.position.y < tile.bounds.position.y) {
-                    // 바닥(위에서 아래로 타일과 충돌)
-                    actor.move(0.f, -overlap.size.y);
-                    movement.velocity.y = 0.f;
-                    wasGrounded = true;
-                } else {
-                    // 천장(아래에서 위로 타일과 충돌) - OneWay 타일이면 무시
-                    if (tile.type == TileType::Solid) {
-                        actor.move(0.f, overlap.size.y);
-                        movement.velocity.y = 0.f;
-                    }
-                }
+        const sf::FloatRect& overlap = *intersection;
+
+        if (overlap.size.x < overlap.size.y) {
+            if (bounds.position.x < tile.bounds.position.x)
+                actor.move(-overlap.size.x, 0.f);
+            else
+                actor.move(overlap.size.x, 0.f);
+
+            movement.velocity.x = 0.f;
+        } else {
+            // 위에서 떨어짐
+            if (movement.velocity.y >= 0 &&
+                bounds.position.y < tile.bounds.position.y) {
+                actor.move(0.f, -overlap.size.y);
+
+                movement.velocity.y = 0.f;
+                movement.isGrounded = true;
             }
-            // 다음 타일과의 정밀한 비교를 위해 위치가 갱신된 바운드 다시 가져오기
-            bounds = actor.getGlobalBounds();
+            // 아래에서 충돌
+            else if (tile.type == TileType::Solid) {
+                actor.move(0.f, overlap.size.y);
+
+                movement.velocity.y = 0.f;
+            }
+        }
+
+        bounds = actor.getGlobalBounds();
+    }
+    bounds = actor.getGlobalBounds();
+
+    sf::FloatRect footCheck(
+        { bounds.position.x + 2.f,
+          bounds.position.y + bounds.size.y },
+        { bounds.size.x - 4.f,
+          GroundEpsilon });
+
+    movement.isGrounded = false;
+
+    for (const auto& tile : map.getCollisionTiles()) {
+        if (tile.type == TileType::None)
+            continue;
+
+        if (footCheck.findIntersection(tile.bounds)) {
+            movement.isGrounded = true;
+            break;
         }
     }
-    movement.isGrounded = wasGrounded;
 }
