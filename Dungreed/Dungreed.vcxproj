@@ -157,11 +157,13 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md" />
+    <None Include="Resources\images\equip_atlas.json" />
     <None Include="resources\images\monster_atlas.json" />
     <None Include="resources\images\player_atlas.json" />
     <None Include="resources\images\tilemap_atlas.json" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="Resources\images\equip_atlas.png" />
     <Image Include="resources\images\monster_atlas.png" />
     <Image Include="resources\images\player_atlas.png" />
     <Image Include="resources\images\tilemap_atlas.png" />

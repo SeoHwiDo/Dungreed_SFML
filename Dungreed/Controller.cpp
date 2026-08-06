@@ -1,6 +1,6 @@
 ﻿#include "Controller.h"
 
-InputData Controller::getInput(const sf::RenderWindow& window, const sf::Vector2f& actorCenter) const {
+InputData Controller::getInput(const sf::RenderWindow& window, const sf::Vector2f& actorCenter) {
     InputData data;
 
     if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left) ||
@@ -12,12 +12,19 @@ InputData Controller::getInput(const sf::RenderWindow& window, const sf::Vector2
         data.moveDirX += 1.f;
     }
 
-    data.isJumping = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Z) ||
-        sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space);
+    data.isJumping = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space);
     data.isDashing = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LShift)||
         sf::Mouse::isButtonPressed(sf::Mouse::Button::Right);
     data.isAttacking = sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
-
+    // [수정된 부분] 마우스를 뗄 때만 단발성으로 공격(true) 판정
+    bool currentMouseLeftPressed = sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
+    if (!currentMouseLeftPressed && m_prevMouseLeftPressed) {
+        data.isAttacking = true;
+    }
+    else {
+        data.isAttacking = false;
+    }
+    m_prevMouseLeftPressed = currentMouseLeftPressed; // 현재 상태 저장
     // 마우스의 월드 좌표 추출
     sf::Vector2i mousePos = sf::Mouse::getPosition(window);
     sf::Vector2f mouseWorldPos = window.mapPixelToCoords(mousePos);

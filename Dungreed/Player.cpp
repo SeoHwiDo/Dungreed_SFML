@@ -4,7 +4,7 @@
 void Player::init(const std::string& atlasKey) {
     Actor::init(atlasKey);
     if (!equipment) {
-        auto defaultWeapon = std::make_shared<Equip>("ShortSword", EquipStat{ 10.f, 1.5f, 40.f });
+        auto defaultWeapon = std::make_shared<Equip>("ShortSword", EquipStat{ 10.f, 2.5f, 40.f });
         defaultWeapon->init("Equip", "ShortSword");
         setEquipment(defaultWeapon);
     }
@@ -112,7 +112,7 @@ void Player::update(float dt, const sf::RenderWindow& window)  {
         }
     }
     if (equipment) {
-        equipment->update(dt, getPosition(), input.aimRadian);
+        equipment->update(dt, getCenterPosition(), input.aimRadian);
     }
     if (state & PlayerState::Dash) {
         // 대시 이펙트 및 특수 물리 로직 처리

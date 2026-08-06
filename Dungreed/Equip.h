@@ -14,6 +14,7 @@ struct EquipStat {
 
 class Equip {
 public:
+    //EquipStat : damage, attackSpeed, range
     Equip(const std::string& name, EquipStat stat);
     virtual ~Equip() = default;
 

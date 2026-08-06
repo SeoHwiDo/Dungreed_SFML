@@ -18,5 +18,7 @@ public:
 
     // 매 프레임마다 호출하여 현재 입력 상태를 가져옵니다.
     // 마우스 좌표를 월드 좌표로 변환하기 위해 윈도우 참조가 필요합니다.
-    InputData getInput(const sf::RenderWindow& window, const sf::Vector2f& actorCenter) const;
+    InputData getInput(const sf::RenderWindow& window, const sf::Vector2f& actorCenter);
+private:
+    bool m_prevMouseLeftPressed = false;
 };
