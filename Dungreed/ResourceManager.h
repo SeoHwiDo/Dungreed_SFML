@@ -16,12 +16,13 @@ constexpr std::string_view PLAYER_ATLAS = "resources/images/player_atlas.png";
 constexpr std::string_view MONSTER_ATLAS = "resources/images/monster_atlas.png";
 constexpr std::string_view BOSS_ATLAS = "resources/images/boss_atlas.png";
 constexpr std::string_view TILEMAP_ATLAS = "resources/images/tilemap_atlas.png";
+constexpr std::string_view EQUIP_ATLAS = "resources/images/equip_atlas.png";
 
 constexpr std::string_view PLAYER_JSON = "resources/images/player_atlas.json";
 constexpr std::string_view MONSTER_JSON = "resources/images/monster_atlas.json";
 constexpr std::string_view BOSS_JSON = "resources/images/boss_atlas.json";
 constexpr std::string_view TILEMAP_JSON = "resources/images/tilemap_atlas.json";
-
+constexpr std::string_view EQUIP_JSON = "resources/images/equip_atlas.json"; 
 constexpr std::string_view Background_PATH = "resources/images/Backgrounds/";
 
 struct AtlasData {

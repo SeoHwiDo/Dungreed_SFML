@@ -20,6 +20,24 @@ void Actor::init(const std::string& atlasKey) {
 
     }
 }
+
+void Actor::setEquipment(std::shared_ptr<Equip> eq) {
+    equipment = eq;
+    if (equipment) {
+        equipment->setOwner(this);
+    }
+}
+
+std::optional<sf::FloatRect> Actor::getAttackHitbox() const {
+    if (equipment) {
+        return equipment->getAttackHitbox();
+    }
+    else if (sprite) {
+        return sprite->getGlobalBounds();
+    }
+    return std::nullopt;
+}
+
 //=================기본 액션 함수=====================
 
 bool Actor::jump() {
@@ -81,5 +99,9 @@ void Actor::update(float dt) {
 void Actor::render(sf::RenderWindow& window) {
     if (sprite) {
         window.draw(*sprite);
+    }
+    // 장비 렌더링 추가
+    if (equipment) {
+        equipment->render(window);
     }
 }

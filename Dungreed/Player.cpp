@@ -3,7 +3,11 @@
 #include"Equip.h"
 void Player::init(const std::string& atlasKey) {
     Actor::init(atlasKey);
-    
+    if (!equipment) {
+        auto defaultWeapon = std::make_shared<Equip>("ShortSword", EquipStat{ 10.f, 1.5f, 40.f });
+        defaultWeapon->init("Equip", "ShortSword");
+        setEquipment(defaultWeapon);
+    }
     //애니메이션 가져오기
     auto& resMgr = ResourceManager::getInstance();
     std::vector<std::string> allAnims = resMgr.getAnimationNames(atlasKey);
@@ -33,7 +37,7 @@ void Player::init(const std::string& atlasKey) {
             animator.addAnimation(animName, clip);
         }
     }
-    equi
+    
     // 4. 초기 상태 애니메이션 실행
     animator.play("Player_Idle");
 }
@@ -103,10 +107,13 @@ void Player::update(float dt, const sf::RenderWindow& window)  {
         playAnimation("Player_Idle");
     }
     if (state & PlayerState::Attack) {
-        // 무기 공격 명령 전달
-        // 예: if (equippedWeapon) equippedWeapon->playAttackAnimation(input.aimDir);
+        if (equipment) {
+            equipment->attack();
+        }
     }
-
+    if (equipment) {
+        equipment->update(dt, getPosition(), input.aimRadian);
+    }
     if (state & PlayerState::Dash) {
         // 대시 이펙트 및 특수 물리 로직 처리
         // 예: EffectManager::spawnTrail(sprite->getPosition()); (잔상 이펙트)

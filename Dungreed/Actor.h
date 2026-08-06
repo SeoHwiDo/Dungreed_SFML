@@ -7,6 +7,9 @@
 #include "ResourceManager.h"
 #include"Collision.h"
 #include"Equip.h"
+
+class Equip;
+
 constexpr float MAXHP = 100.0f;
 constexpr float POWER = 10.0f;
 constexpr float DEX = 1.0f;
@@ -43,6 +46,14 @@ public:
     bool jump();
     sf::Vector2f getCenterPosition() const;
     void setHorizontalInput(float dirX);
+
+    // 장비 장착 및 관리 함수
+    void setEquipment(std::shared_ptr<Equip> eq);
+    inline std::shared_ptr<Equip> getEquipment() const { return equipment; }
+
+    // 타격(공격) 판정 영역 반환 (무기가 없으면 자신의 스프라이트 반환)
+    std::optional<sf::FloatRect> getAttackHitbox() const;
+
 
     // 추가: 충돌 연산을 위해 물리/트랜스폼 데이터 노출
     inline sf::Vector2f getPosition() const { return sprite ? sprite->getPosition() : sf::Vector2f{ 0.f, 0.f }; }

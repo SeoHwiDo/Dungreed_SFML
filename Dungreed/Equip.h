@@ -43,6 +43,7 @@ protected:
 
     // 공격 애니메이션 및 상태 처리를 위한 변수
     bool m_isAttacking = false;
+    bool m_isSwung = false;   // 추가: 현재 무기가 꺾인 상태(토글)인지 확인
     float m_attackTimer = 0.f;
     float m_attackDuration = 0.5f;
 };

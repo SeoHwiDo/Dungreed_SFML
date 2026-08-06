@@ -23,6 +23,9 @@ int main() {
     if (!resMgr.loadAtlas("TileMap", std::string(TILEMAP_JSON), std::string(TILEMAP_ATLAS))) {
         std::cerr << "타일맵 아틀라스 로드 실패\n";
     }
+    if (!resMgr.loadAtlas("Equip", std::string(EQUIP_JSON), std::string(EQUIP_ATLAS))) {
+        std::cerr << "장비 아틀라스 로드 실패\n";
+    }
 
     // 3. 테스트용 타일맵 구성 (바닥 생성)
     const unsigned int mapWidth = 40;
