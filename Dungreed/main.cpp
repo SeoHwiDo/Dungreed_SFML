@@ -68,7 +68,7 @@ int main() {
             // 모든 애니메이션을 0.1초 간격으로 무한 루프 재생 설정
             AnimationClip clip(frames, 0.1f, true);
             entity.animator.addAnimation(animNames[i], clip);
-            entity.animator.Play(animNames[i]);
+            entity.animator.play(animNames[i]);
         }
 
         entities.push_back(std::move(entity));
@@ -93,7 +93,7 @@ int main() {
         window.clear(sf::Color(40, 40, 40)); // 약간 어두운 회색 배경
 
         for (auto& entity : entities) {
-            entity.animator.Update(dt, entity.sprite);
+            entity.animator.update(dt, entity.sprite);
             window.draw(entity.sprite);
         }
 

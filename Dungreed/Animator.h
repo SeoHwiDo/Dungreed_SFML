@@ -26,16 +26,16 @@ private:
 public:
     Animator(): m_currentTime(0.f), m_currentFrame(0), m_isPlaying(false) {}
     void addAnimation(const std::string& name, const AnimationClip& clip);
-    void Play(const std::string& name);
+    void play(const std::string& name);
 
     // 애니메이션 정지
-    void Stop();
+    void stop();
 
     // 매 프레임 호출되어 스프라이트의 TextureRect를 갱신
-    void Update(float dt, sf::Sprite& sprite);
+    void update(float dt, sf::Sprite& sprite);
 
     // 현재 애니메이션이 끝났는지 확인 (루프가 아닌 애니메이션에 유용)
-    bool IsFinished() const;
+    bool isFinished() const;
 
 };
 

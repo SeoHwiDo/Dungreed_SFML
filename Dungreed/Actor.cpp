@@ -77,7 +77,7 @@ void Actor::update(float dt) {
 
     // 애니메이션 갱신
     if (sprite) {
-        animator.Update(dt, *sprite);
+        animator.update(dt, *sprite);
     }
 }
 

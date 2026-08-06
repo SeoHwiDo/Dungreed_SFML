@@ -53,13 +53,13 @@ void Player::update(float dt, const sf::RenderWindow& window)  {
         state |= PlayerState::Jump;
     }
     if (state & PlayerState::Jump) {
-         animator.Play("Player_Jump");
+         animator.play("Player_Jump");
     }
     else if (state & PlayerState::Run) {
-         animator.Play("Player_Run");
+         animator.play("Player_Run");
     }
     else if (state & PlayerState::Idle) {
-         animator.Play("Player_Idle");
+         animator.play("Player_Idle");
     }
     if (state & PlayerState::Attack) {
         // 무기 공격 명령 전달

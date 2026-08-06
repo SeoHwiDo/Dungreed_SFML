@@ -9,7 +9,7 @@ void Animator::addAnimation(const std::string& name, const AnimationClip& clip) 
     }
 }
 
-void Animator::Play(const std::string& name) {
+void Animator::play(const std::string& name) {
     if (m_currentAnimation == name && m_isPlaying) return;
     if (m_animations.find(name) != m_animations.end()) {
         //정상적으로 존재하는 애니메이션일때
@@ -22,12 +22,12 @@ void Animator::Play(const std::string& name) {
     }
 }
 
-void Animator::Stop() {
+void Animator::stop() {
     m_isPlaying = false;
     m_currentFrame = 0;
     m_currentTime = 0.f;
 }
-void Animator::Update(float dt, sf::Sprite& sprite) {
+void Animator::update(float dt, sf::Sprite& sprite) {
     if (!m_isPlaying || m_currentAnimation.empty()) return;
 
     const AnimationClip& clip = m_animations[m_currentAnimation];
@@ -57,6 +57,6 @@ void Animator::Update(float dt, sf::Sprite& sprite) {
     // SFML 3.1.0 기준: Sprite에 현재 프레임의 영역(IntRect) 적용
     sprite.setTextureRect((*clip.frames)[m_currentFrame]);
 }
-bool Animator::IsFinished() const {
+bool Animator::isFinished() const {
     return !m_isPlaying;
 }
