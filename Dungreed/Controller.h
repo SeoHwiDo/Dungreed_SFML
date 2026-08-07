@@ -16,8 +16,7 @@ public:
     Controller() = default;
     ~Controller() = default;
 
-    // 매 프레임마다 호출하여 현재 입력 상태를 가져옵니다.
-    // 마우스 좌표를 월드 좌표로 변환하기 위해 윈도우 참조가 필요합니다.
+    /// 매 프레임 키·마우스 입력을 InputData로 변환합니다. actorCenter는 마우스 조준 방향과 라디안 계산의 기준입니다.
     InputData getInput(const sf::RenderWindow& window, const sf::Vector2f& actorCenter);
 private:
     bool m_prevMouseLeftPressed = false;

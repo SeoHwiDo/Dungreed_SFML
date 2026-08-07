@@ -2,6 +2,7 @@
 #include <array>
 #include <iostream>
 
+/// 첫 유효 타일의 원본 크기를 셀 크기로 삼아, 전경/백타일 버텍스와 충돌 목록을 한 번에 재생성합니다.
 bool TileMap::load(const std::string& tileAtlasKey, const std::vector<TileConfig>& grid,
     unsigned int width, unsigned int height) {
     auto& resMgr = ResourceManager::getInstance();
@@ -41,6 +42,7 @@ bool TileMap::load(const std::string& tileAtlasKey, const std::vector<TileConfig
             unsigned int index = i + j * width;
             const TileConfig& config = grid[index];
 
+            // 한 셀을 두 삼각형으로 만들고, 회전값에 맞게 텍스처 좌표만 재배치합니다.
             const auto appendTile = [&](sf::VertexArray& vertices, const std::string& frameName,
                 sf::Color tileColor, int rotationQuarterTurns) {
                 const sf::IntRect* rect = resMgr.getFrameRect(tileAtlasKey, frameName);
@@ -109,6 +111,7 @@ bool TileMap::load(const std::string& tileAtlasKey, const std::vector<TileConfig
     return true;
 }
 
+/// 단일 배경 프레임을 선택해 타일 버텍스보다 먼저 그릴 스프라이트로 보관합니다.
 void TileMap::setBackground(const std::string& bgAtlasKey, const std::string& bgFrameName) {
     auto& resMgr = ResourceManager::getInstance();
     const sf::Texture* tex = resMgr.getAtlasTexture(bgAtlasKey);
@@ -120,6 +123,7 @@ void TileMap::setBackground(const std::string& bgAtlasKey, const std::string& bg
     }
 }
 
+/// 타일맵 자체의 변환을 적용한 뒤, 배경 이미지·어두운 백타일·충돌 타일 순으로 그립니다.
 void TileMap::draw(sf::RenderTarget& target, sf::RenderStates states) const {
     states.transform *= getTransform();
 

@@ -7,18 +7,19 @@ class TileMap;
 
 class Collision {
 public:
-    // 생성 시 이 콜리전 객체의 주인을 등록합니다.
+    /// 빈 충돌 상자로 생성합니다. Actor::init 또는 이동 시 updateHitbox가 실제 경계를 설정합니다.
     Collision()=default;
     ~Collision() = default;
 
-    // 매 프레임 스프라이트 위치에 맞게 피격 박스(Hitbox)를 갱신합니다.
+    /// 스프라이트의 월드 경계로 피격 상자를 동기화합니다. 이동 후 반드시 호출합니다.
     inline void updateHitbox(const sf::FloatRect& actorBounds) { m_hitbox = actorBounds;}
-    //피격 위치 확인 후 정확한 피격지점 반환, 없을 경우 nullopt반환
+    /// 공격 사각형과 겹치는지 검사하고, 겹치면 교차 영역의 중심 좌표를 반환합니다.
     std::optional<sf::Vector2f> checkHit(const sf::FloatRect& attackBox) const;
 
+    /// 가장 최근에 동기화된 피격 상자를 반환합니다.
     inline const sf::FloatRect& getHitbox() const { return m_hitbox; }
 
-    // 추가: 맵 충돌 처리 (Update -> Collision 분리)
+    /// 액터와 TileMap의 Solid/OneWay 타일 충돌을 해결하고 착지 상태를 갱신합니다. 물리 업데이트 뒤 호출합니다.
     static void resolveMapCollision(Actor& actor, const TileMap& map);
 private:
     sf::FloatRect m_hitbox;
