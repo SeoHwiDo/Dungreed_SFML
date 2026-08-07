@@ -166,7 +166,8 @@ player.setEquipment(sword);
 ```cpp
 if (weapon->isAttacking()) {
     if (const auto attackBox = player.getAttackHitbox();
-        attackBox && monster.getCollision().checkHit(*attackBox) && weapon->consumeHit()) {
+        attackBox && monster.getCollision().checkHit(*attackBox)
+        && weapon->consumeHit(monster.getId())) {
         monster.takeDamage(weapon->getStat().damage, player.getCenterPosition());
     }
 }
@@ -270,3 +271,34 @@ if (SHOW_ALL_ROOMS_DEBUG) {
 5. 새 방 타일이면 `RoomTileSet`, `RoomCell` 변환, 필요 시 `getBackFrame`의 그림자 규칙을 함께 갱신합니다.
 6. 타일 원본 크기가 기존과 다른지 확인합니다. `TileMap`은 첫 타일의 `sourceSize`를 전체 셀 크기로 사용합니다.
 7. 마지막으로 Debug x64 빌드와 방 전체 디버그 보기를 확인합니다.
+
+## 11. 다중 몬스터·원거리 장비·오브젝트 풀
+
+### 책임 분리
+
+- `ObjectPoolingManager`가 `Monster`와 `Projectile`의 생성, 소유, 재사용, 비활성화를 담당합니다. 매니저가 객체를 `delete`하거나 벡터에서 제거하지 않으므로 포인터가 프레임 사이에 안정적으로 유지됩니다.
+- `MonsterManager`는 풀에 있는 활성 몬스터를 순회해 AI와 물리를 실행하고, 각 몬스터가 이동한 직후 `Collision::resolveMapCollision`으로 벽을 먼저 해결합니다.
+- `CombatManager`는 객체를 소유하지 않고 공격 상호작용만 계산합니다. 따라서 몬스터 수가 늘어나도 생성 정책과 충돌 정책이 섞이지 않습니다.
+
+### 장비 기반 원거리 공격
+
+`EquipStat::type`이 `WeaponType::Ranged`이고 `projectile` 설정이 있으면 `Equip::attack`은 스윙 대신 요청을 예약합니다. `consumeProjectileRequests`가 다음 값을 요청마다 복사합니다.
+
+1. 투사체 종류와 대상 그룹
+2. 소유자 몸통 중심에서 시작하는 위치
+3. 마우스/타깃 방향의 라디안과 산탄 간격
+4. 속도, 피해량, 수량, 수명
+
+`CombatManager`는 이 요청을 `ObjectPoolingManager::acquireProjectile`에 전달할 뿐, 발사자를 저장하지 않습니다. `ProjectileTarget::Player` 또는 `ProjectileTarget::Monster`가 충돌 대상을 결정하므로 발사자 ID가 없어도 팀별 판정이 가능합니다.
+
+### 동일 프레임 우선순위
+
+메인 루프는 다음 순서를 고정합니다.
+
+1. 몬스터와 플레이어를 이동시킨 뒤 벽 충돌을 해결합니다. 투사체도 `Collision::resolveProjectileMapCollision`에서 이전 위치와 현재 위치 사이를 샘플링해 벽 통과를 막습니다.
+2. 플레이어의 근접 공격을 검사하고 원거리 투사체를 생성합니다.
+3. 몬스터 대상 투사체를 갱신합니다. 이 단계에서 실제로 맞은 몬스터 ID를 `playerHitMonsters`에 추가합니다.
+4. 몬스터 공격을 처리할 때 해당 집합에 포함된 몬스터만 이번 프레임 공격을 건너뜁니다. 다른 몬스터의 공격과 이미 발사되어 이동 중인 투사체는 무효화하지 않습니다.
+5. 마지막으로 플레이어 대상 투사체를 갱신합니다. 따라서 원거리 몬스터의 투사체는 발사자와 무관하게 계속 유효합니다.
+
+`Equip::m_hitTargets`는 한 번의 근접 스윙에서 같은 몬스터가 여러 프레임/여러 검사로 중복 피격되는 것을 막고, `EntityId`는 풀에서 재사용되는 객체도 프레임 내 대상 집합에서 구분할 수 있게 합니다.
