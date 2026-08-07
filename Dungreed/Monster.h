@@ -29,10 +29,21 @@ public:
     
     /// 플레이어를 대상으로 FSM 행동, 공격 판정, 공통 물리/애니메이션을 한 프레임 갱신합니다.
     void update(float dt, Player& player);
+    /// 풀에서 재사용할 때 상태 머신과 능력치를 초기화합니다.
+    void resetForReuse(Status newStatus);
+    /// 풀 슬롯을 다른 몬스터 종류로 재사용할 때 타입·애니메이션·상태를 함께 초기화합니다.
+    void resetForReuse(const std::string& type, Status newStatus, const std::string& atlasKey = "Monster");
+    /// 근접 공격 상태로 전환합니다. 실제 피해 적용은 전투 매니저가 담당합니다.
+    void beginAttack();
+    /// 원거리 공격 쿨다운을 갱신하고 공격 가능 여부를 반환합니다.
+    bool consumeAttackCooldown(float dt);
+    /// 사망 애니메이션이 끝나 풀 슬롯을 회수해도 되는지 반환합니다.
+    bool readyForPoolRelease() const;
 private:
     std::string m_type;
     int dropGold = 0;
     MonsterFSMData fsm;
+    float m_attackCooldown = 0.f;
     /// 상태가 바뀔 때만 타이머·이동값·애니메이션을 새 상태에 맞게 초기화합니다.
     void changeState(MonsterState newState);
     /// 플레이어와의 거리로 대기·순찰·추적·공격 행동을 결정합니다.

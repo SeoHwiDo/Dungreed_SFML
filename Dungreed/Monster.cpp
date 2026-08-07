@@ -31,6 +31,38 @@ void Monster::init(const std::string& atlasKey) {
     animator.play(m_type + "_Idle");
 }
 
+void Monster::resetForReuse(Status newStatus) {
+    Actor::resetForReuse(newStatus);
+    state = MonsterState::Idle;
+    fsm = MonsterFSMData{};
+    m_attackCooldown = 0.f;
+}
+
+void Monster::resetForReuse(const std::string& type, Status newStatus, const std::string& atlasKey) {
+    m_type = type;
+    resetForReuse(newStatus);
+    init(atlasKey);
+}
+
+void Monster::beginAttack() {
+    changeState(MonsterState::Attack);
+}
+
+bool Monster::consumeAttackCooldown(float dt) {
+    m_attackCooldown = std::max(0.f, m_attackCooldown - dt);
+    if (m_attackCooldown > 0.f) {
+        return false;
+    }
+    const auto weapon = getEquipment();
+    const float attackSpeed = weapon ? weapon->getStat().attackSpeed : 1.f;
+    m_attackCooldown = 1.f / std::max(attackSpeed, 0.01f);
+    return true;
+}
+
+bool Monster::readyForPoolRelease() const {
+    return dead() && state == MonsterState::Dead && animator.isFinished();
+}
+
 void Monster::changeState(MonsterState newState) {
     if (state == MonsterState::Dead) return; // 이미 사망한 경우 상태 변경 무시
 
@@ -153,19 +185,7 @@ void Monster::update(float dt, Player& player) {
     // 1. 상태 머신 로직 업데이트
     handleFSM(dt, player);
 
-    // 2. 이동 후 플레이어의 콜라이더로 실제 충돌 여부를 판정합니다.
+    // 2. 몬스터 자체의 물리·피격·애니메이션만 갱신합니다.
+    // 플레이어와의 공격 판정은 CombatManager가 플레이어 공격 이후에 수행합니다.
     Actor::update(dt);
-    if (state != MonsterState::Chase || !player.getCollision().checkHit(getGlobalBounds())) {
-        return;
-    }
-
-    // 겹침이 발생했으면 몬스터만 수평으로 분리한 뒤 공격 상태로 전환합니다.
-    const sf::FloatRect monsterBounds = getGlobalBounds();
-    const sf::FloatRect playerBounds = player.getGlobalBounds();
-    if (const auto overlap = monsterBounds.findIntersection(playerBounds)) {
-        const float pushDirection = (getCenterPosition().x < player.getCenterPosition().x) ? -1.f : 1.f;
-        move(pushDirection * overlap->size.x, 0.f);
-    }
-    player.takeDamage(attack(), getCenterPosition());
-    changeState(MonsterState::Attack);
 }
