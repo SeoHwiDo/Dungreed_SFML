@@ -13,10 +13,13 @@ constexpr unsigned int kOutlineWidth = 2;
 constexpr unsigned int kDoorHeight = 3;
 constexpr unsigned int kCenterDoorWidth = 3;
 
+/// DoorPosition 열거형을 DoorPositions 배열의 인덱스로 변환해 해당 방향의 문 활성 여부를 읽습니다.
 bool hasDoor(const DoorPositions& positions, DoorPosition position) {
     return positions[static_cast<std::size_t>(position)];
 }
 
+/// 기본 방 레이아웃의 상·하·좌·우 벽을 문 방향 배열에 따라 3타일 폭/높이의 보행 가능한 확장 통로로 바꿉니다.
+/// 문 주위의 코너와 외벽도 함께 배치해 통로 바깥으로 플레이어가 빠지지 않게 합니다.
 void applyDoorways(RoomLayout& layout, const DoorPositions& positions) {
     const unsigned int width = layout.width;
     const unsigned int height = layout.height;
@@ -44,6 +47,11 @@ void applyDoorways(RoomLayout& layout, const DoorPositions& positions) {
         setCell(rightEdge, 0, RoomCell::TopRightCorner);
         setCell(leftEdge, topWallY - 1, RoomCell::LeftWall);
         setCell(rightEdge, topWallY - 1, RoomCell::RightWall);
+        setCell(leftEdge, topWallY, RoomCell::DoorUpLeftCorner);
+        setCell(rightEdge, topWallY, RoomCell::DoorUpRightCorner);
+        setCell(centerStart, topWallY + 1, RoomCell::BackDoorTopLeft);
+        setCell(centerStart + kCenterDoorWidth - 1, topWallY + 1,
+            RoomCell::BackDoorTopRight);
 
         for (unsigned int x = centerStart; x < centerStart + kCenterDoorWidth; ++x) {
             setCell(x, topWallY, RoomCell::Door);
@@ -61,13 +69,18 @@ void applyDoorways(RoomLayout& layout, const DoorPositions& positions) {
         setCell(rightEdge, height - 1, RoomCell::BottomRightCorner);
         setCell(leftEdge, groundY + 1, RoomCell::LeftWall);
         setCell(rightEdge, groundY + 1, RoomCell::RightWall);
+        setCell(leftEdge, groundY, RoomCell::DoorDownLeftCorner);
+        setCell(rightEdge, groundY, RoomCell::DoorDownRightCorner);
+        setCell(centerStart, groundY - 1, RoomCell::BackDoorBottomLeft);
+        setCell(centerStart + kCenterDoorWidth - 1, groundY - 1,
+            RoomCell::BackDoorBottomRight);
 
     }
 
     if (hasDoor(positions, DoorPosition::Left)) {
         setCell(0, sideDoorTop - 1, RoomCell::TopLeftCorner);
         setCell(1, sideDoorTop - 1, RoomCell::Ceiling);
-        setCell(kOutlineWidth, sideDoorTop - 1, RoomCell::BottomRightCorner);
+        setCell(kOutlineWidth, sideDoorTop - 1, RoomCell::DoorLeftCorner);
         setCell(kOutlineWidth, groundY, RoomCell::Ground);
 
         for (unsigned int y = sideDoorTop; y < groundY; ++y) {
@@ -75,10 +88,11 @@ void applyDoorways(RoomLayout& layout, const DoorPositions& positions) {
             setCell(1, y, RoomCell::Door);
             setCell(kOutlineWidth, y, RoomCell::Door);
         }
+        setCell(kOutlineWidth + 1, sideDoorTop, RoomCell::BackDoorTopLeft);
     }
     if (hasDoor(positions, DoorPosition::Right)) {
         const unsigned int rightWallX = width - kOutlineWidth - 1;
-        setCell(rightWallX, sideDoorTop - 1, RoomCell::BottomLeftCorner);
+        setCell(rightWallX, sideDoorTop - 1, RoomCell::DoorRightCorner);
         setCell(width - 2, sideDoorTop - 1, RoomCell::Ceiling);
         setCell(width - 1, sideDoorTop - 1, RoomCell::TopRightCorner);
         setCell(rightWallX, groundY, RoomCell::Ground);
@@ -88,9 +102,12 @@ void applyDoorways(RoomLayout& layout, const DoorPositions& positions) {
             setCell(width - 2, y, RoomCell::Door);
             setCell(width - 1, y, RoomCell::RightWall);
         }
+        setCell(rightWallX - 1, sideDoorTop, RoomCell::BackDoorTopRight);
     }
 }
 
+/// 지정 크기의 기본 방을 만들고, 벽·백타일·스폰 지점 및 길이 3~5의 공중 플랫폼을 배치합니다.
+/// 실제 문 확장 처리는 레이아웃 생성 후 applyDoorways가 담당합니다.
 RoomLayout makeStyledRoom(unsigned int width, unsigned int height,
     std::initializer_list<PlatformSpec> platforms)
 {
@@ -117,8 +134,7 @@ RoomLayout makeStyledRoom(unsigned int width, unsigned int height,
     setCell(leftWallX, topWallY, RoomCell::TopLeftCorner);
     setCell(rightWallX, topWallY, RoomCell::TopRightCorner);
 
-    // The floor extends underneath the side-door protrusions as well.  Without
-    // these outer tiles a player could fall out of the doorway extension.
+    // 좌우 문 확장 공간 아래까지 바닥을 이어서, 문 바깥으로 플레이어가 떨어지지 않게 합니다.
     for (unsigned int x = 0; x < width; ++x) {
         setCell(x, groundY, RoomCell::Ground);
     }
@@ -133,7 +149,7 @@ RoomLayout makeStyledRoom(unsigned int width, unsigned int height,
         }
     }
 
-    // The spawn marker is rendered with the background tile and has no collision.
+    // 스폰 표시는 백타일처럼 렌더링하며 충돌을 만들지 않습니다.
     setCell(leftWallX + 4, groundY - 1, RoomCell::SpawnPoint);
 
     for (const PlatformSpec& platform : platforms) {
@@ -149,31 +165,56 @@ RoomLayout makeStyledRoom(unsigned int width, unsigned int height,
 }
 }
 
+/// 생성 시 바로 레퍼런스 레이아웃을 불러와 Room 객체가 항상 유효한 방 정보를 갖게 합니다.
 Room::Room(RoomType type, DoorPositions doorPositions) {
     loadReference(type, doorPositions);
 }
 
+/// 기본 레이아웃에 문 확장을 덮어쓴 뒤, 최종 Door 셀과 플레이어 스폰 셀을 RoomInfo에 다시 수집합니다.
 void Room::loadReference(RoomType type, DoorPositions doorPositions) {
     info.type = type;
     info.isClear = false;
     info.doorPositions = doorPositions;
     info.layout = getReferenceLayout(type);
     applyDoorways(info.layout, doorPositions);
+    // 문 벡터는 실제 Door 셀 개수가 아니라 Up, Down, Left, Right 방향별 4개 슬롯을 가집니다.
+    // 따라서 문 폭이 3타일이어도 하나의 문은 하나의 연결 정보만 보관합니다.
     info.doors.clear();
+    info.doors.resize(4);
+    for (std::size_t index = 0; index < info.doors.size(); ++index) {
+        info.doors[index].isOpen = doorPositions[index];
+        info.doors[index].next = nullptr;
+    }
     info.playerSpawnCell.reset();
 
     for (unsigned int y = 0; y < info.layout.height; ++y) {
         for (unsigned int x = 0; x < info.layout.width; ++x) {
             const RoomCell cell = info.layout.cells[x + y * info.layout.width];
-            if (cell == RoomCell::Door) {
-                info.doors.push_back({ { x, y }, false });
-            } else if (cell == RoomCell::SpawnPoint) {
+            if (cell == RoomCell::SpawnPoint) {
                 info.playerSpawnCell = { x, y };
             }
         }
     }
 }
 
+/// 방향 슬롯에 연결할 다음 Room 객체를 기록합니다. 문이 없는 방향은 전환에 사용되지 않습니다.
+void Room::setDoorNext(DoorPosition position, Room* nextRoom) {
+    const std::size_t index = static_cast<std::size_t>(position);
+    if (index < info.doors.size()) {
+        info.doors[index].next = nextRoom;
+    }
+}
+
+/// 활성화된 문에 연결된 Room 객체를 반환해, 비활성 방향의 전환을 방지합니다.
+Room* Room::getDoorNext(DoorPosition position) const {
+    const std::size_t index = static_cast<std::size_t>(position);
+    if (index >= info.doors.size() || !info.doors[index].isOpen) {
+        return nullptr;
+    }
+    return info.doors[index].next;
+}
+
+/// 방 셀의 논리 타입을 타일 프레임·충돌 타입으로 바꾸며, 주변 벽을 검사해 알맞은 그림자 백타일도 선택합니다.
 bool Room::buildTileMap(TileMap& tileMap, const std::string& tileAtlasKey,
     const RoomTileSet& tileSet) const
 {
@@ -182,6 +223,7 @@ bool Room::buildTileMap(TileMap& tileMap, const std::string& tileAtlasKey,
         return false;
     }
 
+    // 범위 밖 셀을 Empty로 취급해 가장자리에서 주변 타일을 안전하게 검사합니다.
     const auto getCell = [&](int x, int y) {
         if (x < 0 || y < 0 || x >= static_cast<int>(info.layout.width) ||
             y >= static_cast<int>(info.layout.height)) {
@@ -190,9 +232,11 @@ bool Room::buildTileMap(TileMap& tileMap, const std::string& tileAtlasKey,
         return info.layout.cells[static_cast<unsigned int>(x) +
             static_cast<unsigned int>(y) * info.layout.width];
     };
+    // 백타일은 시각 전용이므로 충돌 없이 배경 버텍스 배열에 넣습니다.
     const auto makeBackTile = [](const std::string& frameName) {
         return TileConfig{ frameName, TileType::None, true };
     };
+    // 벽과 맞닿는 방향 및 문 입구의 모서리를 기준으로 적합한 그림자 백타일 프레임을 선택합니다.
     const auto getBackFrame = [&](unsigned int x, unsigned int y, RoomCell cell)
         -> const std::string&
     {
@@ -211,7 +255,13 @@ bool Room::buildTileMap(TileMap& tileMap, const std::string& tileAtlasKey,
                     neighbor == RoomCell::TopLeftCorner ||
                     neighbor == RoomCell::TopRightCorner ||
                     neighbor == RoomCell::BottomLeftCorner ||
-                    neighbor == RoomCell::BottomRightCorner;
+                    neighbor == RoomCell::BottomRightCorner ||
+                    neighbor == RoomCell::DoorUpLeftCorner ||
+                    neighbor == RoomCell::DoorUpRightCorner ||
+                    neighbor == RoomCell::DoorDownLeftCorner ||
+                    neighbor == RoomCell::DoorDownRightCorner ||
+                    neighbor == RoomCell::DoorLeftCorner ||
+                    neighbor == RoomCell::DoorRightCorner;
             };
             const bool topWall = isWall(getCell(static_cast<int>(x), static_cast<int>(y) - 1));
             const bool bottomWall = isWall(getCell(static_cast<int>(x), static_cast<int>(y) + 1));
@@ -229,12 +279,16 @@ bool Room::buildTileMap(TileMap& tileMap, const std::string& tileAtlasKey,
             return tileSet.backInnerFrameName;
         }
 
-        // Door overlays also alter the first background tiles inside the main room.
-        // These are the cells that receive the one-sided doorway shadows.
+        // 문은 방 안쪽 첫 백타일도 바꿉니다. 이 셀들에 문 입구 방향의 한쪽 그림자가 생깁니다.
         if (hasDoor(info.doorPositions, DoorPosition::Up) && y == topWallY + 1) {
-            if (x == centerStart - 1) return tileSet.backDoorBottomLeftFrameName;
-            if (x >= centerStart && x <= centerEnd) return tileSet.backInnerFrameName;
-            if (x == centerEnd + 1) return tileSet.backDoorBottomRightFrameName;
+            // 상단 문의 양 바깥 경계는 천장과 이어지는 일반 백타일을 유지합니다.
+            if (x == centerStart - 1 || x == centerEnd + 1) {
+                return tileSet.backTopFrameName;
+            }
+            // 실제 입구와 맞닿는 양끝만 위쪽 문 그림자 타일을 사용합니다.
+            if (x == centerStart) return tileSet.backDoorTopLeftFrameName;
+            if (x == centerEnd) return tileSet.backDoorTopRightFrameName;
+            if (x > centerStart && x < centerEnd) return tileSet.backInnerFrameName;
         }
         if (hasDoor(info.doorPositions, DoorPosition::Down) && y == groundY - 1) {
             if (x == centerStart - 1 || x == centerEnd + 1) {
@@ -244,18 +298,20 @@ bool Room::buildTileMap(TileMap& tileMap, const std::string& tileAtlasKey,
             if (x == centerEnd) return tileSet.backDoorBottomRightFrameName;
             if (x > centerStart && x < centerEnd) return tileSet.backInnerFrameName;
         }
-        if (hasDoor(info.doorPositions, DoorPosition::Left) && x == kOutlineWidth + 1 &&
-            y >= sideDoorTop && y < groundY) {
-            if (y == sideDoorTop) return tileSet.backDoorTopRightFrameName;
-            if (y == groundY - 1) return tileSet.backGroundFrameName;
-            return tileSet.backInnerFrameName;
-        }
-        const unsigned int rightInnerX = info.layout.width - kOutlineWidth - 2;
-        if (hasDoor(info.doorPositions, DoorPosition::Right) && x == rightInnerX &&
-            y >= sideDoorTop && y < groundY) {
+        if (hasDoor(info.doorPositions, DoorPosition::Left) && x == kOutlineWidth + 1) {
+            // 입구 위쪽의 방 내부 경계는 좌측 벽과 연결되는 일반 백타일입니다.
+            if (y == sideDoorTop - 1) return tileSet.backLeftFrameName;
             if (y == sideDoorTop) return tileSet.backDoorTopLeftFrameName;
             if (y == groundY - 1) return tileSet.backGroundFrameName;
-            return tileSet.backInnerFrameName;
+            if (y > sideDoorTop && y < groundY - 1) return tileSet.backInnerFrameName;
+        }
+        const unsigned int rightInnerX = info.layout.width - kOutlineWidth - 2;
+        if (hasDoor(info.doorPositions, DoorPosition::Right) && x == rightInnerX) {
+            // 입구 위쪽의 방 내부 경계는 우측 벽과 연결되는 일반 백타일입니다.
+            if (y == sideDoorTop - 1) return tileSet.backRightFrameName;
+            if (y == sideDoorTop) return tileSet.backDoorTopRightFrameName;
+            if (y == groundY - 1) return tileSet.backGroundFrameName;
+            if (y > sideDoorTop && y < groundY - 1) return tileSet.backInnerFrameName;
         }
 
         const RoomCell left = getCell(static_cast<int>(x) - 1, static_cast<int>(y));
@@ -295,26 +351,44 @@ bool Room::buildTileMap(TileMap& tileMap, const std::string& tileAtlasKey,
         case RoomCell::TopRightCorner:
             config = { tileSet.topRightCornerFrameName, TileType::Solid };
             break;
-        case RoomCell::Ground: {
-            const unsigned int centerStart = (info.layout.width - kCenterDoorWidth) / 2;
-            const unsigned int centerEnd = centerStart + kCenterDoorWidth;
-            const unsigned int groundY = info.layout.height - kOutlineWidth - 1;
-            if (hasDoor(info.doorPositions, DoorPosition::Down) && y == groundY &&
-                x == centerStart - 1) {
-                config = { tileSet.wallDoorCornerLeftFrameName, TileType::Solid };
-            } else if (hasDoor(info.doorPositions, DoorPosition::Down) && y == groundY &&
-                x == centerEnd) {
-                config = { tileSet.wallDoorCornerRightFrameName, TileType::Solid };
-            } else {
-                config = { tileSet.wallGroundFrameName, TileType::Solid };
-            }
+        case RoomCell::Ground:
+            config = { tileSet.wallGroundFrameName, TileType::Solid };
             break;
-        }
         case RoomCell::BottomLeftCorner:
             config = { tileSet.bottomLeftCornerFrameName, TileType::Solid };
             break;
         case RoomCell::BottomRightCorner:
             config = { tileSet.bottomRightCornerFrameName, TileType::Solid };
+            break;
+        case RoomCell::DoorUpLeftCorner:
+            config = { tileSet.wallDoorBottomLeftFrameName, TileType::Solid };
+            break;
+        case RoomCell::DoorUpRightCorner:
+            config = { tileSet.wallDoorBottomRightFrameName, TileType::Solid };
+            break;
+        case RoomCell::DoorDownLeftCorner:
+            config = { tileSet.wallDoorTopLeftFrameName, TileType::Solid };
+            break;
+        case RoomCell::DoorDownRightCorner:
+            config = { tileSet.wallDoorTopRightFrameName, TileType::Solid };
+            break;
+        case RoomCell::DoorLeftCorner:
+            config = { tileSet.wallDoorTopRightFrameName, TileType::Solid };
+            break;
+        case RoomCell::DoorRightCorner:
+            config = { tileSet.wallDoorTopLeftFrameName, TileType::Solid };
+            break;
+        case RoomCell::BackDoorTopLeft:
+            config = makeBackTile(tileSet.backDoorTopLeftFrameName);
+            break;
+        case RoomCell::BackDoorTopRight:
+            config = makeBackTile(tileSet.backDoorTopRightFrameName);
+            break;
+        case RoomCell::BackDoorBottomLeft:
+            config = makeBackTile(tileSet.backDoorBottomLeftFrameName);
+            break;
+        case RoomCell::BackDoorBottomRight:
+            config = makeBackTile(tileSet.backDoorBottomRightFrameName);
             break;
         case RoomCell::LeftWall:
             config = { tileSet.wallLeftFrameName, TileType::Solid };
@@ -336,7 +410,7 @@ bool Room::buildTileMap(TileMap& tileMap, const std::string& tileAtlasKey,
             config = makeBackTile(getBackFrame(x, y, info.layout.cells[index]));
             break;
         case RoomCell::Door:
-            // A doorway is walkable, but it still belongs to the room visually.
+            // 문은 걸을 수 있지만 시각적으로는 방 내부이므로 백타일로 렌더링합니다.
             config = makeBackTile(getBackFrame(x, y, RoomCell::Door));
             break;
         case RoomCell::Empty:
@@ -348,6 +422,7 @@ bool Room::buildTileMap(TileMap& tileMap, const std::string& tileAtlasKey,
     return tileMap.load(tileAtlasKey, grid, info.layout.width, info.layout.height);
 }
 
+/// 논리 스폰 셀의 발밑 중심을 반환해 Actor의 bottom-center 원점과 맞춥니다.
 std::optional<sf::Vector2f> Room::getPlayerSpawnPosition(const TileMap& tileMap) const {
     if (!info.playerSpawnCell || tileMap.getTileSize().x <= 0.f || tileMap.getTileSize().y <= 0.f) {
         return std::nullopt;
@@ -360,6 +435,7 @@ std::optional<sf::Vector2f> Room::getPlayerSpawnPosition(const TileMap& tileMap)
     };
 }
 
+/// 발아래가 바닥 또는 플랫폼인 백타일만 후보로 모아, 가운데 후보를 몬스터 스폰 위치로 선택합니다.
 std::optional<sf::Vector2f> Room::getMonsterSpawnPosition(const TileMap& tileMap) const {
     const sf::Vector2f tileSize = tileMap.getTileSize();
     if (tileSize.x <= 0.f || tileSize.y <= 0.f || info.layout.height < 2) {
@@ -390,6 +466,7 @@ std::optional<sf::Vector2f> Room::getMonsterSpawnPosition(const TileMap& tileMap
     };
 }
 
+/// 방 종류별 플랫폼 배치를 고정 데이터로 정의합니다. 보스방은 일반 방의 두 배 폭을 사용합니다.
 RoomLayout Room::getReferenceLayout(RoomType type) {
     constexpr unsigned int kRegularRoomWidth = 28;
     constexpr unsigned int kRoomHeight = 20;

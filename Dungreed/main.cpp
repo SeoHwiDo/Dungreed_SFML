@@ -9,7 +9,9 @@
 #include "Room.h"
 #include "MapManager.h"
 
+/// 프로그램 진입점입니다. 공용 리소스와 테스트 방을 준비한 뒤 입력·AI·충돌·렌더링 루프를 실행합니다.
 int main() {
+    // true로 바꾸면 실제 플레이 대신 모든 레퍼런스 방을 축소해 한 화면에서 확인합니다.
     constexpr bool SHOW_ALL_ROOMS_DEBUG = false;
     // 1. 윈도우 생성 (SFML 3.1.0 기준 sf::VideoMode 및 윈도우 생성자 형식 준수)
     sf::RenderWindow window(sf::VideoMode({ 1280, 720 }), "Dungreed Test");
@@ -40,6 +42,8 @@ int main() {
         "Wall_Right.png",
         "Wall_H0.png",
         "Wall_H2.png",
+        "Wall_H6.png",
+        "Wall_H8.png",
         "Wall_TopLCorner.png",
         "Wall_TopRCorner.png",
         "Wall_BotLCorner.png",
