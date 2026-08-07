@@ -1,5 +1,6 @@
 ﻿#include "Equip.h"
 #include "Actor.h"
+#include <algorithm>
 #include <cmath>
 #include <iostream>
 
@@ -18,12 +19,14 @@ void Equip::init(const std::string& atlasKey, const std::string& frameName) {
         actualFrameName += ".png";
     }
     const sf::IntRect* rect = resMgr.getFrameRect(atlasKey, actualFrameName);
+    const auto pivot = resMgr.getFramePivot(atlasKey, actualFrameName);
 
     if (tex && rect) {
         m_sprite.emplace(*tex);
         m_sprite->setTextureRect(*rect);
-        // 무기를 쥐는 손잡이 부분(좌측 중앙)을 회전축(Origin)으로 설정
-        m_sprite->setOrigin({ 0.f, rect->size.y / 2.f });
+        m_sprite->setOrigin(pivot.value_or(sf::Vector2f{
+            rect->size.x / 2.f, rect->size.y / 2.f
+        }));
     } else {
         std::cerr << "[Equip] 무기 스프라이트를 찾을 수 없습니다: " << actualFrameName << std::endl;
     }
@@ -33,22 +36,46 @@ void Equip::attack() {
     // 이미 공격 중이 아닐 때만 공격 실행
     if (!m_isAttacking) {
         m_isAttacking = true;
+        m_hasDealtDamage = false;
         m_attackTimer = 0.f;
         // stat의 attackSpeed를 반영하여 공격 시간 설정 (기본 0.5초 기준)
-        m_attackDuration = 0.5f / (m_stat.attackSpeed > 0.f ? m_stat.attackSpeed : 1.f);
+        m_attackDuration = 0.1f / (m_stat.attackSpeed > 0.f ? m_stat.attackSpeed : 1.f);
     }
 }
+
+bool Equip::consumeHit() {
+    if (!m_isAttacking || m_hasDealtDamage) {
+        return false;
+    }
+
+    m_hasDealtDamage = true;
+    return true;
+}
+
 void Equip::update(float dt, const sf::Vector2f& ownerPos, float aimRadian) {
     if (!m_sprite) return;
-    // 1. 주인의 위치(ownerPos)를 기준으로 무기를 약간 몸 앞쪽으로 내밀어 쥐도록 오프셋(Offset) 추가
-// 캐릭터가 보는 방향(마우스 방향)에 따라 무기의 시작 위치를 조절합니다.
-    float offsetX = (std::cos(aimRadian) >= 0.f) ? 5.f : -5.f;
-    sf::Vector2f adjustedPos = { ownerPos.x + offsetX, ownerPos.y };
+    constexpr float PI = 3.14159265358979323846f;
+    constexpr float HALF_PI = PI / 2.f;
+
+    // 실제 몸통 중앙에서 캐릭터가 바라보는 전방으로 무기를 배치합니다.
+    const bool isFacingLeft = std::abs(aimRadian) > HALF_PI;
+    const float facingDirection = isFacingLeft ? -1.f : 1.f;
+    const float bodyWidth = m_owner ? m_owner->getGlobalBounds().size.x : 0.f;
+    const float bodyHeight = m_owner ? m_owner->getGlobalBounds().size.y : 0.f;
+
+    const float forwardOffset = std::max(bodyWidth * 0.35f, 5.f);
+    const float upDownOffset = std::max(bodyHeight * 0.25f, 5.f);
+
+    const sf::Vector2f adjustedPos = {
+        ownerPos.x + facingDirection * forwardOffset,
+        ownerPos.y + upDownOffset
+    };
     m_sprite->setPosition(adjustedPos);
 
-
-    // 기본 조준 각도 (무기 이미지가 12시 방향을 향하므로 칼끝이 조준점을 향하도록 90도 보정)
-    sf::Angle currentAngle = sf::radians(aimRadian) + sf::degrees(90.f);
+    // 기본 무기 이미지가 12시 방향을 향하므로 π/2를 보정합니다.
+    // 좌측은 Y축 반전과 반대 보정을 조합해, 각도를 360도 회전시키지 않고
+    // 좌우가 대칭인 자세로 표시합니다.
+    const float baseRotation = aimRadian + (isFacingLeft ? -HALF_PI : HALF_PI);
 
     // 현재 대기 각도에서 반대쪽 끝까지 한 번만 스윙합니다.
     // startOffset은 대기 상태의 각도와 같아야 공격 시작 시 반대편으로
@@ -79,18 +106,10 @@ void Equip::update(float dt, const sf::Vector2f& ownerPos, float aimRadian) {
         }
     }
 
-    // 최종 스윙 각도 적용
-    currentAngle += sf::degrees(swingOffset);
-    m_sprite->setRotation(currentAngle);
-
-    // 마우스 조준 방향에 따른 무기 좌우 스케일 반전 
-    // (Y축을 반전시키면 손잡이 밖으로 무기가 벗어나므로 X축 반전 사용)
-    if (std::cos(aimRadian) < 0.f) {
-        m_sprite->setScale({ -1.f, 1.f });
-    }
-    else {
-        m_sprite->setScale({ 1.f, 1.f });
-    }
+    // 스윙 오프셋도 라디안으로 변환해 최종 회전을 적용합니다.
+    constexpr float DEGREE_TO_RADIAN = PI / 180.f;
+    m_sprite->setRotation(sf::radians(baseRotation + swingOffset * DEGREE_TO_RADIAN));
+    m_sprite->setScale({ 1.f, isFacingLeft ? -1.f : 1.f });
 }
 
 void Equip::render(sf::RenderWindow& window) {

@@ -35,6 +35,8 @@ public:
     // 공격 상태 진입을 위한 함수 추가
     void attack();
     inline bool isAttacking() const { return m_isAttacking; }
+    // 한 번의 스윙으로 동일 대상에게 피해가 중복 적용되지 않도록 합니다.
+    bool consumeHit();
 
 protected:
     std::string m_name;
@@ -44,6 +46,7 @@ protected:
 
     // 공격 애니메이션 및 상태 처리를 위한 변수
     bool m_isAttacking = false;
+    bool m_hasDealtDamage = false;
     bool m_isSwung = false;   // 추가: 현재 무기가 꺾인 상태(토글)인지 확인
     float m_attackTimer = 0.f;
     float m_attackDuration = 0.5f;

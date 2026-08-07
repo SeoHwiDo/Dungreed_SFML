@@ -2,6 +2,8 @@
 
 
 
+#include <iostream>
+
 Actor::Actor() {
     status.maxHp = MAXHP;
     status.tmpHp = status.maxHp;
@@ -51,9 +53,16 @@ void Actor::takeDamage(float damage, const sf::Vector2f& attackerPosition) {
     status.tmpHp -= damage;
     const float knockbackDirection =
         (getCenterPosition().x >= attackerPosition.x) ? 1.f : -1.f;
-    m_knockbackVelocity = { knockbackDirection * KNOCKBACK_SPEED, 0.f };
+    m_knockbackVelocity = { knockbackDirection * KNOCKBACK_SPEED, 100.f };
     m_knockbackTimer = KNOCKBACK_DURATION;
     m_hitTimer = HIT_COLOR_DURATION;
+
+    std::cout << "[Hit] damage=" << damage
+              << ", hp=" << status.tmpHp
+              << ", attacker=(" << attackerPosition.x << ", " << attackerPosition.y << ")"
+              << ", knockbackVelocity=(" << m_knockbackVelocity.x << ", "
+              << m_knockbackVelocity.y << ")"
+              << std::endl;
 
     if (sprite) {
         sprite->setColor(sf::Color(255, 96, 96));
@@ -128,19 +137,27 @@ void Actor::updateHitFeedback(float dt) {
         }
     }
 }
-//============기본 로직===============
-void Actor::update(float dt) {
-    // 물리 연산 수행
-    updatePhysics(dt);
-
-    // 애니메이션 갱신
+void Actor::updateAnimation(float dt) {
     if (sprite) {
         animator.update(dt, *sprite);
         setBottomCenterOrigin();
         col.updateHitbox(sprite->getGlobalBounds());
     }
+}
 
+sf::Vector2f Actor::getBodyCenterPosition() const {
+    const sf::FloatRect bounds = getGlobalBounds();
+    return {
+        bounds.position.x + bounds.size.x / 2.f,
+        bounds.position.y + bounds.size.y / 2.f
+    };
+}
+
+//============기본 로직===============
+void Actor::update(float dt) {
+    updatePhysics(dt);
     updateHitFeedback(dt);
+    updateAnimation(dt);
 }
 
 void Actor::render(sf::RenderWindow& window) {

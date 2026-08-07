@@ -15,10 +15,11 @@ void Player::init(const std::string& atlasKey) {
     for (const auto& animName : allAnims) {
         const auto* frames = resMgr.getAnimationFrames(atlasKey, animName);
         if (frames) {
-            // 이름에 "Attack"이나 "Dead"가 들어가면 반복(Loop) 재생을 끕니다.
+            // 공격과 사망 애니메이션은 마지막 프레임에서 멈춥니다.
             bool isLoop = true;
             if (animName.find("Attack") != std::string::npos ||
-                animName.find("Dead") != std::string::npos) {
+                animName.find("Dead") != std::string::npos ||
+                animName.find("Die") != std::string::npos) {
                 isLoop = false;
             }
 
@@ -42,20 +43,40 @@ void Player::init(const std::string& atlasKey) {
     animator.play("Player_Idle");
 }
 
-void Player::update(float dt, const sf::RenderWindow& window)  {
-    // Actor::update에서 updatePhysics(dt)가 실행됨
-    Actor::update(dt);
-
-    state = 0;
-    if (status.tmpHp <= 0) {
-        state |= PlayerState::Dead;
+void Player::changeState(PlayerState newState) {
+    if (state == newState) {
         return;
     }
 
-    sf::Vector2f centerPos = getCenterPosition();
-    InputData input = controller.getInput(window, centerPos);
+    state = newState;
+    switch (state) {
+    case PlayerState::Idle:
+        setHorizontalInput(0.f);
+        playAnimation("Player_Idle");
+        break;
+    case PlayerState::Run:
+        playAnimation("Player_Run");
+        break;
+    case PlayerState::Jump:
+        playAnimation("Player_Jump");
+        break;
+    case PlayerState::Dead:
+        // 사망 직전의 이동, 점프, 넉백을 모두 제거합니다.
+        setHorizontalInput(0.f);
+        movement.velocity.y = 0.f;
+        m_knockbackVelocity = { 0.f, 0.f };
+        m_knockbackTimer = 0.f;
+        playAnimation("Player_Die");
+        break;
+    }
+}
 
-    // 입력받은 방향 전달
+void Player::handleState(float dt, const InputData& input) {
+    if (dead()) {
+        changeState(PlayerState::Dead);
+        return;
+    }
+
     setHorizontalInput(input.moveDirX);
 
     // 마우스 위치로부터 추출된 단위 벡터의 x 방향을 기준으로 스프라이트 좌우 반전
@@ -67,57 +88,46 @@ void Player::update(float dt, const sf::RenderWindow& window)  {
             sprite->setScale({ 1.f, 1.f });
         }
     }
-    // =========================================================
-        // 2. 모든 상황에서 가능한 액션 (조건 없이 플래그 누적)
-        // =========================================================
-    if (input.isAttacking) {
-        state |= PlayerState::Attack;
-    }
-
-    if (input.isDashing) {
-        state |= PlayerState::Dash;
-    }
-
-    if (input.isJumping&&movement.isGrounded) {
-        // [추론한 내용]: 점프가 모든 상황에서 가능하다는 조건에 따라, 
-        // movement.isGrounded 검사를 제거하고 무조건 jump()를 호출하도록 구현했습니다.
-        // (만약 무한 점프를 막아야 한다면 다중 점프 횟수 제한 변수가 별도로 필요합니다.)
+    if (input.isJumping && movement.isGrounded) {
         jump();
-        state |= PlayerState::Jump;
     }
 
-    if (movement.isGrounded) {
-        if (input.moveDirX != 0.f) {
-            state |= PlayerState::Run;
-        }
-        else {
-            state |= PlayerState::Idle;
-        }
+    if (!movement.isGrounded) {
+        changeState(PlayerState::Jump);
+    } else if (input.moveDirX != 0.f) {
+        changeState(PlayerState::Run);
     }
     else {
-        // 바닥이 아니면 무조건 점프(공중) 상태 포함
-        state |= PlayerState::Jump;
+        changeState(PlayerState::Idle);
     }
 
-    if (state & PlayerState::Jump) {
-        playAnimation("Player_Jump");
-    } else if (state & PlayerState::Run) {
-        playAnimation("Player_Run");
-    } else {
-        playAnimation("Player_Idle");
-    }
-    if (state & PlayerState::Attack) {
-        if (equipment) {
-            equipment->attack();
-        }
+    if (input.isAttacking && equipment) {
+        equipment->attack();
     }
     if (equipment) {
-        equipment->update(dt, getCenterPosition(), input.aimRadian);
+        equipment->update(dt, getBodyCenterPosition(), input.aimRadian);
     }
-    if (state & PlayerState::Dash) {
+    if (input.isDashing) {
         // 대시 이펙트 및 특수 물리 로직 처리
         // 예: EffectManager::spawnTrail(sprite->getPosition()); (잔상 이펙트)
         // 예: movement.velocity.x = dashSpeed * input.moveDirX; (순간 가속)
     }
+}
 
+void Player::update(float dt, const sf::RenderWindow& window)  {
+    // 사망한 뒤에는 입력을 무시하고, 중력/피격 피드백/애니메이션만 갱신합니다.
+    if (dead()) {
+        changeState(PlayerState::Dead);
+        updatePhysics(dt);
+        updateHitFeedback(dt);
+        updateAnimation(dt);
+        return;
+    }
+
+    // 입력 -> 상태 전환 -> 물리/피격 처리 -> 애니메이션 순서를 유지합니다.
+    const InputData input = controller.getInput(window, getBodyCenterPosition());
+    handleState(dt, input);
+    updatePhysics(dt);
+    updateHitFeedback(dt);
+    updateAnimation(dt);
 }

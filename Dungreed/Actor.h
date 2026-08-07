@@ -47,6 +47,7 @@ public:
     //점프중일때 true;
     bool jump();
     sf::Vector2f getCenterPosition() const;
+    sf::Vector2f getBodyCenterPosition() const;
     void setHorizontalInput(float dirX);
 
     // 장비 장착 및 관리 함수
@@ -76,6 +77,7 @@ protected:
     std::shared_ptr<Equip> equipment; 
     Collision col;
     void updatePhysics(float dt);
+    void updateAnimation(float dt);
     std::string m_currentAnimation;
 
     void playAnimation(const std::string& animationName);
@@ -84,7 +86,7 @@ protected:
     float m_hitTimer = 0.f;
     float m_knockbackTimer = 0.f;
     sf::Vector2f m_knockbackVelocity{ 0.f, 0.f };
-    static constexpr float HIT_COLOR_DURATION = 0.15f;
+    static constexpr float HIT_COLOR_DURATION = 1.f;
     static constexpr float KNOCKBACK_DURATION = 0.12f;
     static constexpr float KNOCKBACK_SPEED = 350.f;
 

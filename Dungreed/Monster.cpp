@@ -12,14 +12,14 @@ void Monster::init(const std::string& atlasKey) {
     std::vector<std::string> allAnims = resMgr.getAnimationNames(atlasKey);
 
     for (const auto& animName : allAnims) {
-        // 전체 애니메이션 중, 현재 몬스터의 타입 이름이 포함된 경우만 필터링
-        if (animName.find(m_type) != std::string::npos) {
+        // 타입별 애니메이션과 모든 몬스터가 공유하는 사망 애니메이션을 등록합니다.
+        if (animName.find(m_type) != std::string::npos || animName == "Monster_Die") {
             const auto* frames = resMgr.getAnimationFrames(atlasKey, animName);
             if (frames) {
                 // 단발성 애니메이션 추론 (공격, 사망)
                 bool isLoop = true;
                 if (animName.find("Attack") != std::string::npos ||
-                    animName.find("Dead") != std::string::npos) {
+                    animName.find("Die") != std::string::npos) {
                     isLoop = false;
                 }
 
@@ -66,7 +66,7 @@ void Monster::changeState(MonsterState newState) {
 
     case MonsterState::Dead:
         setHorizontalInput(0.f);
-        animator.play(m_type + "_Dead");
+        animator.play("Monster_Die");
         break;
     }
 }
@@ -104,7 +104,7 @@ void Monster::handleFSM(float dt, const Player& player) {
 
     case MonsterState::Patrol:
         // 걷는 속도는 절반만 사용 (0.5f)
-        setHorizontalInput(fsm.m_patrolDir * 0.5f);
+        setHorizontalInput(fsm.m_patrolDir * 0.2f);
 
         if (sprite) {
             sprite->setScale({ fsm.m_patrolDir, 1.f });
@@ -113,7 +113,7 @@ void Monster::handleFSM(float dt, const Player& player) {
         if (distToTarget <= fsm.DETECT_RANGE) {
             changeState(MonsterState::Chase);
         }
-        // 3초간 순찰 후 다시 대기
+        // 1초간 순찰 후 다시 대기
         else if (fsm.m_stateTimer > 1.0f) {
             changeState(MonsterState::Idle);
         }
@@ -128,6 +128,7 @@ void Monster::handleFSM(float dt, const Player& player) {
         else {
             setHorizontalInput(dirToTargetX);
             if (sprite) {
+                // 좌우 반전만 적용합니다. Y 스케일은 원본 크기(1.f)를 유지합니다.
                 sprite->setScale({ dirToTargetX, 1.f });
             }
         }
@@ -148,7 +149,7 @@ void Monster::handleFSM(float dt, const Player& player) {
     }
 }
 
-void Monster::update(float dt, const Player& player) {
+void Monster::update(float dt, Player& player) {
     // 1. 상태 머신 로직 업데이트
     handleFSM(dt, player);
 
@@ -165,5 +166,6 @@ void Monster::update(float dt, const Player& player) {
         const float pushDirection = (getCenterPosition().x < player.getCenterPosition().x) ? -1.f : 1.f;
         move(pushDirection * overlap->size.x, 0.f);
     }
+    player.takeDamage(attack(), getCenterPosition());
     changeState(MonsterState::Attack);
 }
