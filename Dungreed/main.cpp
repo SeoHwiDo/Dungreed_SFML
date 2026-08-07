@@ -87,6 +87,9 @@ int main() {
     }
 
     ObjectPoolingManager objectPool;
+    // 게임 시작 시 자주 쓰는 몬스터·투사체를 비활성 상태로 선생성합니다.
+    objectPool.prewarmMonsters(4, "SkelDog", { 100.f, 100.f, 10.f, 1.f }, "Monster");
+    objectPool.prewarmProjectiles(32);
     MonsterManager monsterManager;
     CombatManager combatManager;
     Monster* meleeMonster = objectPool.acquireMonster(

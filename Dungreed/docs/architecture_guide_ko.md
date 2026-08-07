@@ -302,3 +302,14 @@ if (SHOW_ALL_ROOMS_DEBUG) {
 5. 마지막으로 플레이어 대상 투사체를 갱신합니다. 따라서 원거리 몬스터의 투사체는 발사자와 무관하게 계속 유효합니다.
 
 `Equip::m_hitTargets`는 한 번의 근접 스윙에서 같은 몬스터가 여러 프레임/여러 검사로 중복 피격되는 것을 막고, `EntityId`는 풀에서 재사용되는 객체도 프레임 내 대상 집합에서 구분할 수 있게 합니다.
+
+### 풀 선생성과 비활성 우선순위 큐
+
+`ObjectPoolingManager::prewarmMonsters`와 `prewarmProjectiles`는 게임 시작이나 방 진입 시 필요한 수만큼 객체를 먼저 생성하고, 렌더링·업데이트 대상이 아닌 비활성 슬롯으로 보관합니다.
+
+```cpp
+objectPool.prewarmMonsters(4, "SkelDog", { 100.f, 100.f, 10.f, 1.f }, "Monster");
+objectPool.prewarmProjectiles(32);
+```
+
+풀은 비활성 슬롯의 벡터를 매 요청마다 선형 탐색하지 않습니다. 슬롯 번호와 비활성화 순번을 `std::priority_queue` 최소 힙에 넣고, `acquire` 시 가장 오래 비활성 상태였던 슬롯을 먼저 꺼냅니다. 선생성된 객체도 생성 순서대로 큐에 들어가므로 첫 요청부터 순서대로 재사용됩니다. 큐가 비면 그때만 새 슬롯을 만들고 활성화합니다. `release`는 중복 반환을 막은 뒤 슬롯을 다시 큐에 넣습니다.
