@@ -16,6 +16,8 @@ enum class TileType {
 struct TileConfig {
     std::string frameName; // ResourceManager에 등록된 프레임 이름 (빈 문자열이면 None)
     TileType type = TileType::None;
+    bool isBackground = false; // true면 렌더링만 하고 충돌을 만들지 않음
+    int rotationQuarterTurns = 0; // 시계 방향 90도 단위 텍스처 회전
 };
 
 // 게임 내 실제 물리 충돌에 쓰일 데이터
@@ -26,27 +28,37 @@ struct TileData {
 
 class TileMap : public sf::Drawable, public sf::Transformable {
 public:
-    TileMap() : m_vertices(sf::PrimitiveType::Triangles) {}
+    TileMap()
+        : m_vertices(sf::PrimitiveType::Triangles),
+          m_backgroundVertices(sf::PrimitiveType::Triangles) {}
     ~TileMap() = default;
 
     // 타일맵 로드: 그리드 데이터 기반으로 VertexArray 구성
     bool load(const std::string& tileAtlasKey, const std::vector<TileConfig>& grid,
-        unsigned int width, unsigned int height, sf::Vector2f tileSize);
+        unsigned int width, unsigned int height);
 
     // 배경 이미지 설정
     void setBackground(const std::string& bgAtlasKey, const std::string& bgFrameName);
 
     // 충돌 처리를 위해 생성된 타일 물리 영역 반환
     inline const std::vector<TileData>& getCollisionTiles() const { return m_collisionTiles; }
+    inline sf::Vector2f getTileSize() const { return m_tileSize; }
+    inline sf::Vector2f getPixelSize() const {
+        return { m_tileSize.x * m_width, m_tileSize.y * m_height };
+    }
 
 protected:
     // sf::Drawable 인터페이스 구현 (window.draw(tileMap)을 위해)
     void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
 
 private:
+    sf::VertexArray m_backgroundVertices;
     sf::VertexArray m_vertices;
     const sf::Texture* m_tileset = nullptr;
     std::vector<TileData> m_collisionTiles;
+    sf::Vector2f m_tileSize{ 0.f, 0.f };
+    unsigned int m_width = 0;
+    unsigned int m_height = 0;
 
     std::optional<sf::Sprite> m_background;
 };
