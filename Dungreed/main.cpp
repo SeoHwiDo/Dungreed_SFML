@@ -6,8 +6,11 @@
 #include "Monster.h"
 #include "TileMap.h"
 #include "Collision.h"
+#include "Room.h"
+#include "MapManager.h"
 
 int main() {
+    constexpr bool SHOW_ALL_ROOMS_DEBUG = false;
     // 1. 윈도우 생성 (SFML 3.1.0 기준 sf::VideoMode 및 윈도우 생성자 형식 준수)
     sf::RenderWindow window(sf::VideoMode({ 1280, 720 }), "Dungreed Test");
     window.setFramerateLimit(60);
@@ -27,31 +30,58 @@ int main() {
         std::cerr << "장비 아틀라스 로드 실패\n";
     }
 
-    // 3. 테스트용 타일맵 구성 (바닥 생성)
-    const unsigned int mapWidth = 40;
-    const unsigned int mapHeight = 20;
-    sf::Vector2f tileSize(32.f, 32.f);
-    std::vector<TileConfig> grid(mapWidth * mapHeight, { "", TileType::None });
-
-    // tilemap_atlas.json에 정의된 정확한 프레임 이름 사용 ("Tile/1FloorTileMiddle.png")
-    std::string floorTileName = "Tile/1FloorTileMiddle.png";
-
-    // 하단 바닥 배치
-    for (unsigned int x = 0; x < mapWidth; ++x) {
-        grid[x + (mapHeight - 2) * mapWidth] = { floorTileName, TileType::Solid };
-    }
-
+    // 3. 고정 레퍼런스 방 데이터를 TileMap으로 변환
     TileMap tileMap;
-    tileMap.load("TileMap", grid, mapWidth, mapHeight, tileSize);
+    Room room(RoomType::Start);
+    const RoomTileSet roomTiles{
+        "Wall_Top.png",
+        "Wall_Ground.png",
+        "Wall_Left.png",
+        "Wall_Right.png",
+        "Wall_H0.png",
+        "Wall_H2.png",
+        "Wall_TopLCorner.png",
+        "Wall_TopRCorner.png",
+        "Wall_BotLCorner.png",
+        "Wall_BotRCorner.png",
+        "Back_Inner.png",
+        "Back_Top.png",
+        "Back_Ground.png",
+        "Back_Left.png",
+        "Back_Right.png",
+        "Back_TopLcorner.png",
+        "Back_TopRCorner.png",
+        "BackBotLCorner.png",
+        "Back_BotRCorner.png",
+        "Back_DoorTopL.png",
+        "Back_DoorTopR.png",
+        "Back_DoorBotL.png",
+        "Back_DoorBotR.png",
+        "Flatform_L.png",
+        "Flatform_In.png",
+        "Flatform_R.png"
+    };
+    if (!room.buildTileMap(tileMap, "TileMap", roomTiles)) {
+        std::cerr << "방 타일맵 생성 실패\n";
+    }
+    MapManager mapManager;
+    if (SHOW_ALL_ROOMS_DEBUG && !mapManager.buildAllRoomsDebug(
+        "TileMap", roomTiles, window.getSize())) {
+        std::cerr << "방 디버그 프리뷰 생성 실패\n";
+    }
 
     // 4. 플레이어 및 몬스터 생성
     Player player;
     player.init("Player");
-    player.move(200.f, 300.f);
+    if (const auto playerSpawn = room.getPlayerSpawnPosition(tileMap)) {
+        player.move(playerSpawn->x, playerSpawn->y);
+    }
 
     Monster monster("SkelDog", { 100.f, 100.f, 10.f, 1.f }, "Monster");
     monster.init("Monster");
-    monster.move(500.f, 300.f);
+    if (const auto monsterSpawn = room.getMonsterSpawnPosition(tileMap)) {
+        monster.move(monsterSpawn->x, monsterSpawn->y);
+    }
 
     sf::Clock clock;
 
@@ -70,6 +100,14 @@ int main() {
         player.update(dt, window);
         monster.update(dt, player);
 
+        // 플레이어 공격이 몬스터에 닿으면 실제 피해/넉백을 한 번 적용합니다.
+        if (const auto weapon = player.getEquipment(); weapon && weapon->isAttacking()) {
+            if (const auto attackBox = player.getAttackHitbox();
+                attackBox && monster.getCollision().checkHit(*attackBox) && weapon->consumeHit()) {
+                monster.takeDamage(weapon->getStat().damage, player.getCenterPosition());
+            }
+        }
+
         // 충돌 처리
         Collision::resolveMapCollision(player, tileMap);
         Collision::resolveMapCollision(monster, tileMap);
@@ -77,9 +115,13 @@ int main() {
         // 렌더링
         window.clear(sf::Color::Black);
 
-        window.draw(tileMap);
-        player.render(window);
-        monster.render(window);
+        if (SHOW_ALL_ROOMS_DEBUG) {
+            mapManager.renderAllRoomsDebug(window);
+        } else {
+            window.draw(tileMap);
+            player.render(window);
+            monster.render(window);
+        }
 
         window.display();
     }
