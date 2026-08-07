@@ -1,6 +1,8 @@
 ﻿#include "Collision.h"
 #include "Actor.h"
 #include "TileMap.h"
+#include "Projectile.h"
+#include <cmath>
 #include<optional>
 std::optional<sf::Vector2f> Collision::checkHit(const sf::FloatRect& attackBox) const {
     auto intersection = m_hitbox.findIntersection(attackBox);
@@ -82,4 +84,35 @@ void Collision::resolveMapCollision(Actor& actor, const TileMap& map) {
             break;
         }
     }
+}
+
+bool Collision::resolveProjectileMapCollision(Projectile& projectile, const TileMap& map) {
+    if (!projectile.isActive()) {
+        return false;
+    }
+
+    const sf::Vector2f start = projectile.getPreviousPosition();
+    const sf::Vector2f end = projectile.getPosition();
+    const sf::Vector2f delta = end - start;
+    const sf::Vector2f tileSize = map.getTileSize();
+    const float sampleLength = std::max(1.f, std::max(tileSize.x, tileSize.y));
+    const float distance = std::max(std::abs(delta.x), std::abs(delta.y));
+    const unsigned int samples = std::max(1u, static_cast<unsigned int>(std::ceil(distance / sampleLength)));
+
+    for (unsigned int i = 1; i <= samples; ++i) {
+        const float t = static_cast<float>(i) / static_cast<float>(samples);
+        const sf::Vector2f position = start + delta * t;
+        const sf::FloatRect bounds = projectile.getGlobalBoundsAt(position);
+        for (const auto& tile : map.getCollisionTiles()) {
+            if (tile.type == TileType::None) {
+                continue;
+            }
+            if (bounds.findIntersection(tile.bounds).has_value()) {
+                const float safeT = static_cast<float>(i - 1) / static_cast<float>(samples);
+                projectile.setPosition(start + delta * safeT);
+                return true;
+            }
+        }
+    }
+    return false;
 }

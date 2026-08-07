@@ -4,6 +4,7 @@
 #include <optional>
 class Actor;
 class TileMap;
+class Projectile;
 
 class Collision {
 public:
@@ -21,6 +22,8 @@ public:
 
     /// 액터와 TileMap의 Solid/OneWay 타일 충돌을 해결하고 착지 상태를 갱신합니다. 물리 업데이트 뒤 호출합니다.
     static void resolveMapCollision(Actor& actor, const TileMap& map);
+    /// 투사체의 이전 위치부터 현재 위치까지를 잘게 샘플링해 벽을 먼저 판정합니다.
+    static bool resolveProjectileMapCollision(Projectile& projectile, const TileMap& map);
 private:
     sf::FloatRect m_hitbox;
 };

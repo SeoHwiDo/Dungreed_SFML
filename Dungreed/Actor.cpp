@@ -24,6 +24,18 @@ void Actor::init(const std::string& atlasKey) {
     }
 }
 
+void Actor::resetForReuse(Status newStatus) {
+    status = newStatus;
+    movement = MovementData{};
+    m_hitTimer = 0.f;
+    m_knockbackTimer = 0.f;
+    m_knockbackVelocity = { 0.f, 0.f };
+    if (sprite) {
+        sprite->setColor(sf::Color::White);
+        col.updateHitbox(sprite->getGlobalBounds());
+    }
+}
+
 void Actor::setEquipment(std::shared_ptr<Equip> eq) {
     equipment = eq;
     if (equipment) {

@@ -33,27 +33,61 @@ void Equip::init(const std::string& atlasKey, const std::string& frameName) {
 }
 
 void Equip::attack() {
+    if (m_stat.type == WeaponType::Ranged) {
+        // 원거리 장비는 스윙 상태 대신 한 번의 투사체 생성 요청만 예약합니다.
+        m_projectileRequestPending = true;
+        return;
+    }
+
     // 이미 공격 중이 아닐 때만 공격 실행
     if (!m_isAttacking) {
         m_isAttacking = true;
-        m_hasDealtDamage = false;
+        m_hitTargets.clear();
         m_attackTimer = 0.f;
         // stat의 attackSpeed를 반영하여 공격 시간 설정 (기본 0.5초 기준)
         m_attackDuration = 0.1f / (m_stat.attackSpeed > 0.f ? m_stat.attackSpeed : 1.f);
     }
 }
 
-bool Equip::consumeHit() {
-    if (!m_isAttacking || m_hasDealtDamage) {
+bool Equip::consumeHit(EntityId targetId) {
+    if (!m_isAttacking || m_hitTargets.find(targetId) != m_hitTargets.end()) {
         return false;
     }
 
-    m_hasDealtDamage = true;
+    m_hitTargets.insert(targetId);
     return true;
 }
 
+std::vector<ProjectileSpawnRequest> Equip::consumeProjectileRequests() {
+    std::vector<ProjectileSpawnRequest> requests;
+    if (!m_projectileRequestPending || !m_stat.projectile) {
+        return requests;
+    }
+
+    m_projectileRequestPending = false;
+    const ProjectileConfig& config = *m_stat.projectile;
+    const unsigned int count = std::max(1u, config.count);
+    for (unsigned int index = 0; index < count; ++index) {
+        const float center = (static_cast<float>(count) - 1.f) * 0.5f;
+        const float angle = m_lastAimRadian +
+            (static_cast<float>(index) - center) * config.spreadRadian;
+        requests.push_back({
+            config.type,
+            config.target,
+            m_lastOwnerPosition,
+            { std::cos(angle), std::sin(angle) },
+            config.speed,
+            config.damage,
+            config.lifetime
+        });
+    }
+    return requests;
+}
+
 void Equip::update(float dt, const sf::Vector2f& ownerPos, float aimRadian) {
-    if (!m_sprite) return;
+    m_lastOwnerPosition = ownerPos;
+    m_lastAimRadian = aimRadian;
+    if (!m_sprite || m_stat.type == WeaponType::Ranged) return;
     constexpr float PI = 3.14159265358979323846f;
     constexpr float HALF_PI = PI / 2.f;
 

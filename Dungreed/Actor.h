@@ -41,6 +41,8 @@ public:
 
     /// 아틀라스 키로 기본 스프라이트와 충돌 상자를 초기화합니다. 파생 클래스는 애니메이션 등록 후 호출합니다.
     virtual void init(const std::string& atlasKey);
+    /// 풀에서 재사용할 때 능력치·물리·피격 상태를 초기화합니다.
+    virtual void resetForReuse(Status newStatus);
     /// 월드 좌표만큼 이동시키고 이동 직후 피격 상자를 동기화합니다. 물리 보정 없이 순간 이동할 때 사용합니다.
     inline void move(float dx, float dy) { if (sprite) { sprite->move({ dx,dy }); col.updateHitbox(sprite->getGlobalBounds()); } }
     /// 현재 체력이 0 이하인지 반환합니다. 사망 상태 전환과 입력 차단의 기준으로 사용합니다.
@@ -70,6 +72,8 @@ public:
     /// 현재 공격 판정 영역을 반환합니다. 무기가 있으면 무기 판정, 없으면 본체 영역을 사용합니다.
     std::optional<sf::FloatRect> getAttackHitbox() const;
 
+    /// 풀에서 객체를 재사용하거나 공격 대상을 구분할 때 사용하는 고유 ID를 반환합니다.
+    inline EntityId getId() const { return m_entityId; }
 
     /// 현재 스프라이트의 기준 위치를 반환합니다. 스프라이트가 없으면 원점을 반환합니다.
     inline sf::Vector2f getPosition() const { return sprite ? sprite->getPosition() : sf::Vector2f{ 0.f, 0.f }; }
@@ -84,7 +88,6 @@ public:
     virtual void update(float dt);
     /// 본체 스프라이트와 장착 장비를 창에 그립니다.
     virtual void render(sf::RenderWindow& window);
-    
 
 protected:
     Status status;
@@ -113,7 +116,9 @@ protected:
     static constexpr float KNOCKBACK_SPEED = 350.f;
 
 private:
-   
+    inline static EntityId s_nextEntityId = 1;
+    EntityId m_entityId = s_nextEntityId++;
+
     /// 발밑 중앙을 스프라이트 원점으로 설정해 위치와 충돌 기준을 통일합니다.
     void setBottomCenterOrigin();
 };
