@@ -48,6 +48,18 @@
     <ClCompile Include="Equip.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="Projectile.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="ObjectPoolingManager.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="MonsterManager.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="CombatManager.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
     <ClCompile Include="MapManager.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
@@ -81,6 +93,18 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="Equip.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Projectile.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="ObjectPoolingManager.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="MonsterManager.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="CombatManager.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="MapManager.h">

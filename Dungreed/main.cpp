@@ -1,9 +1,14 @@
 ﻿#include <SFML/Graphics.hpp>
 #include <iostream>
 #include <vector>
+#include <unordered_set>
 #include "ResourceManager.h"
 #include "Player.h"
 #include "Monster.h"
+#include "Equip.h"
+#include "ObjectPoolingManager.h"
+#include "MonsterManager.h"
+#include "CombatManager.h"
 #include "TileMap.h"
 #include "Collision.h"
 #include "Room.h"
@@ -81,10 +86,27 @@ int main() {
         player.move(playerSpawn->x, playerSpawn->y);
     }
 
-    Monster monster("SkelDog", { 100.f, 100.f, 10.f, 1.f }, "Monster");
-    monster.init("Monster");
+    ObjectPoolingManager objectPool;
+    MonsterManager monsterManager;
+    CombatManager combatManager;
+    Monster* meleeMonster = objectPool.acquireMonster(
+        "SkelDog", { 100.f, 100.f, 10.f, 1.f }, "Monster");
+    Monster* rangedMonster = objectPool.acquireMonster(
+        "SkelDog", { 100.f, 100.f, 10.f, 1.f }, "Monster");
+    meleeMonster->setEquipment(std::make_shared<Equip>(
+        "MonsterClaw", EquipStat{ 10.f, 1.f, 50.f }));
+    ProjectileConfig rangedConfig;
+    rangedConfig.type = ProjectileType::Fireball;
+    rangedConfig.target = ProjectileTarget::Player;
+    rangedConfig.speed = 260.f;
+    rangedConfig.damage = 8.f;
+    rangedConfig.count = 1;
+    rangedConfig.lifetime = 4.f;
+    EquipStat rangedStat{ 8.f, 0.8f, 300.f, WeaponType::Ranged, rangedConfig };
+    rangedMonster->setEquipment(std::make_shared<Equip>("MonsterFireball", rangedStat));
     if (const auto monsterSpawn = room.getMonsterSpawnPosition(tileMap)) {
-        monster.move(monsterSpawn->x, monsterSpawn->y);
+        meleeMonster->move(monsterSpawn->x, monsterSpawn->y);
+        rangedMonster->move(monsterSpawn->x + 180.f, monsterSpawn->y);
     }
 
     sf::Clock clock;
@@ -102,19 +124,21 @@ int main() {
 
         // 업데이트 처리
         player.update(dt, window);
-        monster.update(dt, player);
 
-        // 플레이어 공격이 몬스터에 닿으면 실제 피해/넉백을 한 번 적용합니다.
-        if (const auto weapon = player.getEquipment(); weapon && weapon->isAttacking()) {
-            if (const auto attackBox = player.getAttackHitbox();
-                attackBox && monster.getCollision().checkHit(*attackBox) && weapon->consumeHit()) {
-                monster.takeDamage(weapon->getStat().damage, player.getCenterPosition());
-            }
-        }
-
-        // 충돌 처리
+        // 1순위: 각 몬스터의 이동 후 벽 충돌을 해결합니다.
+        monsterManager.update(dt, player, objectPool, tileMap);
         Collision::resolveMapCollision(player, tileMap);
-        Collision::resolveMapCollision(monster, tileMap);
+
+        // 2순위: 플레이어의 공격을 먼저 처리합니다.
+        std::unordered_set<EntityId> playerHitMonsters =
+            combatManager.resolvePlayerAttack(player, objectPool);
+        const auto projectileHits = combatManager.updateProjectiles(
+            dt, player, objectPool, tileMap, ProjectileTarget::Monster);
+        playerHitMonsters.insert(projectileHits.begin(), projectileHits.end());
+
+        // 3순위: 플레이어가 이번 프레임에 실제로 맞힌 몬스터의 공격만 무효화합니다.
+        combatManager.resolveMonsterAttacks(dt, player, objectPool, playerHitMonsters);
+        combatManager.updateProjectiles(dt, player, objectPool, tileMap, ProjectileTarget::Player);
 
         // 렌더링
         window.clear(sf::Color::Black);
@@ -124,7 +148,7 @@ int main() {
         } else {
             window.draw(tileMap);
             player.render(window);
-            monster.render(window);
+            objectPool.render(window);
         }
 
         window.display();

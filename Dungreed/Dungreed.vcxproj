@@ -140,6 +140,10 @@
     <ClCompile Include="Collision.cpp" />
     <ClCompile Include="Controller.cpp" />
     <ClCompile Include="Equip.cpp" />
+    <ClCompile Include="Projectile.cpp" />
+    <ClCompile Include="ObjectPoolingManager.cpp" />
+    <ClCompile Include="MonsterManager.cpp" />
+    <ClCompile Include="CombatManager.cpp" />
     <ClCompile Include="MapManager.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Monster.cpp" />
@@ -154,6 +158,10 @@
     <ClInclude Include="Collision.h" />
     <ClInclude Include="Controller.h" />
     <ClInclude Include="Equip.h" />
+    <ClInclude Include="Projectile.h" />
+    <ClInclude Include="ObjectPoolingManager.h" />
+    <ClInclude Include="MonsterManager.h" />
+    <ClInclude Include="CombatManager.h" />
     <ClInclude Include="MapManager.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="ResourceManager.h" />
