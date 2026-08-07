@@ -1,6 +1,7 @@
 ﻿#pragma once
 #include<string>
 #include<memory>
+#include<optional>
 
 #include<vector>
 #include<unordered_map>
@@ -29,6 +30,10 @@ struct AtlasData {
     sf::Texture texture;
     // 1. 프레임 풀 네임 -> 사각형 영역 (예: "player_attack_01.png" -> IntRect)
     std::unordered_map<std::string, std::unique_ptr<sf::IntRect>> frameRects;
+    // JSON 피벗을 스프라이트 로컬 좌표로 변환해 보관합니다.
+    std::unordered_map<std::string, sf::Vector2f> framePivots;
+    // JSON sourceSize를 원본 이미지 크기로 보관합니다.
+    std::unordered_map<std::string, sf::Vector2u> frameSourceSizes;
     // 2. 애니메이션 클립 이름 -> 프레임 리스트 (예: "player_attack" -> [IntRect0, IntRect1, ...])
     std::unordered_map<std::string, std::unique_ptr<std::vector<sf::IntRect>>> animations;
 };
@@ -60,6 +65,8 @@ public:
 
     // 2. 특정 단일 프레임의 IntRect 참조 (오브젝트, 타일, 단일 스프라이트용)
     const sf::IntRect* getFrameRect(const std::string& atlasKey, const std::string& frameName) const;
+    std::optional<sf::Vector2f> getFramePivot(const std::string& atlasKey, const std::string& frameName) const;
+    std::optional<sf::Vector2u> getFrameSourceSize(const std::string& atlasKey, const std::string& frameName) const;
 
     // 3. 애니메이션 클립의 전체 프레임 배열 참조 (Actor, Monster의 Animator에 전달용)
     const std::vector<sf::IntRect>* getAnimationFrames(const std::string& atlasKey, const std::string& animName) const;
