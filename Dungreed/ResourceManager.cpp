@@ -49,6 +49,35 @@ bool ResourceManager::loadAtlas(const std::string& atlasKey, const std::string& 
             );
             //프레임 이름과 IntRect 저장
             atlas->frameRects[frameName] = std::make_unique<sf::IntRect>(rect);
+
+            sf::Vector2f sourceSize{ static_cast<float>(rect.size.x), static_cast<float>(rect.size.y) };
+            if (frameData.contains("sourceSize")) {
+                const auto& sourceSizeData = frameData["sourceSize"];
+                if (sourceSizeData.contains("w") && sourceSizeData.contains("h")) {
+                    const sf::Vector2u sourceSizePixels{
+                        sourceSizeData["w"].get<unsigned int>(),
+                        sourceSizeData["h"].get<unsigned int>()
+                    };
+                    atlas->frameSourceSizes[frameName] = sourceSizePixels;
+                    sourceSize = {
+                        static_cast<float>(sourceSizePixels.x),
+                        static_cast<float>(sourceSizePixels.y)
+                    };
+                }
+            }
+
+            // TexturePacker 피벗은 원본 크기 기준의 0~1 정규화 좌표입니다.
+            // 트리밍된 이미지에도 맞도록 spriteSourceSize 오프셋을 반영합니다.
+            sf::Vector2f pivot{ rect.size.x / 2.f, rect.size.y / 2.f };
+            if (frameData.contains("pivot")) {
+                const auto& pivotData = frameData["pivot"];
+                const auto& spriteSourceSize = frameData["spriteSourceSize"];
+                pivot = {
+                    pivotData["x"].get<float>() * sourceSize.x - spriteSourceSize["x"].get<float>(),
+                    pivotData["y"].get<float>() * sourceSize.y - spriteSourceSize["y"].get<float>()
+                };
+            }
+            atlas->framePivots[frameName] = pivot;
             //프레임 애니메이션 저장
             std::string animName = extractAnimationName(frameName);
             if (atlas->animations.find(animName) == atlas->animations.end()) {
@@ -90,6 +119,36 @@ const sf::IntRect* ResourceManager::getFrameRect(const std::string& atlasKey, co
         return it->second.get();
     }
     return nullptr;
+}
+
+std::optional<sf::Vector2f> ResourceManager::getFramePivot(
+    const std::string& atlasKey, const std::string& frameName) const
+{
+    auto atlasIt = m_atlases.find(atlasKey);
+    if (atlasIt == m_atlases.end()) {
+        return std::nullopt;
+    }
+
+    const auto pivotIt = atlasIt->second->framePivots.find(frameName);
+    if (pivotIt == atlasIt->second->framePivots.end()) {
+        return std::nullopt;
+    }
+    return pivotIt->second;
+}
+
+std::optional<sf::Vector2u> ResourceManager::getFrameSourceSize(
+    const std::string& atlasKey, const std::string& frameName) const
+{
+    auto atlasIt = m_atlases.find(atlasKey);
+    if (atlasIt == m_atlases.end()) {
+        return std::nullopt;
+    }
+
+    const auto sourceSizeIt = atlasIt->second->frameSourceSizes.find(frameName);
+    if (sourceSizeIt == atlasIt->second->frameSourceSizes.end()) {
+        return std::nullopt;
+    }
+    return sourceSizeIt->second;
 }
 
 const std::vector<sf::IntRect>* ResourceManager::getAnimationFrames(const std::string& atlasKey, const std::string& animName) const

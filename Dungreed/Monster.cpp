@@ -1,156 +1,253 @@
-﻿#include "Monster.h"
+#include "Monster.h"
+
+#include "Player.h"
 #include "ResourceManager.h"
+#include <cmath>
+#include <cstdlib>
 #include <iostream>
-#include <cmath>   // std::sqrt
-#include <cstdlib> // std::rand
+
+namespace {
+const char* toString(MonsterState state) {
+    switch (state) {
+    case MonsterState::Idle: return "Idle";
+    case MonsterState::Patrol: return "Patrol";
+    case MonsterState::Chase: return "Chase";
+    case MonsterState::Attack: return "Attack";
+    case MonsterState::Dead: return "Dead";
+    }
+    return "Unknown";
+}
+}
 
 void Monster::init(const std::string& atlasKey) {
+    m_isFlying = (m_type == "Bat");
+    if (m_isFlying) {
+        movement.gravity = 0.f;
+        movement.velocity = { 0.f, 0.f };
+        movement.isGrounded = false;
+    }
     Actor::init(atlasKey);
 
     auto& resMgr = ResourceManager::getInstance();
-    std::vector<std::string> allAnims = resMgr.getAnimationNames(atlasKey);
+    const std::vector<std::string> allAnims = resMgr.getAnimationNames(atlasKey);
+    const std::vector<sf::IntRect>* fallbackDieFrames = nullptr;
 
     for (const auto& animName : allAnims) {
-        // 전체 애니메이션 중, 현재 몬스터의 타입 이름이 포함된 경우만 필터링
-        if (animName.find(m_type) != std::string::npos) {
-            const auto* frames = resMgr.getAnimationFrames(atlasKey, animName);
-            if (frames) {
-                // 단발성 애니메이션 추론 (공격, 사망)
-                bool isLoop = true;
-                if (animName.find("Attack") != std::string::npos ||
-                    animName.find("Dead") != std::string::npos) {
-                    isLoop = false;
-                }
-
-                AnimationClip clip(frames, 0.1f, isLoop);
-                animator.addAnimation(animName, clip);
-            }
+        const auto* frames = resMgr.getAnimationFrames(atlasKey, animName);
+        if (!frames) {
+            continue;
         }
+
+        if (!fallbackDieFrames && animName.size() >= 4 &&
+            animName.compare(animName.size() - 4, 4, "_Die") == 0) {
+            fallbackDieFrames = frames;
+        }
+
+        if (animName.find(m_type) == std::string::npos && animName != "Monster_Die") {
+            continue;
+        }
+
+        const bool isLoop = animName.find("Attack") == std::string::npos &&
+            animName.find("Charge") == std::string::npos &&
+            animName.find("Die") == std::string::npos;
+        animator.addAnimation(animName, AnimationClip(frames, 0.1f, isLoop));
+    }
+
+    if (!animator.hasAnimation("Monster_Die") && fallbackDieFrames) {
+        animator.addAnimation("Monster_Die", AnimationClip(fallbackDieFrames, 0.1f, false));
     }
     animator.play(m_type + "_Idle");
 }
 
+void Monster::resetForReuse(Status newStatus, MonsterBehaviorConfig behavior) {
+    Actor::resetForReuse(newStatus);
+    state = MonsterState::Idle;
+    fsm = MonsterFSMData{};
+    setBehavior(behavior);
+    m_attackCooldown = 0.f;
+    if (m_isFlying) {
+        movement.gravity = 0.f;
+        movement.velocity = { 0.f, 0.f };
+        movement.isGrounded = false;
+    }
+}
+
+void Monster::resetForReuse(const std::string& type, Status newStatus,
+    const std::string& atlasKey, MonsterBehaviorConfig behavior) {
+    m_type = type;
+    resetForReuse(newStatus, behavior);
+    init(atlasKey);
+}
+
+void Monster::setBehavior(MonsterBehaviorConfig behavior) {
+    fsm.DETECT_RANGE = behavior.detectRange;
+    fsm.ATTACK_RANGE = behavior.attackRange;
+    movement.moveSpeed = behavior.moveSpeed;
+}
+
+bool Monster::isTargetInAttackRange(const sf::Vector2f& targetPosition) const {
+    const sf::Vector2f delta = targetPosition - getBodyCenterPosition();
+    return delta.x * delta.x + delta.y * delta.y <= fsm.ATTACK_RANGE * fsm.ATTACK_RANGE;
+}
+
+void Monster::beginAttack() {
+    changeState(MonsterState::Attack);
+}
+
+bool Monster::consumeAttackCooldown(float dt) {
+    m_attackCooldown = std::max(0.f, m_attackCooldown - dt);
+    if (m_attackCooldown > 0.f) {
+        return false;
+    }
+    const auto weapon = getEquipment();
+    const float attackSpeed = weapon ? weapon->getStat().attackSpeed : 1.f;
+    m_attackCooldown = 1.f / std::max(attackSpeed, 0.01f);
+    return true;
+}
+
+bool Monster::readyForPoolRelease() const {
+    return dead() && state == MonsterState::Dead && animator.isFinished();
+}
+
 void Monster::changeState(MonsterState newState) {
-    if (state == MonsterState::Dead) return; // 이미 사망한 경우 상태 변경 무시
+    if (state == MonsterState::Dead) {
+        return;
+    }
 
+        if (state != newState) {
+        std::cout << "[MonsterFSM] type=" << m_type
+                  << ", id=" << getId()
+                  << ", " << toString(state)
+                  << " -> " << toString(newState) << '\n';
+    }
     state = newState;
-    fsm.m_stateTimer = 0.f; // 상태 타이머 초기화
+    fsm.m_stateTimer = 0.f;
 
-    // 상태에 따른 초기 설정 및 애니메이션 재생
     switch (state) {
     case MonsterState::Idle:
-        setHorizontalInput(0.f); // 대기 시 정지
+        setHorizontalInput(0.f);
         animator.play(m_type + "_Idle");
         break;
 
     case MonsterState::Patrol:
-        // 무작위로 좌우 방향 결정
-        //단순한 좌우 랜덤용이므로 고전 rand 사용
         fsm.m_patrolDir = (std::rand() % 2 == 0) ? 1.f : -1.f;
-        animator.play(m_type + "_Run");
+        if (animator.hasAnimation(m_type + "_Run")) {
+            animator.play(m_type + "_Run");
+        } else {
+            animator.play(m_type + "_Idle");
+        }
         break;
 
     case MonsterState::Chase:
-        animator.play(m_type + "_Run");
+        if (animator.hasAnimation(m_type + "_Run")) {
+            animator.play(m_type + "_Run");
+        } else {
+            animator.play(m_type + "_Idle");
+        }
         break;
 
     case MonsterState::Attack:
-        setHorizontalInput(0.f); // 공격 시 일단 정지
-        animator.play(m_type + "_Attack");
+        setHorizontalInput(0.f);
+        if (animator.hasAnimation(m_type + "_Attack")) {
+            animator.play(m_type + "_Attack");
+        } else if (animator.hasAnimation(m_type + "_Charge")) {
+            animator.play(m_type + "_Charge");
+        } else {
+            animator.play(m_type + "_Idle");
+        }
         break;
 
     case MonsterState::Dead:
         setHorizontalInput(0.f);
-        animator.play(m_type + "_Dead");
+        if (animator.hasAnimation(m_type + "_Die")) {
+            animator.play(m_type + "_Die");
+        } else if (animator.hasAnimation("Monster_Die")) {
+            animator.play("Monster_Die");
+        } else {
+            animator.stop();
+        }
         break;
     }
 }
 
-void Monster::handleFSM(float dt) {
-    // 1. 사망 체크
+void Monster::handleFSM(float dt, const Player& player) {
     if (status.tmpHp <= 0 && state != MonsterState::Dead) {
         changeState(MonsterState::Dead);
         return;
     }
-    if (state == MonsterState::Dead) return; // 사망 시 AI 중지
-
-    fsm.m_stateTimer += dt;
-    sf::Vector2f centerPos = getCenterPosition();
-
-    // 2. 타겟과의 거리 및 방향 계산
-    float distToTarget = 9999.f;
-    float dirToTargetX = 0.f;
-
-    if (fsm.m_hasTarget) {
-        float dx = fsm.m_targetPos.x - centerPos.x;
-        float dy = fsm.m_targetPos.y - centerPos.y;
-        //삼각함수로 거리계산
-        distToTarget = std::sqrt(dx * dx + dy * dy);
-        dirToTargetX = (dx > 0.f) ? 1.f : -1.f;
+    if (state == MonsterState::Dead) {
+        return;
     }
 
-    // 3. 상태별 로직 처리
+    if (player.dead()) {
+        if (state == MonsterState::Chase || state == MonsterState::Attack) {
+            changeState(MonsterState::Idle);
+        }
+        return;
+    }
+
+    fsm.m_stateTimer += dt;
+    const sf::Vector2f centerPos = getCenterPosition();
+    const sf::Vector2f targetCenter = player.getCenterPosition();
+    const float dx = targetCenter.x - centerPos.x;
+    const float dy = targetCenter.y - centerPos.y;
+    const float distance = std::sqrt(dx * dx + dy * dy);
+    const float directionX = dx >= 0.f ? 1.f : -1.f;
+
     switch (state) {
     case MonsterState::Idle:
-        // 시야 범위 내에 타겟이 들어오면 추적 시작
-        if (fsm.m_hasTarget && distToTarget <= fsm.DETECT_RANGE) {
+        if (distance <= fsm.DETECT_RANGE) {
             changeState(MonsterState::Chase);
-        }
-        // 2초 정도 대기 후 순찰 시작
-        else if (fsm.m_stateTimer > 2.0f) {
+        } else if (fsm.m_stateTimer > 2.f) {
             changeState(MonsterState::Patrol);
         }
         break;
 
     case MonsterState::Patrol:
-        // 걷는 속도는 절반만 사용 (0.5f)
-        setHorizontalInput(fsm.m_patrolDir * 0.5f);
-
+        setHorizontalInput(fsm.m_patrolDir * 0.2f);
         if (sprite) {
             sprite->setScale({ fsm.m_patrolDir, 1.f });
         }
-
-        if (fsm.m_hasTarget && distToTarget <= fsm.DETECT_RANGE) {
+        if (distance <= fsm.DETECT_RANGE) {
             changeState(MonsterState::Chase);
-        }
-        // 3초간 순찰 후 다시 대기
-        else if (fsm.m_stateTimer > 3.0f) {
+        } else if (fsm.m_stateTimer > 1.f) {
             changeState(MonsterState::Idle);
         }
         break;
 
     case MonsterState::Chase:
-        // 타겟을 상실했거나 추적 범위를 크게 벗어나면 포기
-        if (!fsm.m_hasTarget || distToTarget > fsm.DETECT_RANGE * 1.5f) {
-            changeState(MonsterState::Idle);
-        }
-        // 공격 사거리 내에 들어왔을 경우
-        else if (distToTarget <= fsm.ATTACK_RANGE) {
+        if (distance <= fsm.ATTACK_RANGE) {
             changeState(MonsterState::Attack);
-        }
-        // 계속 추적 (전속력)
-        else {
-            setHorizontalInput(dirToTargetX);
+        } else if (distance > fsm.DETECT_RANGE * 1.5f) {
+            changeState(MonsterState::Idle);
+        } else {
+            setHorizontalInput(directionX);
             if (sprite) {
-                sprite->setScale({ dirToTargetX, 1.f });
+                sprite->setScale({ directionX, 1.f });
             }
         }
         break;
 
     case MonsterState::Attack:
-        // 공격 애니메이션(단발성)이 완전히 끝났는지 확인
-        if (animator.isFinished()) {
-            // 공격 후 잠시 대기 상태로 전환 (연속 공격 방지 쿨타임 역할)
+        if (m_type == "SkelDog") {
+            setHorizontalInput(directionX * 1.5f);
+            if (sprite) {
+                sprite->setScale({ directionX, 1.f });
+            }
+            if (fsm.m_stateTimer > 0.45f) {
+                changeState(MonsterState::Idle);
+            }
+        } else if (animator.isFinished() || fsm.m_stateTimer > 1.f) {
             changeState(MonsterState::Idle);
         }
+        break;
+
+    case MonsterState::Dead:
         break;
     }
 }
 
-void Monster::update(float dt) {
-    // 1. 상태 머신 로직 업데이트
-    handleFSM(dt);
-
-    // 2. 부모 클래스(Actor)의 물리 연산 및 애니메이션 갱신 처리
+void Monster::update(float dt, Player& player) {
+    handleFSM(dt, player);
     Actor::update(dt);
 }

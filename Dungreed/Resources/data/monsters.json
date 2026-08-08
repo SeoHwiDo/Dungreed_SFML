@@ -1,0 +1,147 @@
+{
+  "version": 1,
+  "monsters": [
+    {
+      "id": "Banshee",
+      "enabled": true,
+      "atlasKey": "Monster",
+      "animations": {
+        "idle": "Banshee_Idle",
+        "attack": "Banshee_Attack"
+      },
+      "movement": {
+        "mode": "Ground",
+        "moveSpeed": 220.0
+      },
+      "status": {
+        "maxHp": 100.0,
+        "power": 10.0,
+        "dex": 1.0
+      },
+      "ai": {
+        "detectRange": 180.0,
+        "attackRange": 50.0
+      },
+      "weaponId": "MonsterClaw"
+    },
+    {
+      "id": "Bat",
+      "enabled": true,
+      "atlasKey": "Monster",
+      "animations": {
+        "idle": "Bat_Idle"
+      },
+      "movement": {
+        "mode": "Flying",
+        "gravity": 0.0,
+        "moveSpeed": 300.0,
+        "patrol": true,
+        "chase": true,
+        "fallbackAnimation": "Bat_Idle"
+      },
+      "status": {
+        "maxHp": 100.0,
+        "power": 10.0,
+        "dex": 1.0
+      },
+      "ai": {
+        "detectRange": 380.0,
+        "attackRange": 160.0
+      },
+      "weaponId": "BabyBatBullet"
+    },
+    {
+      "id": "BigWhiteSkel",
+      "enabled": true,
+      "atlasKey": "Monster",
+      "animations": {
+        "idle": "BigWhiteSkel_Idle",
+        "run": "BigWhiteSkel_Run",
+        "attack": "BigWhiteSkel_Attack"
+      },
+      "movement": {
+        "mode": "Ground",
+        "moveSpeed": 180.0
+      },
+      "status": {
+        "maxHp": 150.0,
+        "power": 15.0,
+        "dex": 1.0
+      },
+      "ai": {
+        "detectRange": 200.0,
+        "attackRange": 55.0
+      },
+      "weaponId": "MonsterClaw"
+    },
+    {
+      "id": "LittleGhost",
+      "enabled": true,
+      "atlasKey": "Monster",
+      "animations": {
+        "idle": "LittleGhost_Idle",
+        "attack": "LittleGhost_Attack"
+      },
+      "movement": {
+        "mode": "Ground",
+        "moveSpeed": 200.0
+      },
+      "status": {
+        "maxHp": 80.0,
+        "power": 8.0,
+        "dex": 1.0
+      },
+      "ai": {
+        "detectRange": 180.0,
+        "attackRange": 45.0
+      },
+      "weaponId": "MonsterClaw"
+    },
+    {
+      "id": "Minotaurs",
+      "enabled": true,
+      "atlasKey": "Monster",
+      "animations": {
+        "charge": "Minotaurs_Charge",
+        "attack": "Minotaurs_Attack"
+      },
+      "movement": {
+        "mode": "Ground",
+        "moveSpeed": 160.0
+      },
+      "status": {
+        "maxHp": 200.0,
+        "power": 20.0,
+        "dex": 1.0
+      },
+      "ai": {
+        "detectRange": 220.0,
+        "attackRange": 60.0
+      },
+      "weaponId": "MonsterClaw"
+    },
+    {
+      "id": "SkelDog",
+      "enabled": true,
+      "atlasKey": "Monster",
+      "animations": {
+        "idle": "SkelDog_Idle",
+        "run": "SkelDog_Run",
+        "die": "SkelDog_Die"
+      },
+      "movement": {
+        "moveSpeed": 150.0
+      },
+      "status": {
+        "maxHp": 100.0,
+        "power": 10.0,
+        "dex": 1.0
+      },
+      "ai": {
+        "detectRange": 180.0,
+        "attackRange": 50.0
+      },
+      "weaponId": "MonsterClaw"
+    }
+  ]
+}

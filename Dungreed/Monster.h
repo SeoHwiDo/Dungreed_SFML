@@ -1,7 +1,9 @@
-﻿#pragma once
-#include"Actor.h"
-#include <string>
+#pragma once
+
+#include "Actor.h"
 #include <SFML/System/Vector2.hpp>
+#include <string>
+
 enum class MonsterState {
     Idle,
     Patrol,
@@ -9,31 +11,56 @@ enum class MonsterState {
     Attack,
     Dead
 };
+
 struct MonsterFSMData {
-    float m_stateTimer = 0.f;           // 상태 유지 시간 기록
-    float m_patrolDir = 1.f;            // 순찰 방향 (1.f: 우측, -1.f: 좌측)
-    sf::Vector2f m_targetPos{ 0.f, 0.f }; // 타겟(플레이어)의 위치
-    bool m_hasTarget = false;     
-    // 시야 및 공격 반경 (필요시 몬스터 타입별로 설정할 수도 있습니다)
-    const float DETECT_RANGE = 400.f;
-    const float ATTACK_RANGE = 80.f;// 타겟 유무 플래그
+    float m_stateTimer = 0.f;
+    float m_patrolDir = 1.f;
+    float DETECT_RANGE = 100.f;
+    float ATTACK_RANGE = 50.f;
 };
+
+/// 몬스터 생성 시 전달하는 탐지·공격 거리 설정입니다.
+struct MonsterBehaviorConfig {
+    float detectRange = 100.f;
+    float attackRange = 50.f;
+    float moveSpeed = 300.f;
+};
+
+class Player;
+
 class Monster : public Actor {
 public:
     MonsterState state = MonsterState::Idle;
+
     void init(const std::string& atlasKey = "Monster") override;
-    Monster(const std::string& type, Status _status = { MAXHP, MAXHP, POWER, DEX },const std::string & atlasKey = "Monster") :Actor(_status), m_type(type) { init(atlasKey); }
-    
-    inline void setTargetPos(const sf::Vector2f& pos) { fsm.m_targetPos = pos; fsm.m_hasTarget = true; }
-    inline void clearTarget() { fsm.m_hasTarget = false; }
+    Monster(const std::string& type,
+        Status status = { MAXHP, MAXHP, POWER, DEX },
+        const std::string& atlasKey = "Monster",
+        MonsterBehaviorConfig behavior = {})
+        : Actor(status), m_type(type) {
+        setBehavior(behavior);
+        init(atlasKey);
+    }
 
-  
+    void update(float dt, Player& player);
+    void resetForReuse(Status newStatus, MonsterBehaviorConfig behavior = {});
+    void resetForReuse(const std::string& type, Status newStatus,
+        const std::string& atlasKey = "Monster", MonsterBehaviorConfig behavior = {});
 
-    void update(float dt) override;
+    void beginAttack();
+    bool consumeAttackCooldown(float dt);
+    bool readyForPoolRelease() const;
+    bool isFlying() const { return m_isFlying; }
+    bool isTargetInAttackRange(const sf::Vector2f& targetPosition) const;
+
 private:
     std::string m_type;
     int dropGold = 0;
     MonsterFSMData fsm;
+    float m_attackCooldown = 0.f;
+    bool m_isFlying = false;
+
+    void setBehavior(MonsterBehaviorConfig behavior);
     void changeState(MonsterState newState);
-    void handleFSM(float dt);
+    void handleFSM(float dt, const Player& player);
 };

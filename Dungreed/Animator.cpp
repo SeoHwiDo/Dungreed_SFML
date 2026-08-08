@@ -27,6 +27,10 @@ void Animator::stop() {
     m_currentFrame = 0;
     m_currentTime = 0.f;
 }
+bool Animator::hasAnimation(const std::string& name) const {
+    return m_animations.find(name) != m_animations.end();
+}
+
 void Animator::update(float dt, sf::Sprite& sprite) {
     if (!m_isPlaying || m_currentAnimation.empty()) return;
 
