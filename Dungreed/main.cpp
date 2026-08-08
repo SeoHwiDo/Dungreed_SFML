@@ -1,7 +1,9 @@
-﻿#include <SFML/Graphics.hpp>
+#include <SFML/Graphics.hpp>
+#include <Windows.h>
 #include <iostream>
 #include <vector>
 #include <unordered_set>
+#include <filesystem>
 #include "ResourceManager.h"
 #include "Player.h"
 #include "Monster.h"
@@ -13,9 +15,14 @@
 #include "Collision.h"
 #include "Room.h"
 #include "MapManager.h"
+#include "Camera.h"
+#include "GameDataManager.h"
 
 /// 프로그램 진입점입니다. 공용 리소스와 테스트 방을 준비한 뒤 입력·AI·충돌·렌더링 루프를 실행합니다.
 int main() {
+    // 소스는 UTF-8(/utf-8)로 컴파일되므로 콘솔도 UTF-8로 맞춥니다.
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
     // true로 바꾸면 실제 플레이 대신 모든 레퍼런스 방을 축소해 한 화면에서 확인합니다.
     constexpr bool SHOW_ALL_ROOMS_DEBUG = false;
     // 1. 윈도우 생성 (SFML 3.1.0 기준 sf::VideoMode 및 윈도우 생성자 형식 준수)
@@ -36,7 +43,19 @@ int main() {
     if (!resMgr.loadAtlas("Equip", std::string(EQUIP_JSON), std::string(EQUIP_ATLAS))) {
         std::cerr << "장비 아틀라스 로드 실패\n";
     }
+    if (!resMgr.loadAtlas("Projectile", std::string(PROJECTILE_JSON), std::string(PROJECTILE_ATLAS))) {
+        std::cerr << "Projectile atlas load failed\n";
+    }
 
+
+    GameDataManager gameData;
+    const std::filesystem::path dataDirectory =
+        std::filesystem::path(__FILE__).parent_path() / "Resources" / "data";
+    if (!gameData.loadWeapons((dataDirectory / "weapons.json").string()) ||
+        !gameData.loadMonsters((dataDirectory / "monsters.json").string())) {
+        std::cerr << "게임 데이터 JSON 로드 실패\n";
+        return 1;
+    }
     // 3. 고정 레퍼런스 방 데이터를 TileMap으로 변환
     TileMap tileMap;
     Room room(RoomType::Start);
@@ -82,34 +101,42 @@ int main() {
     // 4. 플레이어 및 몬스터 생성
     Player player;
     player.init("Player");
+    if (const auto playerWeapon = gameData.createEquip("ShortSword")) {
+        player.setEquipment(playerWeapon);
+    }
     if (const auto playerSpawn = room.getPlayerSpawnPosition(tileMap)) {
         player.move(playerSpawn->x, playerSpawn->y);
     }
 
+    // 1.5배 확대된 뷰로 플레이어를 즉시 추적합니다.
+    // 맵의 최하단에서는 뷰 하단이 맵 바닥과 정확히 맞춰집니다.
+    Camera camera(window.getSize(),
+        sf::FloatRect({ 0.f, 0.f }, tileMap.getPixelSize()), 3.f);
+    camera.update(player.getCenterPosition());
+    window.setView(camera.getView());
+
+    const MonsterData* skelDogData = gameData.findMonster("SkelDog");
+    const MonsterData* batData = gameData.findMonster("Bat");
+    if (!skelDogData || !batData || !skelDogData->enabled || !batData->enabled) {
+        std::cerr << "필수 몬스터 데이터가 없습니다.\n";
+        return 1;
+    }
+
     ObjectPoolingManager objectPool;
-    // 게임 시작 시 자주 쓰는 몬스터·투사체를 비활성 상태로 선생성합니다.
-    objectPool.prewarmMonsters(4, "SkelDog", { 100.f, 100.f, 10.f, 1.f }, "Monster");
+    objectPool.prewarmMonsters(4, skelDogData->id, skelDogData->status,
+        skelDogData->atlasKey, skelDogData->behavior);
     objectPool.prewarmProjectiles(32);
     MonsterManager monsterManager;
     CombatManager combatManager;
-    Monster* meleeMonster = objectPool.acquireMonster(
-        "SkelDog", { 100.f, 100.f, 10.f, 1.f }, "Monster");
-    Monster* rangedMonster = objectPool.acquireMonster(
-        "SkelDog", { 100.f, 100.f, 10.f, 1.f }, "Monster");
-    meleeMonster->setEquipment(std::make_shared<Equip>(
-        "MonsterClaw", EquipStat{ 10.f, 1.f, 50.f }));
-    ProjectileConfig rangedConfig;
-    rangedConfig.type = ProjectileType::Fireball;
-    rangedConfig.target = ProjectileTarget::Player;
-    rangedConfig.speed = 260.f;
-    rangedConfig.damage = 8.f;
-    rangedConfig.count = 1;
-    rangedConfig.lifetime = 4.f;
-    EquipStat rangedStat{ 8.f, 0.8f, 300.f, WeaponType::Ranged, rangedConfig };
-    rangedMonster->setEquipment(std::make_shared<Equip>("MonsterFireball", rangedStat));
+    Monster* meleeMonster = objectPool.acquireMonster(skelDogData->id, skelDogData->status,
+        skelDogData->atlasKey, skelDogData->behavior);
+    Monster* rangedMonster = objectPool.acquireMonster(batData->id, batData->status,
+        batData->atlasKey, batData->behavior);
+    meleeMonster->setEquipment(gameData.createEquip(skelDogData->weaponId));
+    rangedMonster->setEquipment(gameData.createEquip(batData->weaponId));
     if (const auto monsterSpawn = room.getMonsterSpawnPosition(tileMap)) {
         meleeMonster->move(monsterSpawn->x, monsterSpawn->y);
-        rangedMonster->move(monsterSpawn->x + 180.f, monsterSpawn->y);
+        rangedMonster->move(monsterSpawn->x + 180.f, monsterSpawn->y - 120.f);
     }
 
     sf::Clock clock;
@@ -142,6 +169,12 @@ int main() {
         // 3순위: 플레이어가 이번 프레임에 실제로 맞힌 몬스터의 공격만 무효화합니다.
         combatManager.resolveMonsterAttacks(dt, player, objectPool, playerHitMonsters);
         combatManager.updateProjectiles(dt, player, objectPool, tileMap, ProjectileTarget::Player);
+
+        // 충돌 보정까지 끝난 실제 플레이어 위치를 즉시 카메라에 반영합니다.
+        camera.update(player.getCenterPosition());
+        if (!SHOW_ALL_ROOMS_DEBUG) {
+            window.setView(camera.getView());
+        }
 
         // 렌더링
         window.clear(sf::Color::Black);

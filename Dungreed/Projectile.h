@@ -23,15 +23,15 @@ public:
     /// 현재 투사체의 피해량을 반환합니다.
     float getDamage() const { return m_damage; }
     /// 현재 스프라이트의 월드 충돌 영역을 반환합니다.
-    sf::FloatRect getGlobalBounds() const { return m_shape.getGlobalBounds(); }
+    sf::FloatRect getGlobalBounds() const;
     /// 지정한 위치에 놓였을 때의 투사체 경계를 계산합니다. 고속 투사체의 벽 통과를 검사할 때 사용합니다.
     sf::FloatRect getGlobalBoundsAt(const sf::Vector2f& position) const;
     /// 직전 프레임 위치를 반환합니다. 벽/고속 이동 충돌 검사에 사용합니다.
     sf::Vector2f getPreviousPosition() const { return m_previousPosition; }
     /// 현재 위치를 반환합니다.
-    sf::Vector2f getPosition() const { return m_shape.getPosition(); }
+    sf::Vector2f getPosition() const;
     /// 투사체를 충돌 지점으로 이동시킵니다.
-    void setPosition(const sf::Vector2f& position) { m_shape.setPosition(position); }
+    void setPosition(const sf::Vector2f& position);
     /// 충돌 영역을 갱신한 뒤 공격 대상과 겹치는지 검사합니다.
     bool checkHit(const sf::FloatRect& targetBounds) const;
     /// 화면에 활성 투사체를 그립니다.
@@ -45,5 +45,9 @@ private:
     float m_damage = 0.f;
     float m_lifetime = 0.f;
     sf::CircleShape m_shape{ 4.f };
+    std::optional<sf::Sprite> m_sprite;
+    const std::vector<sf::IntRect>* m_animationFrames = nullptr;
+    float m_animationTime = 0.f;
+    std::size_t m_animationFrame = 0;
     Collision m_collision;
 };
