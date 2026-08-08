@@ -54,7 +54,15 @@ void CombatManager::resolveMonsterAttacks(float dt, Player& player,
         }
 
         const auto weapon = monster.getEquipment();
-        if (!weapon || !monster.consumeAttackCooldown(dt)) {
+        if (!weapon) {
+            return;
+        }
+
+        const bool isMelee = weapon->getStat().type == WeaponType::Melee;
+        if (isMelee && !monster.getCollision().checkHit(playerBounds).has_value()) {
+            return;
+        }
+        if (!monster.consumeAttackCooldown(dt)) {
             return;
         }
 
@@ -64,16 +72,14 @@ void CombatManager::resolveMonsterAttacks(float dt, Player& player,
         weapon->update(dt, origin, aim);
         weapon->attack();
 
-        if (weapon->getStat().type == WeaponType::Ranged) {
+        if (!isMelee) {
             for (const ProjectileSpawnRequest& request : weapon->consumeProjectileRequests()) {
                 objectPool.acquireProjectile(request);
             }
             return;
         }
 
-        if (monster.getCollision().checkHit(playerBounds).has_value()) {
-            player.takeDamage(weapon->getStat().damage, origin);
-        }
+        player.takeDamage(weapon->getStat().damage, origin);
     });
 }
 
