@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include <SFML/Graphics.hpp>
 #include <string>
 #include <optional>
@@ -18,7 +18,8 @@ enum class WeaponType {
 enum class ProjectileType {
     Arrow,
     Fireball,
-    Bullet
+    Bullet,
+    BabyBatBullet
 };
 
 enum class ProjectileTarget {

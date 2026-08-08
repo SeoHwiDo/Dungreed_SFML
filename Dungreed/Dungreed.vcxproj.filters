@@ -48,6 +48,9 @@
     <ClCompile Include="Equip.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="GameDataManager.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
     <ClCompile Include="Projectile.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
@@ -61,6 +64,9 @@
       <Filter>소스 파일</Filter>
     </ClCompile>
     <ClCompile Include="MapManager.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="Camera.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
   </ItemGroup>
@@ -95,6 +101,9 @@
     <ClInclude Include="Equip.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="GameDataManager.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
     <ClInclude Include="Projectile.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
@@ -110,8 +119,17 @@
     <ClInclude Include="MapManager.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="Camera.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
+    <None Include="Resources\data\monsters.json">
+      <Filter>리소스 파일</Filter>
+    </None>
+    <None Include="Resources\data\weapons.json">
+      <Filter>리소스 파일</Filter>
+    </None>
     <None Include="resources\images\player_atlas.json" />
     <None Include="resources\images\tilemap_atlas.json" />
     <None Include="..\README.md" />

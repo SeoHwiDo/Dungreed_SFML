@@ -1,0 +1,54 @@
+{
+  "version": 1,
+  "monsters": [
+    {
+      "id": "SkelDog",
+      "enabled": true,
+      "atlasKey": "Monster",
+      "animations": {
+        "idle": "SkelDog_Idle",
+        "run": "SkelDog_Run",
+        "die": "SkelDog_Die"
+      },
+      "movement": {
+        "moveSpeed": 150.0
+      },
+      "status": {
+        "maxHp": 100.0,
+        "power": 10.0,
+        "dex": 1.0
+      },
+      "ai": {
+        "detectRange": 180.0,
+        "attackRange": 50.0
+      },
+      "weaponId": "MonsterClaw"
+    },
+    {
+      "id": "Bat",
+      "enabled": true,
+      "atlasKey": "Monster",
+      "animations": {
+        "idle": "Bat_Idle"
+      },
+      "movement": {
+        "mode": "Flying",
+        "gravity": 0.0,
+        "moveSpeed": 300.0,
+        "patrol": true,
+        "chase": true,
+        "fallbackAnimation": "Bat_Idle"
+      },
+      "status": {
+        "maxHp": 100.0,
+        "power": 10.0,
+        "dex": 1.0
+      },
+      "ai": {
+        "detectRange": 380.0,
+        "attackRange": 160.0
+      },
+      "weaponId": "BabyBatBullet"
+    }
+  ]
+}

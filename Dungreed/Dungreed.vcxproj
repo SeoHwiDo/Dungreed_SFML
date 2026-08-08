@@ -140,10 +140,12 @@
     <ClCompile Include="Collision.cpp" />
     <ClCompile Include="Controller.cpp" />
     <ClCompile Include="Equip.cpp" />
+    <ClCompile Include="GameDataManager.cpp" />
     <ClCompile Include="Projectile.cpp" />
     <ClCompile Include="ObjectPoolingManager.cpp" />
     <ClCompile Include="MonsterManager.cpp" />
     <ClCompile Include="CombatManager.cpp" />
+    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="MapManager.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Monster.cpp" />
@@ -158,10 +160,12 @@
     <ClInclude Include="Collision.h" />
     <ClInclude Include="Controller.h" />
     <ClInclude Include="Equip.h" />
+    <ClInclude Include="GameDataManager.h" />
     <ClInclude Include="Projectile.h" />
     <ClInclude Include="ObjectPoolingManager.h" />
     <ClInclude Include="MonsterManager.h" />
     <ClInclude Include="CombatManager.h" />
+    <ClInclude Include="Camera.h" />
     <ClInclude Include="MapManager.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="ResourceManager.h" />
@@ -171,6 +175,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md" />
+    <None Include="Resources\data\monsters.json" />
+    <None Include="Resources\data\weapons.json" />
     <None Include="Resources\images\equip_atlas.json" />
     <None Include="resources\images\monster_atlas.json" />
     <None Include="resources\images\player_atlas.json" />

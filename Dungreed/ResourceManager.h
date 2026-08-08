@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include<string>
 #include<memory>
 #include<optional>
@@ -10,21 +10,21 @@
 #include<SFML/Audio.hpp>
 
 //문자열 데이터 직접 소유X->오버헤드 0
-constexpr std::string_view RESOURCE_PATH = "resources/";
-constexpr std::string_view IMAGE_PATH = "resources/images/";
+\
+constexpr std::string_view PLAYER_ATLAS = "Z:/DevProject/Dungreed_Resources/resources/images/player_atlas.png";
+constexpr std::string_view MONSTER_ATLAS = "Z:/DevProject/Dungreed_Resources/resources/images/monster_atlas.png";
+constexpr std::string_view BOSS_ATLAS = "Z:/DevProject/Dungreed_Resources/resources/images/boss_atlas.png";
+constexpr std::string_view TILEMAP_ATLAS = "Z:/DevProject/Dungreed_Resources/resources/images/tilemap_atlas.png";
+constexpr std::string_view EQUIP_ATLAS = "Z:/DevProject/Dungreed_Resources/resources/images/equip_atlas.png";
+constexpr std::string_view PROJECTILE_ATLAS = "Z:/DevProject/Dungreed_Resources/resources/images/projectile_atlas.png";
 
-constexpr std::string_view PLAYER_ATLAS = "resources/images/player_atlas.png";
-constexpr std::string_view MONSTER_ATLAS = "resources/images/monster_atlas.png";
-constexpr std::string_view BOSS_ATLAS = "resources/images/boss_atlas.png";
-constexpr std::string_view TILEMAP_ATLAS = "resources/images/tilemap_atlas.png";
-constexpr std::string_view EQUIP_ATLAS = "resources/images/equip_atlas.png";
-
-constexpr std::string_view PLAYER_JSON = "resources/images/player_atlas.json";
-constexpr std::string_view MONSTER_JSON = "resources/images/monster_atlas.json";
-constexpr std::string_view BOSS_JSON = "resources/images/boss_atlas.json";
-constexpr std::string_view TILEMAP_JSON = "resources/images/tilemap_atlas.json";
-constexpr std::string_view EQUIP_JSON = "resources/images/equip_atlas.json"; 
-constexpr std::string_view Background_PATH = "resources/images/Backgrounds/";
+constexpr std::string_view PLAYER_JSON = "Z:/DevProject/Dungreed_Resources/resources/images/player_atlas.json";
+constexpr std::string_view MONSTER_JSON = "Z:/DevProject/Dungreed_Resources/resources/images/monster_atlas.json";
+constexpr std::string_view BOSS_JSON = "Z:/DevProject/Dungreed_Resources/resources/images/boss_atlas.json";
+constexpr std::string_view TILEMAP_JSON = "Z:/DevProject/Dungreed_Resources/resources/images/tilemap_atlas.json";
+constexpr std::string_view EQUIP_JSON = "Z:/DevProject/Dungreed_Resources/resources/images/equip_atlas.json";
+constexpr std::string_view PROJECTILE_JSON = "Z:/DevProject/Dungreed_Resources/resources/images/projectile_atlas.json";
+constexpr std::string_view Background_PATH = "Z:/DevProject/Dungreed_Resources/resources/images/Backgrounds/";
 
 struct AtlasData {
     sf::Texture texture;
