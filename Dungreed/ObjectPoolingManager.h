@@ -15,14 +15,16 @@ public:
     /// 지정 수만큼 몬스터를 미리 생성해 비활성 슬롯으로 넣습니다. 이후 요청은 가장 먼저 비활성화된 슬롯부터 재사용합니다.
     void prewarmMonsters(std::size_t count, const std::string& type,
         Actor::Status status = { MAXHP, MAXHP, POWER, DEX },
-        const std::string& atlasKey = "Monster");
+        const std::string& atlasKey = "Monster",
+        MonsterBehaviorConfig behavior = {});
     /// 지정 수만큼 기본 비활성 투사체를 미리 생성해 전투 중 동적 할당을 줄입니다.
     void prewarmProjectiles(std::size_t count);
 
     /// 비활성 몬스터 슬롯을 재사용하거나 새 슬롯을 생성해 활성 몬스터를 반환합니다.
     Monster* acquireMonster(const std::string& type,
         Actor::Status status = { MAXHP, MAXHP, POWER, DEX },
-        const std::string& atlasKey = "Monster");
+        const std::string& atlasKey = "Monster",
+        MonsterBehaviorConfig behavior = {});
     /// 몬스터를 삭제하지 않고 비활성 슬롯으로 반환합니다.
     void releaseMonster(Monster* monster);
     /// 현재 활성화된 모든 몬스터에 대해 상호작용 매니저가 연산할 수 있도록 순회합니다.

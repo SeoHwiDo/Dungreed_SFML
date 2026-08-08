@@ -36,10 +36,20 @@ std::unordered_set<EntityId> CombatManager::resolvePlayerAttack(
 void CombatManager::resolveMonsterAttacks(float dt, Player& player,
     ObjectPoolingManager& objectPool,
     const std::unordered_set<EntityId>& playerHitMonsters) const {
+    if (player.dead()) {
+        return;
+    }
+
     const sf::FloatRect playerBounds = player.getGlobalBounds();
     objectPool.forEachActiveMonster([&](Monster& monster) {
         if (monster.dead() || playerHitMonsters.find(monster.getId()) != playerHitMonsters.end()) {
             // 동일 프레임에 플레이어가 맞힌 몬스터의 공격만 무효화합니다.
+            return;
+        }
+
+        const sf::Vector2f playerCenter = player.getBodyCenterPosition();
+        if (monster.state != MonsterState::Attack ||
+            !monster.isTargetInAttackRange(playerCenter)) {
             return;
         }
 
@@ -58,13 +68,11 @@ void CombatManager::resolveMonsterAttacks(float dt, Player& player,
             for (const ProjectileSpawnRequest& request : weapon->consumeProjectileRequests()) {
                 objectPool.acquireProjectile(request);
             }
-            monster.beginAttack();
             return;
         }
 
         if (monster.getCollision().checkHit(playerBounds).has_value()) {
             player.takeDamage(weapon->getStat().damage, origin);
-            monster.beginAttack();
         }
     });
 }
@@ -86,7 +94,7 @@ std::unordered_set<EntityId> CombatManager::updateProjectiles(
         }
 
         if (target == ProjectileTarget::Player) {
-            if (projectile.checkHit(player.getGlobalBounds())) {
+            if (!player.dead() && projectile.checkHit(player.getGlobalBounds())) {
                 player.takeDamage(projectile.getDamage(), projectile.getPosition());
                 toRelease.push_back(&projectile);
             }

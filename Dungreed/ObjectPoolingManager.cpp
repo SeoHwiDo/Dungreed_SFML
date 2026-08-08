@@ -1,10 +1,10 @@
 #include "ObjectPoolingManager.h"
 
 void ObjectPoolingManager::prewarmMonsters(std::size_t count,
-    const std::string& type, Actor::Status status, const std::string& atlasKey) {
+    const std::string& type, Actor::Status status, const std::string& atlasKey, MonsterBehaviorConfig behavior) {
     for (std::size_t i = 0; i < count; ++i) {
         MonsterSlot slot;
-        slot.object = std::make_unique<Monster>(type, status, atlasKey);
+        slot.object = std::make_unique<Monster>(type, status, atlasKey, behavior);
         slot.active = false;
         m_monsters.push_back(std::move(slot));
         enqueueInactiveMonster(m_monsters.size() - 1);
@@ -22,16 +22,16 @@ void ObjectPoolingManager::prewarmProjectiles(std::size_t count) {
 }
 
 Monster* ObjectPoolingManager::acquireMonster(const std::string& type,
-    Actor::Status status, const std::string& atlasKey) {
+    Actor::Status status, const std::string& atlasKey, MonsterBehaviorConfig behavior) {
     if (MonsterSlot* slot = dequeueInactiveMonster()) {
-        slot->object->resetForReuse(type, status, atlasKey);
+        slot->object->resetForReuse(type, status, atlasKey, behavior);
         slot->active = true;
         return slot->object.get();
     }
 
     // 비활성 큐가 비어 있을 때만 새 슬롯을 확장합니다.
     MonsterSlot slot;
-    slot.object = std::make_unique<Monster>(type, status, atlasKey);
+    slot.object = std::make_unique<Monster>(type, status, atlasKey, behavior);
     slot.active = true;
     Monster* result = slot.object.get();
     m_monsters.push_back(std::move(slot));

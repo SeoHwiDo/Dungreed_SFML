@@ -1,7 +1,9 @@
-﻿#pragma once
-#include"Actor.h"
-#include <string>
+#pragma once
+
+#include "Actor.h"
 #include <SFML/System/Vector2.hpp>
+#include <string>
+
 enum class MonsterState {
     Idle,
     Patrol,
@@ -9,43 +11,56 @@ enum class MonsterState {
     Attack,
     Dead
 };
+
 struct MonsterFSMData {
-    float m_stateTimer = 0.f;           // 상태 유지 시간 기록
-    float m_patrolDir = 1.f;            // 순찰 방향 (1.f: 우측, -1.f: 좌측)
-// 시야 및 공격 반경 (필요시 몬스터 타입별로 설정할 수도 있습니다)
+    float m_stateTimer = 0.f;
+    float m_patrolDir = 1.f;
     float DETECT_RANGE = 100.f;
     float ATTACK_RANGE = 50.f;
 };
+
+/// 몬스터 생성 시 전달하는 탐지·공격 거리 설정입니다.
+struct MonsterBehaviorConfig {
+    float detectRange = 100.f;
+    float attackRange = 50.f;
+    float moveSpeed = 300.f;
+};
+
 class Player;
 
 class Monster : public Actor {
 public:
-    /// 현재 몬스터 상태입니다. FSM 행동과 애니메이션 선택에 사용합니다.
     MonsterState state = MonsterState::Idle;
-    /// 몬스터 아틀라스와 공통 Monster_Die 애니메이션을 등록합니다.
+
     void init(const std::string& atlasKey = "Monster") override;
-    /// 타입·능력치·아틀라스를 설정하고 몬스터를 초기화합니다.
-    Monster(const std::string& type, Status _status = { MAXHP, MAXHP, POWER, DEX },const std::string & atlasKey = "Monster") :Actor(_status), m_type(type) { init(atlasKey); }
-    
-    /// 플레이어를 대상으로 FSM 행동, 공격 판정, 공통 물리/애니메이션을 한 프레임 갱신합니다.
+    Monster(const std::string& type,
+        Status status = { MAXHP, MAXHP, POWER, DEX },
+        const std::string& atlasKey = "Monster",
+        MonsterBehaviorConfig behavior = {})
+        : Actor(status), m_type(type) {
+        setBehavior(behavior);
+        init(atlasKey);
+    }
+
     void update(float dt, Player& player);
-    /// 풀에서 재사용할 때 상태 머신과 능력치를 초기화합니다.
-    void resetForReuse(Status newStatus);
-    /// 풀 슬롯을 다른 몬스터 종류로 재사용할 때 타입·애니메이션·상태를 함께 초기화합니다.
-    void resetForReuse(const std::string& type, Status newStatus, const std::string& atlasKey = "Monster");
-    /// 근접 공격 상태로 전환합니다. 실제 피해 적용은 전투 매니저가 담당합니다.
+    void resetForReuse(Status newStatus, MonsterBehaviorConfig behavior = {});
+    void resetForReuse(const std::string& type, Status newStatus,
+        const std::string& atlasKey = "Monster", MonsterBehaviorConfig behavior = {});
+
     void beginAttack();
-    /// 원거리 공격 쿨다운을 갱신하고 공격 가능 여부를 반환합니다.
     bool consumeAttackCooldown(float dt);
-    /// 사망 애니메이션이 끝나 풀 슬롯을 회수해도 되는지 반환합니다.
     bool readyForPoolRelease() const;
+    bool isFlying() const { return m_isFlying; }
+    bool isTargetInAttackRange(const sf::Vector2f& targetPosition) const;
+
 private:
     std::string m_type;
     int dropGold = 0;
     MonsterFSMData fsm;
     float m_attackCooldown = 0.f;
-    /// 상태가 바뀔 때만 타이머·이동값·애니메이션을 새 상태에 맞게 초기화합니다.
+    bool m_isFlying = false;
+
+    void setBehavior(MonsterBehaviorConfig behavior);
     void changeState(MonsterState newState);
-    /// 플레이어와의 거리로 대기·순찰·추적·공격 행동을 결정합니다.
     void handleFSM(float dt, const Player& player);
 };

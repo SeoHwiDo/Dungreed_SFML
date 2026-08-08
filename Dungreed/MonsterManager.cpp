@@ -10,7 +10,7 @@ void MonsterManager::update(float dt, Player& player,
     std::vector<Monster*> finished;
     objectPool.forEachActiveMonster([&](Monster& monster) {
         monster.update(dt, player);
-        Collision::resolveMapCollision(monster, tileMap);
+        Collision::resolveMapCollision(monster, tileMap, monster.isFlying());
         if (monster.readyForPoolRelease()) {
             finished.push_back(&monster);
         }

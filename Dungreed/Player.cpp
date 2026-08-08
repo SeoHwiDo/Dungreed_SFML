@@ -5,7 +5,7 @@ void Player::init(const std::string& atlasKey) {
     Actor::init(atlasKey);
     if (!equipment) {
         auto defaultWeapon = std::make_shared<Equip>("ShortSword", EquipStat{ 10.f, 2.5f, 40.f });
-        defaultWeapon->init("Equip", "ShortSword");
+        defaultWeapon->init("Equip", "ShortSword_Idle-00");
         setEquipment(defaultWeapon);
     }
     //애니메이션 가져오기
