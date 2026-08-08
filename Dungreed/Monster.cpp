@@ -4,6 +4,20 @@
 #include "ResourceManager.h"
 #include <cmath>
 #include <cstdlib>
+#include <iostream>
+
+namespace {
+const char* toString(MonsterState state) {
+    switch (state) {
+    case MonsterState::Idle: return "Idle";
+    case MonsterState::Patrol: return "Patrol";
+    case MonsterState::Chase: return "Chase";
+    case MonsterState::Attack: return "Attack";
+    case MonsterState::Dead: return "Dead";
+    }
+    return "Unknown";
+}
+}
 
 void Monster::init(const std::string& atlasKey) {
     m_isFlying = (m_type == "Bat");
@@ -100,6 +114,12 @@ void Monster::changeState(MonsterState newState) {
         return;
     }
 
+        if (state != newState) {
+        std::cout << "[MonsterFSM] type=" << m_type
+                  << ", id=" << getId()
+                  << ", " << toString(state)
+                  << " -> " << toString(newState) << '\n';
+    }
     state = newState;
     fsm.m_stateTimer = 0.f;
 
@@ -209,7 +229,15 @@ void Monster::handleFSM(float dt, const Player& player) {
         break;
 
     case MonsterState::Attack:
-        if (animator.isFinished() || fsm.m_stateTimer > 1.f) {
+        if (m_type == "SkelDog") {
+            setHorizontalInput(directionX * 1.5f);
+            if (sprite) {
+                sprite->setScale({ directionX, 1.f });
+            }
+            if (fsm.m_stateTimer > 0.45f) {
+                changeState(MonsterState::Idle);
+            }
+        } else if (animator.isFinished() || fsm.m_stateTimer > 1.f) {
             changeState(MonsterState::Idle);
         }
         break;
