@@ -1,4 +1,4 @@
-#include <SFML/Graphics.hpp>
+﻿#include <SFML/Graphics.hpp>
 #include <Windows.h>
 #include <iostream>
 #include <vector>
@@ -123,17 +123,16 @@ int main() {
     }
 
     ObjectPoolingManager objectPool;
-    objectPool.prewarmMonsters(4, skelDogData->id, skelDogData->status,
-        skelDogData->atlasKey, skelDogData->behavior);
+    objectPool.prewarmMonsters(4, skelDogData->id, skelDogData->status,skelDogData->atlasKey, skelDogData->behavior);
     objectPool.prewarmProjectiles(32);
     MonsterManager monsterManager;
     CombatManager combatManager;
-    Monster* meleeMonster = objectPool.acquireMonster(skelDogData->id, skelDogData->status,
-        skelDogData->atlasKey, skelDogData->behavior);
-    Monster* rangedMonster = objectPool.acquireMonster(batData->id, batData->status,
-        batData->atlasKey, batData->behavior);
+    Monster* meleeMonster = objectPool.acquireMonster(skelDogData->id, skelDogData->status,skelDogData->atlasKey, skelDogData->behavior);
+    Monster* rangedMonster = objectPool.acquireMonster(batData->id, batData->status,batData->atlasKey, batData->behavior);
+    
     meleeMonster->setEquipment(gameData.createEquip(skelDogData->weaponId));
     rangedMonster->setEquipment(gameData.createEquip(batData->weaponId));
+    
     if (const auto monsterSpawn = room.getMonsterSpawnPosition(tileMap)) {
         meleeMonster->move(monsterSpawn->x, monsterSpawn->y);
         rangedMonster->move(monsterSpawn->x + 180.f, monsterSpawn->y - 120.f);

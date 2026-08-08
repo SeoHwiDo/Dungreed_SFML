@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <SFML/Graphics/Rect.hpp>
 #include <SFML/Graphics/View.hpp>
@@ -11,7 +11,7 @@ class Camera {
 public:
     /// zoom은 1.0f가 원래 화면 크기이며, 값이 클수록 더 확대됩니다.
     Camera(const sf::Vector2u& windowSize, const sf::FloatRect& mapBounds,
-        float zoom = 1.5f);
+        float zoom = 4.f);
 
     /// targetPosition을 바로 카메라 중심으로 적용합니다. 보간을 사용하지 않습니다.
     void update(const sf::Vector2f& targetPosition);
