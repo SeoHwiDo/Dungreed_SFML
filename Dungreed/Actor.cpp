@@ -1,14 +1,14 @@
-﻿#include "Actor.h"
+#include "Actor.h"
 
 
 
 #include <iostream>
 
 Actor::Actor() {
-    status.maxHp = MAXHP;
+    status.maxHp = kDefaultMaxHp;
     status.tmpHp = status.maxHp;
-    status.dex = DEX;
-    status.power = POWER;
+    status.dex = kDefaultDex;
+    status.power = kDefaultPower;
 }
 
 void Actor::init(const std::string& atlasKey) {
@@ -54,7 +54,7 @@ std::optional<sf::FloatRect> Actor::getAttackHitbox() const {
 }
 
 void Actor::takeDamage(float damage) {
-    // 공격자 정보가 없는 기존 호출도 기본 방향으로 넉백을 적용합니다.
+    // 공격자 정보가 없으면 액터의 왼쪽을 기준으로 넉백 방향을 정합니다.
     const sf::Vector2f center = getCenterPosition();
     takeDamage(damage, { center.x - 1.f, center.y });
 }
@@ -65,9 +65,9 @@ void Actor::takeDamage(float damage, const sf::Vector2f& attackerPosition) {
     status.tmpHp -= damage;
     const float knockbackDirection =
         (getCenterPosition().x >= attackerPosition.x) ? 1.f : -1.f;
-    m_knockbackVelocity = { knockbackDirection * KNOCKBACK_SPEED, 100.f };
-    m_knockbackTimer = KNOCKBACK_DURATION;
-    m_hitTimer = HIT_COLOR_DURATION;
+    m_knockbackVelocity = { knockbackDirection * kKnockbackSpeed, 100.f };
+    m_knockbackTimer = kKnockbackDuration;
+    m_hitTimer = kHitColorDuration;
 
     std::cout << "[Hit] damage=" << damage
               << ", hp=" << status.tmpHp
@@ -81,18 +81,18 @@ void Actor::takeDamage(float damage, const sf::Vector2f& attackerPosition) {
     }
 }
 
-//=================기본 액션 함수=====================
+// 점프 처리
 
 bool Actor::jump() {
     if (movement.isGrounded) {
-        movement.velocity.y = movement.jumpForce; // 점프 시 위로 솟구침
+        movement.velocity.y = movement.jumpForce; // 위쪽 초기 속도를 적용합니다.
         movement.isGrounded = false;
     }
-    // 바닥에 닿지 않았으면 점프(공중) 상태이므로 true 반환
+    // 공중 상태이면 점프가 진행 중이므로 true를 반환합니다.
     return !movement.isGrounded;
 }
 
-//=================물리연산용 함수=====================
+// 물리 처리
 sf::Vector2f Actor::getCenterPosition()const {
     if (!sprite) return { 0.f, 0.f };
     sf::Vector2f pos = sprite->getPosition();
@@ -101,9 +101,9 @@ sf::Vector2f Actor::getCenterPosition()const {
 }
 
 void Actor::setBottomCenterOrigin() {
-    if (sprite) { // sprite가 생성되어 있는지 확인
+    if (sprite) { // 스프라이트가 초기화된 경우에만 원점을 설정합니다.
         sf::FloatRect bounds = sprite->getLocalBounds();
-        // SFML 3.1.0은 Vector2f 구조체를 인자로 받습니다
+        // SFML 3.1은 Vector2f 형태로 스프라이트 원점을 설정합니다.
         sprite->setOrigin({ bounds.size.x / 2.f, bounds.size.y });
     }
 }
@@ -112,12 +112,13 @@ void Actor::setHorizontalInput(float dirX) {
     movement.velocity.x = dirX * movement.moveSpeed;
 }
 void Actor::updatePhysics(float dt) {
-    // 1. 중력 적용
+    m_previousGlobalBounds = getGlobalBounds();
+    // 공중 상태에서만 중력을 누적합니다.
     if (!movement.isGrounded) {
         movement.velocity.y += movement.gravity * dt;
     }
 
-    // 2. 이동 적용 (피격 넉백은 일반 이동과 합산)
+    // 일반 이동 속도와 피격 넉백 속도를 합산해 적용합니다.
     sf::Vector2f totalVelocity = movement.velocity;
     if (m_knockbackTimer > 0.f) {
         totalVelocity += m_knockbackVelocity;
@@ -165,7 +166,7 @@ sf::Vector2f Actor::getBodyCenterPosition() const {
     };
 }
 
-//============기본 로직===============
+// 프레임 갱신
 void Actor::update(float dt) {
     updatePhysics(dt);
     updateHitFeedback(dt);
@@ -176,7 +177,7 @@ void Actor::render(sf::RenderWindow& window) {
     if (sprite) {
         window.draw(*sprite);
     }
-    // 장비 렌더링 추가
+    // 장비는 본체 스프라이트 뒤에 이어서 렌더링합니다.
     if (equipment) {
         equipment->render(window);
     }

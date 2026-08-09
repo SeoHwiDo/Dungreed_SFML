@@ -1,18 +1,18 @@
-﻿#pragma once
-#include<SFML/Graphics.hpp>
+#pragma once
+#include <SFML/Graphics.hpp>
 #include <optional> 
 #include <string>   
 //-----------------------------------------------
-#include"Animator.h"
+#include "Animator.h"
 #include "ResourceManager.h"
-#include"Collision.h"
-#include"Equip.h"
+#include "Collision.h"
+#include "Equip.h"
 
 class Equip;
 
-constexpr float MAXHP = 100.0f;
-constexpr float POWER = 10.0f;
-constexpr float DEX = 1.0f;
+constexpr float kDefaultMaxHp = 100.0f;
+constexpr float kDefaultPower = 10.0f;
+constexpr float kDefaultDex = 1.0f;
 
 struct MovementData {
     sf::Vector2f velocity{ 0.f, 0.f };
@@ -35,7 +35,7 @@ public:
     /// 기본 능력치로 액터를 생성하고, 이후 init으로 아틀라스 스프라이트를 준비합니다.
     Actor();
     /// 지정한 능력치로 액터를 생성합니다. 파생 클래스 생성자에서 초기 능력치를 넘길 때 사용합니다.
-    Actor(Status _status) :status(_status){};
+    Actor(Status initialStatus) : status(initialStatus) {};
 
     virtual ~Actor() = default;
 
@@ -45,6 +45,13 @@ public:
     virtual void resetForReuse(Status newStatus);
     /// 월드 좌표만큼 이동시키고 이동 직후 피격 상자를 동기화합니다. 물리 보정 없이 순간 이동할 때 사용합니다.
     inline void move(float dx, float dy) { if (sprite) { sprite->move({ dx,dy }); col.updateHitbox(sprite->getGlobalBounds()); } }
+    inline void setPosition(const sf::Vector2f& position) {
+        if (sprite) {
+            sprite->setPosition(position);
+            m_previousGlobalBounds = sprite->getGlobalBounds();
+            col.updateHitbox(m_previousGlobalBounds);
+        }
+    }
     /// 현재 체력이 0 이하인지 반환합니다. 사망 상태 전환과 입력 차단의 기준으로 사용합니다.
     inline bool dead() const { return status.tmpHp <= 0; }
     /// 기본 공격력 값을 반환합니다. 장비 공격력과 함께 피해량 계산에 사용합니다.
@@ -79,6 +86,7 @@ public:
     inline sf::Vector2f getPosition() const { return sprite ? sprite->getPosition() : sf::Vector2f{ 0.f, 0.f }; }
     /// 현재 스프라이트의 월드 경계를 반환합니다. 맵 충돌 검사에서 사용합니다.
     inline sf::FloatRect getGlobalBounds() const { return sprite ? sprite->getGlobalBounds() : sf::FloatRect{}; }
+    inline const sf::FloatRect& getPreviousGlobalBounds() const { return m_previousGlobalBounds; }
     /// 속도·중력·착지 상태를 수정할 수 있는 이동 데이터를 반환합니다. 충돌 해결기에서 사용합니다.
     inline MovementData& getMovement() { return movement; }
     /// 현재 피격 상자를 읽기 전용으로 반환합니다. 공격 충돌 검사에서 사용합니다.
@@ -97,6 +105,7 @@ protected:
     // std::list<Item> Inventory;       
     std::shared_ptr<Equip> equipment; 
     Collision col;
+    sf::FloatRect m_previousGlobalBounds;
     /// 중력·일반 속도·넉백 속도를 합쳐 이동하고 피격 상자를 갱신합니다.
     void updatePhysics(float dt);
     /// 선택된 애니메이터를 한 프레임 진행시킵니다.
@@ -111,9 +120,9 @@ protected:
     float m_hitTimer = 0.f;
     float m_knockbackTimer = 0.f;
     sf::Vector2f m_knockbackVelocity{ 0.f, 0.f };
-    static constexpr float HIT_COLOR_DURATION = 1.f;
-    static constexpr float KNOCKBACK_DURATION = 0.12f;
-    static constexpr float KNOCKBACK_SPEED = 350.f;
+    static constexpr float kHitColorDuration = 1.f;
+    static constexpr float kKnockbackDuration = 0.12f;
+    static constexpr float kKnockbackSpeed = 350.f;
 
 private:
     inline static EntityId s_nextEntityId = 1;

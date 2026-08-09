@@ -1,4 +1,4 @@
-﻿#include "Animator.h"
+#include "Animator.h"
 #include<iostream>
 
 void Animator::addAnimation(const std::string& name, const AnimationClip& clip) {
@@ -63,4 +63,13 @@ void Animator::update(float dt, sf::Sprite& sprite) {
 }
 bool Animator::isFinished() const {
     return !m_isPlaying;
+}
+
+bool Animator::isOnLastFrame() const {
+    const auto animationIt = m_animations.find(m_currentAnimation);
+    if (animationIt == m_animations.end() || !animationIt->second.frames ||
+        animationIt->second.frames->empty()) {
+        return false;
+    }
+    return m_currentFrame + 1 >= animationIt->second.frames->size();
 }
