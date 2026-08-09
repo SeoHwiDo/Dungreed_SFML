@@ -1,0 +1,267 @@
+{
+  "version": 1,
+  "floors": [
+    {
+      "id": "floor_01",
+      "name": "Floor 01",
+      "roomReferences": [
+        {
+          "id": "floor01_ref_start",
+          "roomType": "Start",
+          "layout": {
+            "generator": "StyledRoom",
+            "width": 40,
+            "height": 30,
+            "outlineWidth": 2,
+            "platforms": [
+              {
+                "x": 13,
+                "y": 9,
+                "length": 5
+              }
+            ]
+          }
+        },
+        {
+          "id": "floor01_ref_monster",
+          "roomType": "Monster",
+          "layout": {
+            "generator": "StyledRoom",
+            "width": 40,
+            "height": 30,
+            "outlineWidth": 2,
+            "platforms": [
+              {
+                "x": 10,
+                "y": 5,
+                "length": 5
+              },
+              {
+                "x": 6,
+                "y": 8,
+                "length": 3
+              },
+              {
+                "x": 18,
+                "y": 8,
+                "length": 3
+              },
+              {
+                "x": 11,
+                "y": 10,
+                "length": 4
+              }
+            ]
+          }
+        },
+        {
+          "id": "floor01_ref_hut",
+          "roomType": "Hut",
+          "layout": {
+            "generator": "StyledRoom",
+            "width": 40,
+            "height": 30,
+            "outlineWidth": 2,
+            "platforms": [
+              {
+                "x": 13,
+                "y": 7,
+                "length": 5
+              },
+              {
+                "x": 12,
+                "y": 10,
+                "length": 3
+              }
+            ]
+          }
+        },
+        {
+          "id": "floor01_ref_boss",
+          "roomType": "Boss",
+          "layout": {
+            "generator": "StyledRoom",
+            "width": 56,
+            "height": 40,
+            "outlineWidth": 2,
+            "platforms": [
+              {
+                "x": 10,
+                "y": 14,
+                "length": 25
+              },
+              {
+                "x": 8,
+                "y": 9,
+                "length": 6
+              },
+              {
+                "x": 40,
+                "y": 9,
+                "length": 6
+              },
+              {
+                "x": 20,
+                "y": 5,
+                "length": 6
+              }
+            ]
+          }
+        }
+      ],
+      "rooms": [
+        {
+          "id": "floor01_start_01",
+          "roomReferenceId": "floor01_ref_start",
+          "role": "Start",
+          "availableDoorPositions": [ "Up", "Down", "Left", "Right" ],
+          "minDoorCount": 1,
+          "maxDoorCount": 1,
+          "doorConnections": {
+            "Up": null,
+            "Down": null,
+            "Left": null,
+            "Right": null
+          },
+          "monsters": []
+        },
+        {
+          "id": "floor01_monster_01",
+          "roomReferenceId": "floor01_ref_monster",
+          "role": "Monster",
+          "availableDoorPositions": [ "Up", "Down", "Left", "Right" ],
+          "minDoorCount": 2,
+          "maxDoorCount": 2,
+          "doorConnections": {
+            "Up": null,
+            "Down": null,
+            "Left": null,
+            "Right": null
+          },
+          "monsters": [],
+          "spawnPhases": {
+            "minPhaseCount": 2,
+            "maxPhaseCount": 3,
+            "minMonstersPerPhase": 3,
+            "maxMonstersPerPhase": 4,
+            "phaseDelay": 1.2,
+            "activationDelay": 0.9,
+            "monsterPool": [
+              "Banshee",
+              "Bat",
+              "BigWhiteSkel",
+              "LittleGhost",
+              "Minotaurs",
+              "SkelDog"
+            ]
+          }
+        },
+        {
+          "id": "floor01_monster_02",
+          "roomReferenceId": "floor01_ref_monster",
+          "role": "Monster",
+          "availableDoorPositions": [ "Up", "Down", "Left", "Right" ],
+          "minDoorCount": 2,
+          "maxDoorCount": 2,
+          "doorConnections": {
+            "Up": null,
+            "Down": null,
+            "Left": null,
+            "Right": null
+          },
+          "monsters": [],
+          "spawnPhases": {
+            "minPhaseCount": 2,
+            "maxPhaseCount": 3,
+            "minMonstersPerPhase": 3,
+            "maxMonstersPerPhase": 4,
+            "phaseDelay": 1.2,
+            "activationDelay": 0.9,
+            "monsterPool": [
+              "Banshee",
+              "Bat",
+              "BigWhiteSkel",
+              "LittleGhost",
+              "Minotaurs",
+              "SkelDog"
+            ]
+          }
+        },
+        {
+          "id": "floor01_monster_03",
+          "roomReferenceId": "floor01_ref_monster",
+          "role": "Monster",
+          "availableDoorPositions": [ "Up", "Down", "Left", "Right" ],
+          "minDoorCount": 2,
+          "maxDoorCount": 2,
+          "doorConnections": {
+            "Up": null,
+            "Down": null,
+            "Left": null,
+            "Right": null
+          },
+          "monsters": [],
+          "spawnPhases": {
+            "minPhaseCount": 2,
+            "maxPhaseCount": 3,
+            "minMonstersPerPhase": 3,
+            "maxMonstersPerPhase": 4,
+            "phaseDelay": 1.2,
+            "activationDelay": 0.9,
+            "monsterPool": [
+              "Banshee",
+              "Bat",
+              "BigWhiteSkel",
+              "LittleGhost",
+              "Minotaurs",
+              "SkelDog"
+            ]
+          }
+        },
+        {
+          "id": "floor01_hut_01",
+          "roomReferenceId": "floor01_ref_hut",
+          "role": "Hut",
+          "availableDoorPositions": [ "Up", "Down", "Left", "Right" ],
+          "minDoorCount": 2,
+          "maxDoorCount": 2,
+          "doorConnections": {
+            "Up": null,
+            "Down": null,
+            "Left": null,
+            "Right": null
+          },
+          "monsters": []
+        },
+        {
+          "id": "floor01_boss_01",
+          "roomReferenceId": "floor01_ref_boss",
+          "role": "Boss",
+          "availableDoorPositions": [ "Up", "Down", "Left", "Right" ],
+          "minDoorCount": 1,
+          "maxDoorCount": 1,
+          "doorConnections": {
+            "Up": null,
+            "Down": null,
+            "Left": null,
+            "Right": null
+          },
+          "monsters": []
+        }
+      ],
+      "connectionGeneration": {
+        "strategy": "RandomPath",
+        "startRoomId": "floor01_start_01",
+        "bossRoomId": "floor01_boss_01",
+        "shuffleRoomIds": [
+          "floor01_monster_01",
+          "floor01_monster_02",
+          "floor01_monster_03",
+          "floor01_hut_01"
+        ],
+        "doorSelection": "RandomUnused",
+        "resolvedConnections": []
+      }
+    }
+  ]
+}

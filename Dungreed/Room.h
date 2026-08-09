@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 #include <array>
 #include <cstdint>
 #include <optional>
@@ -71,12 +71,37 @@ struct RoomLayout {
     std::vector<RoomCell> cells;
 };
 
+struct RoomMonsterSpawn {
+    std::string monsterId;
+    sf::Vector2f positionOffset{};
+    float activationDelay = 1.f;
+};
+
+struct RoomMonsterPhaseConfig {
+    int minPhaseCount = 0;
+    int maxPhaseCount = 0;
+    int minMonstersPerPhase = 0;
+    int maxMonstersPerPhase = 0;
+    float phaseDelay = 1.2f;
+    float activationDelay = 0.9f;
+    std::vector<std::string> monsterPool;
+
+    bool isEnabled() const {
+        return minPhaseCount > 0 && maxPhaseCount >= minPhaseCount &&
+            minMonstersPerPhase > 0 &&
+            maxMonstersPerPhase >= minMonstersPerPhase &&
+            !monsterPool.empty();
+    }
+};
+
 struct RoomInfo {
     std::vector<Door> doors;
     std::optional<sf::Vector2u> playerSpawnCell;
     DoorPositions doorPositions{ false, false, true, true };
     RoomType type = RoomType::Start;
     bool isClear = false;
+    std::vector<RoomMonsterSpawn> monsterSpawns;
+    RoomMonsterPhaseConfig monsterPhaseConfig;
     RoomLayout layout;
 };
 
@@ -117,10 +142,15 @@ class Room {
 public:
     /// 방 종류와 연결 문 방향으로 하드코딩된 레퍼런스 레이아웃을 생성합니다.
     explicit Room(RoomType type = RoomType::Start,
-        DoorPositions doorPositions = { true, true, true, true });
+        DoorPositions doorPositions = { true, true, true, true },
+        std::vector<RoomMonsterSpawn> monsterSpawns = {});
 
     /// 하드코딩된 레퍼런스 방을 다시 읽고 지정한 방향에만 문 확장 공간을 만듭니다.
     void loadReference(RoomType type, DoorPositions doorPositions = { false, false, true, true });
+    void loadLayout(RoomType type, RoomLayout layout, DoorPositions doorPositions);
+    void setMonsterSpawns(std::vector<RoomMonsterSpawn> monsterSpawns);
+    void setMonsterPhaseConfig(RoomMonsterPhaseConfig config);
+    void setClear(bool isClear);
 
     /// RoomCell 레이아웃을 TileConfig로 변환해 타일맵 렌더링 및 충돌 데이터를 생성합니다.
     /// tileSet에는 벽·문·백타일·플랫폼에 대응하는 아틀라스 프레임 이름을 전달합니다.
@@ -131,6 +161,11 @@ public:
     std::optional<sf::Vector2f> getPlayerSpawnPosition(const TileMap& tileMap) const;
     /// BackTile 중 스폰에 안전한 빈 셀 하나를 선택해 타일 중앙 좌표를 반환합니다. 후보가 없으면 nullopt입니다.
     std::optional<sf::Vector2f> getMonsterSpawnPosition(const TileMap& tileMap) const;
+    std::vector<sf::Vector2f> getMonsterSpawnPositions(const TileMap& tileMap) const;
+    std::optional<DoorPosition> getEnteredDoor(
+        const sf::FloatRect& actorBounds,
+        const sf::FloatRect& previousActorBounds,
+        const TileMap& tileMap) const;
 
     /// 현재 방의 레이아웃·문·스폰 정보를 읽기 전용으로 반환합니다.
     inline const RoomInfo& getInfo() const { return info; }

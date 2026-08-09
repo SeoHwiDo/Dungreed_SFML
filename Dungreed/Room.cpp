@@ -1,6 +1,9 @@
-﻿#include "Room.h"
+#include "Room.h"
 
+#include <algorithm>
+#include <cmath>
 #include <initializer_list>
+#include <utility>
 
 namespace {
 struct PlatformSpec {
@@ -40,7 +43,8 @@ void applyDoorways(RoomLayout& layout, const DoorPositions& positions) {
         const unsigned int leftEdge = centerStart - 1;
         const unsigned int rightEdge = centerStart + kCenterDoorWidth;
         setCell(leftEdge, 0, RoomCell::TopLeftCorner);
-        for (unsigned int x = centerStart; x < centerStart + kCenterDoorWidth; ++x) {
+        for (unsigned int x = centerStart;
+            x < centerStart + kCenterDoorWidth; ++x) {
             setCell(x, 0, RoomCell::Ceiling);
             setCell(x, topWallY - 1, RoomCell::Door);
         }
@@ -53,15 +57,18 @@ void applyDoorways(RoomLayout& layout, const DoorPositions& positions) {
         setCell(centerStart + kCenterDoorWidth - 1, topWallY + 1,
             RoomCell::BackDoorTopRight);
 
-        for (unsigned int x = centerStart; x < centerStart + kCenterDoorWidth; ++x) {
+        for (unsigned int x = centerStart;
+            x < centerStart + kCenterDoorWidth; ++x) {
             setCell(x, topWallY, RoomCell::Door);
         }
     }
+
     if (hasDoor(positions, DoorPosition::Down)) {
         const unsigned int leftEdge = centerStart - 1;
         const unsigned int rightEdge = centerStart + kCenterDoorWidth;
         setCell(leftEdge, height - 1, RoomCell::BottomLeftCorner);
-        for (unsigned int x = centerStart; x < centerStart + kCenterDoorWidth; ++x) {
+        for (unsigned int x = centerStart;
+            x < centerStart + kCenterDoorWidth; ++x) {
             setCell(x, groundY, RoomCell::Door);
             setCell(x, groundY + 1, RoomCell::Door);
             setCell(x, height - 1, RoomCell::Ground);
@@ -74,38 +81,57 @@ void applyDoorways(RoomLayout& layout, const DoorPositions& positions) {
         setCell(centerStart, groundY - 1, RoomCell::BackDoorBottomLeft);
         setCell(centerStart + kCenterDoorWidth - 1, groundY - 1,
             RoomCell::BackDoorBottomRight);
-
     }
 
     if (hasDoor(positions, DoorPosition::Left)) {
         setCell(0, sideDoorTop - 1, RoomCell::TopLeftCorner);
         setCell(1, sideDoorTop - 1, RoomCell::Ceiling);
         setCell(kOutlineWidth, sideDoorTop - 1, RoomCell::DoorLeftCorner);
-        setCell(kOutlineWidth, groundY, RoomCell::Ground);
 
         for (unsigned int y = sideDoorTop; y < groundY; ++y) {
-            setCell(0, y, RoomCell::LeftWall);
-            setCell(1, y, RoomCell::Door);
-            setCell(kOutlineWidth, y, RoomCell::Door);
+            for (unsigned int x = 0; x <= kOutlineWidth; ++x) {
+                setCell(x, y, RoomCell::Door);
+            }
         }
-        setCell(kOutlineWidth + 1, sideDoorTop, RoomCell::BackDoorTopLeft);
+        setCell(0, groundY, RoomCell::BottomLeftCorner);
+        for (unsigned int x = 1; x <= kOutlineWidth; ++x) {
+            setCell(x, groundY, RoomCell::Ground);
+        }
+        setCell(kOutlineWidth + 1, sideDoorTop,
+            RoomCell::BackDoorTopLeft);
+
+        for (unsigned int y = groundY + 1; y < height; ++y) {
+            setCell(0, y, RoomCell::LeftWall);
+            setCell(1, y, RoomCell::BackTile);
+            setCell(kOutlineWidth, y, RoomCell::BackTile);
+        }
     }
+
     if (hasDoor(positions, DoorPosition::Right)) {
         const unsigned int rightWallX = width - kOutlineWidth - 1;
         setCell(rightWallX, sideDoorTop - 1, RoomCell::DoorRightCorner);
         setCell(width - 2, sideDoorTop - 1, RoomCell::Ceiling);
         setCell(width - 1, sideDoorTop - 1, RoomCell::TopRightCorner);
-        setCell(rightWallX, groundY, RoomCell::Ground);
 
         for (unsigned int y = sideDoorTop; y < groundY; ++y) {
-            setCell(rightWallX, y, RoomCell::Door);
-            setCell(width - 2, y, RoomCell::Door);
+            for (unsigned int x = rightWallX; x < width; ++x) {
+                setCell(x, y, RoomCell::Door);
+            }
+        }
+        for (unsigned int x = rightWallX; x < width - 1; ++x) {
+            setCell(x, groundY, RoomCell::Ground);
+        }
+        setCell(width - 1, groundY, RoomCell::BottomRightCorner);
+        setCell(rightWallX - 1, sideDoorTop,
+            RoomCell::BackDoorTopRight);
+
+        for (unsigned int y = groundY + 1; y < height; ++y) {
+            setCell(rightWallX, y, RoomCell::BackTile);
+            setCell(width - 2, y, RoomCell::BackTile);
             setCell(width - 1, y, RoomCell::RightWall);
         }
-        setCell(rightWallX - 1, sideDoorTop, RoomCell::BackDoorTopRight);
     }
 }
-
 /// 지정 크기의 기본 방을 만들고, 벽·백타일·스폰 지점 및 길이 3~5의 공중 플랫폼을 배치합니다.
 /// 실제 문 확장 처리는 레이아웃 생성 후 applyDoorways가 담당합니다.
 RoomLayout makeStyledRoom(unsigned int width, unsigned int height,
@@ -166,41 +192,163 @@ RoomLayout makeStyledRoom(unsigned int width, unsigned int height,
 }
 
 /// 생성 시 바로 레퍼런스 레이아웃을 불러와 Room 객체가 항상 유효한 방 정보를 갖게 합니다.
-Room::Room(RoomType type, DoorPositions doorPositions) {
+Room::Room(RoomType type, DoorPositions doorPositions,
+    std::vector<RoomMonsterSpawn> monsterSpawns) {
     loadReference(type, doorPositions);
+    info.monsterSpawns = std::move(monsterSpawns);
 }
 
 /// 기본 레이아웃에 문 확장을 덮어쓴 뒤, 최종 Door 셀과 플레이어 스폰 셀을 RoomInfo에 다시 수집합니다.
 void Room::loadReference(RoomType type, DoorPositions doorPositions) {
+    loadLayout(type, getReferenceLayout(type), doorPositions);
+}
+
+void Room::loadLayout(RoomType type, RoomLayout layout, DoorPositions doorPositions) {
     info.type = type;
     info.isClear = false;
     info.doorPositions = doorPositions;
-    info.layout = getReferenceLayout(type);
+    info.layout = std::move(layout);
     applyDoorways(info.layout, doorPositions);
-    // 문 벡터는 실제 Door 셀 개수가 아니라 Up, Down, Left, Right 방향별 4개 슬롯을 가집니다.
-    // 따라서 문 폭이 3타일이어도 하나의 문은 하나의 연결 정보만 보관합니다.
-    info.doors.clear();
     info.doors.resize(4);
     for (std::size_t index = 0; index < info.doors.size(); ++index) {
         info.doors[index].isOpen = doorPositions[index];
         info.doors[index].next = nullptr;
     }
     info.playerSpawnCell.reset();
-
     for (unsigned int y = 0; y < info.layout.height; ++y) {
         for (unsigned int x = 0; x < info.layout.width; ++x) {
-            const RoomCell cell = info.layout.cells[x + y * info.layout.width];
-            if (cell == RoomCell::SpawnPoint) {
+            if (info.layout.cells[x + y * info.layout.width] == RoomCell::SpawnPoint) {
                 info.playerSpawnCell = { x, y };
             }
         }
     }
 }
+void Room::setMonsterSpawns(std::vector<RoomMonsterSpawn> monsterSpawns) {
+    info.monsterSpawns = std::move(monsterSpawns);
+}
 
-/// 방향 슬롯에 연결할 다음 Room 객체를 기록합니다. 문이 없는 방향은 전환에 사용되지 않습니다.
+void Room::setMonsterPhaseConfig(RoomMonsterPhaseConfig config) {
+    info.monsterPhaseConfig = std::move(config);
+}
+
+void Room::setClear(bool isClear) {
+    info.isClear = isClear;
+}
+
+std::optional<DoorPosition> Room::getEnteredDoor(
+    const sf::FloatRect& actorBounds,
+    const sf::FloatRect& previousActorBounds,
+    const TileMap& tileMap) const {
+    const sf::Vector2f tileSize = tileMap.getTileSize();
+    if (tileSize.x <= 0.f || tileSize.y <= 0.f ||
+        info.layout.width < 2 * kOutlineWidth + kCenterDoorWidth ||
+        info.layout.height < 2 * kOutlineWidth + kDoorHeight + 1) {
+        return std::nullopt;
+    }
+
+    const unsigned int centerStart =
+        (info.layout.width - kCenterDoorWidth) / 2;
+    const unsigned int groundY =
+        info.layout.height - kOutlineWidth - 1;
+    const unsigned int sideDoorTop = groundY - kDoorHeight;
+    const unsigned int rightWallX =
+        info.layout.width - kOutlineWidth - 1;
+
+    const auto makeBounds = [&tileSize](unsigned int x, unsigned int y,
+        unsigned int width, unsigned int height) {
+        return sf::FloatRect(
+            { static_cast<float>(x) * tileSize.x,
+              static_cast<float>(y) * tileSize.y },
+            { static_cast<float>(width) * tileSize.x,
+              static_cast<float>(height) * tileSize.y });
+    };
+    const std::array<std::pair<DoorPosition, sf::FloatRect>, 4> triggers{
+        std::pair{ DoorPosition::Up,
+            makeBounds(centerStart, kOutlineWidth - 1,
+                kCenterDoorWidth, 2) },
+        std::pair{ DoorPosition::Down,
+            makeBounds(centerStart, groundY, kCenterDoorWidth, 2) },
+        std::pair{ DoorPosition::Left,
+            makeBounds(0, sideDoorTop, kOutlineWidth + 1,
+                kDoorHeight) },
+        std::pair{ DoorPosition::Right,
+            makeBounds(rightWallX, sideDoorTop,
+                info.layout.width - rightWallX, kDoorHeight) }
+    };
+
+    const auto intersectsMovement =
+        [&](const sf::FloatRect& triggerBounds) {
+        if (actorBounds.findIntersection(triggerBounds) ||
+            previousActorBounds.findIntersection(triggerBounds)) {
+            return true;
+        }
+
+        const sf::Vector2f start{
+            previousActorBounds.position.x +
+                previousActorBounds.size.x * 0.5f,
+            previousActorBounds.position.y +
+                previousActorBounds.size.y * 0.5f
+        };
+        const sf::Vector2f end{
+            actorBounds.position.x + actorBounds.size.x * 0.5f,
+            actorBounds.position.y + actorBounds.size.y * 0.5f
+        };
+        const float halfWidth = std::max(
+            actorBounds.size.x, previousActorBounds.size.x) * 0.5f;
+        const float halfHeight = std::max(
+            actorBounds.size.y, previousActorBounds.size.y) * 0.5f;
+        const sf::FloatRect expandedTrigger{
+            { triggerBounds.position.x - halfWidth,
+              triggerBounds.position.y - halfHeight },
+            { triggerBounds.size.x + halfWidth * 2.f,
+              triggerBounds.size.y + halfHeight * 2.f }
+        };
+        const sf::Vector2f delta = end - start;
+        float minimumTime = 0.f;
+        float maximumTime = 1.f;
+
+        const auto intersectsAxis = [&](float origin, float direction,
+            float minimum, float maximum) {
+            constexpr float epsilon = 0.0001f;
+            if (std::abs(direction) <= epsilon) {
+                return origin >= minimum && origin <= maximum;
+            }
+
+            float entryTime = (minimum - origin) / direction;
+            float exitTime = (maximum - origin) / direction;
+            if (entryTime > exitTime) {
+                std::swap(entryTime, exitTime);
+            }
+            minimumTime = std::max(minimumTime, entryTime);
+            maximumTime = std::min(maximumTime, exitTime);
+            return minimumTime <= maximumTime;
+        };
+
+        return intersectsAxis(start.x, delta.x,
+                   expandedTrigger.position.x,
+                   expandedTrigger.position.x +
+                       expandedTrigger.size.x) &&
+            intersectsAxis(start.y, delta.y,
+                expandedTrigger.position.y,
+                expandedTrigger.position.y +
+                    expandedTrigger.size.y);
+    };
+
+    for (const auto& [position, triggerBounds] : triggers) {
+        const std::size_t index = static_cast<std::size_t>(position);
+        if (index < info.doors.size() &&
+            info.doors[index].isOpen &&
+            info.doors[index].next &&
+            intersectsMovement(triggerBounds)) {
+            return position;
+        }
+    }
+    return std::nullopt;
+}
 void Room::setDoorNext(DoorPosition position, Room* nextRoom) {
     const std::size_t index = static_cast<std::size_t>(position);
-    if (index < info.doors.size()) {
+    if (nextRoom != this && index < info.doors.size() &&
+        (!info.doors[index].next || info.doors[index].next == nextRoom)) {
         info.doors[index].next = nextRoom;
     }
 }
@@ -436,13 +584,13 @@ std::optional<sf::Vector2f> Room::getPlayerSpawnPosition(const TileMap& tileMap)
 }
 
 /// 발아래가 바닥 또는 플랫폼인 백타일만 후보로 모아, 가운데 후보를 몬스터 스폰 위치로 선택합니다.
-std::optional<sf::Vector2f> Room::getMonsterSpawnPosition(const TileMap& tileMap) const {
+std::vector<sf::Vector2f> Room::getMonsterSpawnPositions(const TileMap& tileMap) const {
     const sf::Vector2f tileSize = tileMap.getTileSize();
+    std::vector<sf::Vector2f> positions;
     if (tileSize.x <= 0.f || tileSize.y <= 0.f || info.layout.height < 2) {
-        return std::nullopt;
+        return positions;
     }
 
-    std::vector<sf::Vector2u> candidates;
     for (unsigned int y = 1; y < info.layout.height - 1; ++y) {
         for (unsigned int x = 1; x < info.layout.width - 1; ++x) {
             const unsigned int index = x + y * info.layout.width;
@@ -451,21 +599,22 @@ std::optional<sf::Vector2f> Room::getMonsterSpawnPosition(const TileMap& tileMap
             const RoomCell below = info.layout.cells[belowIndex];
             if ((cell == RoomCell::BackTile || cell == RoomCell::SpawnPoint) &&
                 (below == RoomCell::Ground || below == RoomCell::Platform)) {
-                candidates.push_back({ x, y });
+                positions.push_back({
+                    (static_cast<float>(x) + 0.5f) * tileSize.x,
+                    (static_cast<float>(y) + 1.f) * tileSize.y
+                });
             }
         }
     }
-    if (candidates.empty()) {
+    return positions;
+}
+std::optional<sf::Vector2f> Room::getMonsterSpawnPosition(const TileMap& tileMap) const {
+    const std::vector<sf::Vector2f> positions = getMonsterSpawnPositions(tileMap);
+    if (positions.empty()) {
         return std::nullopt;
     }
-
-    const sf::Vector2u& cell = candidates[candidates.size() / 2];
-    return sf::Vector2f{
-        (static_cast<float>(cell.x) + 0.5f) * tileSize.x,
-        (static_cast<float>(cell.y) + 1.f) * tileSize.y
-    };
+    return positions[positions.size() / 2];
 }
-
 /// 방 종류별 플랫폼 배치를 고정 데이터로 정의합니다. 보스방은 일반 방의 두 배 폭을 사용합니다.
 RoomLayout Room::getReferenceLayout(RoomType type) {
     constexpr unsigned int kRegularRoomWidth = 28;
