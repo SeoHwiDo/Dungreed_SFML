@@ -1,5 +1,7 @@
 #include "ObjectPoolingManager.h"
 
+#include "GameDataManager.h"
+
 void ObjectPoolingManager::prewarmMonsters(std::size_t count,
     const std::string& type, Actor::Status status, const std::string& atlasKey, MonsterBehaviorConfig behavior) {
     for (std::size_t i = 0; i < count; ++i) {
@@ -19,6 +21,15 @@ void ObjectPoolingManager::prewarmProjectiles(std::size_t count) {
         m_projectiles.push_back(std::move(slot));
         enqueueInactiveProjectile(m_projectiles.size() - 1);
     }
+}
+void ObjectPoolingManager::prewarmFromGameData(const GameDataManager& gameData,
+    float reserveRatio) {
+    const PoolPrewarmPlan plan = gameData.createPoolPrewarmPlan(reserveRatio);
+    for (const MonsterPrewarmData& monster : plan.monsters) {
+        prewarmMonsters(monster.count, monster.monsterId, monster.status,
+            monster.atlasKey, monster.behavior);
+    }
+    prewarmProjectiles(plan.projectileCount);
 }
 
 Monster* ObjectPoolingManager::acquireMonster(const std::string& type,
