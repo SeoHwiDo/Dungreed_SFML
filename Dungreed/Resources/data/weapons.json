@@ -1,9 +1,74 @@
 {
   "version": 1,
   "weapons": [
-    { "id": "ShortSword", "atlasKey": "Equip", "frame": "ShortSword_Idle-00.png", "type": "Melee", "damage": 10.0, "attackSpeed": 2.5, "range": 40.0 },
-    { "id": "MonsterClaw", "type": "Melee", "damage": 10.0, "attackSpeed": 1.0, "range": 50.0 },
-    { "id": "BabyBatBullet", "type": "Ranged", "damage": 8.0, "attackSpeed": 0.4, "range": 300.0,
-      "projectile": { "type": "BabyBatBullet", "target": "Player", "speed": 130.0, "damage": 8.0, "count": 1, "spreadRadian": 0.0, "lifetime": 4.0 } }
+    {
+      "id": "ShortSword",
+      "atlasKey": "Equip",
+      "frame": "ShortSword_Idle-00.png",
+      "type": "Melee",
+      "damage": 10.0,
+      "attackSpeed": 2.5,
+      "range": 40.0
+    },
+    {
+      "id": "MonsterClaw",
+      "type": "Melee",
+      "damage": 10.0,
+      "attackSpeed": 0.6,
+      "range": 50.0
+    },
+    {
+      "id": "LittleGhostTouch",
+      "type": "Melee",
+      "damage": 8.0,
+      "attackSpeed": 0.45,
+      "range": 55.0
+    },
+    {
+      "id": "BigWhiteSword",
+      "type": "Melee",
+      "damage": 15.0,
+      "attackSpeed": 0.4,
+      "range": 65.0
+    },
+    {
+      "id": "BansheeRadial",
+      "type": "Ranged",
+      "damage": 7.0,
+      "attackSpeed": 0.25,
+      "range": 160.0,
+      "projectile": {
+        "type": "BansheeBullet",
+        "target": "Player",
+        "speed": 70.0,
+        "damage": 7.0,
+        "count": 10,
+        "spreadRadian": 0.62831853,
+        "lifetime": 6.0
+      }
+    },
+    {
+      "id": "MinotaursSlam",
+      "type": "Melee",
+      "damage": 18.0,
+      "attackSpeed": 0.35,
+      "range": 70.0
+    },
+    {
+      "id": "BabyBatBullet",
+      "type": "Ranged",
+      "damage": 8.0,
+      "attackSpeed": 0.3,
+      "range": 300.0,
+      "projectile": {
+        "type": "BabyBatBullet",
+        "target": "Player",
+        "speed": 130.0,
+        "damage": 8.0,
+        "count": 1,
+        "spreadRadian": 0.0,
+        "lifetime": 4.0
+      }
+    }
   ]
 }

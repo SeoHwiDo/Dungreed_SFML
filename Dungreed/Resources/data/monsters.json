@@ -5,13 +5,9 @@
       "id": "Banshee",
       "enabled": true,
       "atlasKey": "Monster",
-      "animations": {
-        "idle": "Banshee_Idle",
-        "attack": "Banshee_Attack"
-      },
       "movement": {
         "mode": "Ground",
-        "moveSpeed": 220.0
+        "moveSpeed": 80
       },
       "status": {
         "maxHp": 100.0,
@@ -19,22 +15,22 @@
         "dex": 1.0
       },
       "ai": {
-        "detectRange": 180.0,
-        "attackRange": 50.0
+        "detectRange": 220,
+        "attackRange": 160,
+        "attackWindup": 0.55,
+        "attackOnLastFrame": true,
+        "attackPattern": "RadialProjectile"
       },
-      "weaponId": "MonsterClaw"
+      "weaponId": "BansheeRadial"
     },
     {
       "id": "Bat",
       "enabled": true,
       "atlasKey": "Monster",
-      "animations": {
-        "idle": "Bat_Idle"
-      },
       "movement": {
         "mode": "Flying",
         "gravity": 0.0,
-        "moveSpeed": 300.0,
+        "moveSpeed": 150,
         "patrol": true,
         "chase": true,
         "fallbackAnimation": "Bat_Idle"
@@ -45,8 +41,8 @@
         "dex": 1.0
       },
       "ai": {
-        "detectRange": 380.0,
-        "attackRange": 160.0
+        "detectRange": 260,
+        "attackRange": 130
       },
       "weaponId": "BabyBatBullet"
     },
@@ -54,14 +50,9 @@
       "id": "BigWhiteSkel",
       "enabled": true,
       "atlasKey": "Monster",
-      "animations": {
-        "idle": "BigWhiteSkel_Idle",
-        "run": "BigWhiteSkel_Run",
-        "attack": "BigWhiteSkel_Attack"
-      },
       "movement": {
         "mode": "Ground",
-        "moveSpeed": 180.0
+        "moveSpeed": 65
       },
       "status": {
         "maxHp": 150.0,
@@ -69,22 +60,22 @@
         "dex": 1.0
       },
       "ai": {
-        "detectRange": 200.0,
-        "attackRange": 55.0
+        "detectRange": 180,
+        "attackRange": 65,
+        "attackWindup": 0.55,
+        "attackOnLastFrame": true,
+        "attackPattern": "Standard"
       },
-      "weaponId": "MonsterClaw"
+      "weaponId": "BigWhiteSword"
     },
     {
       "id": "LittleGhost",
       "enabled": true,
       "atlasKey": "Monster",
-      "animations": {
-        "idle": "LittleGhost_Idle",
-        "attack": "LittleGhost_Attack"
-      },
       "movement": {
-        "mode": "Ground",
-        "moveSpeed": 200.0
+        "mode": "Flying",
+        "moveSpeed": 70,
+        "ignoresWalls": true
       },
       "status": {
         "maxHp": 80.0,
@@ -92,22 +83,21 @@
         "dex": 1.0
       },
       "ai": {
-        "detectRange": 180.0,
-        "attackRange": 45.0
+        "detectRange": 180,
+        "attackRange": 55,
+        "attackWindup": 0.45,
+        "attackOnLastFrame": true,
+        "attackPattern": "GhostTouch"
       },
-      "weaponId": "MonsterClaw"
+      "weaponId": "LittleGhostTouch"
     },
     {
       "id": "Minotaurs",
       "enabled": true,
       "atlasKey": "Monster",
-      "animations": {
-        "charge": "Minotaurs_Charge",
-        "attack": "Minotaurs_Attack"
-      },
       "movement": {
         "mode": "Ground",
-        "moveSpeed": 160.0
+        "moveSpeed": 80
       },
       "status": {
         "maxHp": 200.0,
@@ -115,22 +105,24 @@
         "dex": 1.0
       },
       "ai": {
-        "detectRange": 220.0,
-        "attackRange": 60.0
+        "detectRange": 440,
+        "attackRange": 70,
+        "attackWindup": 0.45,
+        "attackOnLastFrame": true,
+        "attackPattern": "ChargeCombo",
+        "chargeDuration": 0.65,
+        "chargeSpeedMultiplier": 3.2,
+        "stunDuration": 0.45
       },
-      "weaponId": "MonsterClaw"
+      "weaponId": "MinotaursSlam"
     },
     {
       "id": "SkelDog",
       "enabled": true,
       "atlasKey": "Monster",
-      "animations": {
-        "idle": "SkelDog_Idle",
-        "run": "SkelDog_Run",
-        "die": "SkelDog_Die"
-      },
       "movement": {
-        "moveSpeed": 150.0
+        "mode": "Ground",
+        "moveSpeed": 75
       },
       "status": {
         "maxHp": 100.0,
@@ -138,8 +130,11 @@
         "dex": 1.0
       },
       "ai": {
-        "detectRange": 180.0,
-        "attackRange": 50.0
+        "detectRange": 130,
+        "attackRange": 45,
+        "attackWindup": 0.3,
+        "attackOnLastFrame": true,
+        "attackPattern": "Standard"
       },
       "weaponId": "MonsterClaw"
     }
