@@ -1,4 +1,4 @@
-﻿#include "Equip.h"
+#include "Equip.h"
 #include "Actor.h"
 #include <algorithm>
 #include <cmath>
@@ -88,11 +88,11 @@ void Equip::update(float dt, const sf::Vector2f& ownerPos, float aimRadian) {
     m_lastOwnerPosition = ownerPos;
     m_lastAimRadian = aimRadian;
     if (!m_sprite || m_stat.type == WeaponType::Ranged) return;
-    constexpr float PI = 3.14159265358979323846f;
-    constexpr float HALF_PI = PI / 2.f;
+    constexpr float kPi = 3.14159265358979323846f;
+    constexpr float kHalfPi = kPi / 2.f;
 
     // 실제 몸통 중앙에서 캐릭터가 바라보는 전방으로 무기를 배치합니다.
-    const bool isFacingLeft = std::abs(aimRadian) > HALF_PI;
+    const bool isFacingLeft = std::abs(aimRadian) > kHalfPi;
     const float facingDirection = isFacingLeft ? -1.f : 1.f;
     const float bodyWidth = m_owner ? m_owner->getGlobalBounds().size.x : 0.f;
     const float bodyHeight = m_owner ? m_owner->getGlobalBounds().size.y : 0.f;
@@ -109,7 +109,7 @@ void Equip::update(float dt, const sf::Vector2f& ownerPos, float aimRadian) {
     // 기본 무기 이미지가 12시 방향을 향하므로 π/2를 보정합니다.
     // 좌측은 Y축 반전과 반대 보정을 조합해, 각도를 360도 회전시키지 않고
     // 좌우가 대칭인 자세로 표시합니다.
-    const float baseRotation = aimRadian + (isFacingLeft ? -HALF_PI : HALF_PI);
+    const float baseRotation = aimRadian + (isFacingLeft ? -kHalfPi : kHalfPi);
 
     // 현재 대기 각도에서 반대쪽 끝까지 한 번만 스윙합니다.
     // startOffset은 대기 상태의 각도와 같아야 공격 시작 시 반대편으로
@@ -141,8 +141,8 @@ void Equip::update(float dt, const sf::Vector2f& ownerPos, float aimRadian) {
     }
 
     // 스윙 오프셋도 라디안으로 변환해 최종 회전을 적용합니다.
-    constexpr float DEGREE_TO_RADIAN = PI / 180.f;
-    m_sprite->setRotation(sf::radians(baseRotation + swingOffset * DEGREE_TO_RADIAN));
+    constexpr float kDegreeToRadian = kPi / 180.f;
+    m_sprite->setRotation(sf::radians(baseRotation + swingOffset * kDegreeToRadian));
     m_sprite->setScale({ 1.f, isFacingLeft ? -1.f : 1.f });
 }
 
