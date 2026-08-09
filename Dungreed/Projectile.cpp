@@ -19,19 +19,32 @@ void Projectile::activate(const ProjectileSpawnRequest& request) {
     m_shape.setOrigin({ 4.f, 4.f });
     m_shape.setFillColor(request.type == ProjectileType::Fireball
         ? sf::Color(255, 120, 40)
-        : request.type == ProjectileType::Bullet
-            ? sf::Color(220, 220, 220)
-            : sf::Color(220, 190, 80));
+        : request.type == ProjectileType::BansheeBullet
+            ? sf::Color(180, 90, 255)
+            : request.type == ProjectileType::Bullet
+                ? sf::Color(220, 220, 220)
+                : sf::Color(220, 190, 80));
 
-    if (request.type == ProjectileType::BabyBatBullet) {
+    if (request.type == ProjectileType::BabyBatBullet ||
+        request.type == ProjectileType::BansheeBullet) {
         auto& resources = ResourceManager::getInstance();
+        const std::string animationName =
+            request.type == ProjectileType::BabyBatBullet
+            ? "BabyBatBullet_Fly"
+            : "BansheeBullet_Fly";
+        const std::string firstFrameName = animationName + "-00.png";
         const sf::Texture* texture = resources.getAtlasTexture("Projectile");
-        const sf::IntRect* frame = resources.getFrameRect("Projectile", "BabyBatBullet_Fly-00.png");
-        m_animationFrames = resources.getAnimationFrames("Projectile", "BabyBatBullet_Fly");
+        const sf::IntRect* frame =
+            resources.getFrameRect("Projectile", firstFrameName);
+        m_animationFrames =
+            resources.getAnimationFrames("Projectile", animationName);
         if (texture != nullptr && frame != nullptr) {
             m_sprite.emplace(*texture);
             m_sprite->setTextureRect(*frame);
-            m_sprite->setOrigin({ frame->size.x * 0.5f, frame->size.y * 0.5f });
+            m_sprite->setOrigin({
+                frame->size.x * 0.5f,
+                frame->size.y * 0.5f
+            });
             m_sprite->setPosition(request.position);
         }
     }
@@ -50,8 +63,8 @@ void Projectile::update(float dt) {
         m_sprite->move(m_velocity * dt);
         if (m_animationFrames && !m_animationFrames->empty()) {
             m_animationTime += dt;
-            while (m_animationTime >= 0.1f) {
-                m_animationTime -= 0.1f;
+            while (m_animationTime >= 0.2f) {
+                m_animationTime -= 0.2f;
                 m_animationFrame = (m_animationFrame + 1) % m_animationFrames->size();
             }
             m_sprite->setTextureRect((*m_animationFrames)[m_animationFrame]);

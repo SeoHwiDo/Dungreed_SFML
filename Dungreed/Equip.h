@@ -19,7 +19,8 @@ enum class ProjectileType {
     Arrow,
     Fireball,
     Bullet,
-    BabyBatBullet
+    BabyBatBullet,
+    BansheeBullet
 };
 
 enum class ProjectileTarget {
