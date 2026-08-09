@@ -1,28 +1,75 @@
-﻿#pragma once
+#pragma once
+
 #include "Actor.h"
 #include "Controller.h"
+
+#include <vector>
+
+class TileMap;
+
 enum class PlayerState {
     Idle,
     Run,
     Jump,
+    Dash,
     Dead
+};
+
+struct DashConfig {
+    float maxDistanceMultiplier = 8.f;
+    int maxCharges = 3;
+    float chargeRecoveryTime = 3.f;
+    float duration = 0.12f;
+    float afterimageInterval = 0.03f;
+    float afterimageLifetime = 0.20f;
 };
 
 class Player : public Actor {
 public:
-    /// 현재 플레이어 상태입니다. 입력 해석과 애니메이션 선택의 기준으로 사용합니다.
     PlayerState state = PlayerState::Idle;
-    /// 플레이어 아틀라스에서 상태별 애니메이션을 등록합니다.
-    void init(const std::string& atlasKey = "Player") override;
-    /// 지정 능력치로 생성하고 기본 플레이어 아틀라스를 즉시 초기화합니다.
-    Player(Status _status = { MAXHP, MAXHP, POWER, DEX }) :Actor(_status) { init("Player"); };
-    /// 입력 수집 → 상태 처리 → 물리/피격 처리 → 애니메이션 순으로 한 프레임을 갱신합니다.
-    void update(float dt, const sf::RenderWindow& window);
-private:
-    Controller controller;
 
-    /// 상태가 실제로 바뀔 때만 해당 애니메이션을 시작합니다.
+    void init(const std::string& atlasKey = "Player") override;
+    Player(Status status = { kDefaultMaxHp, kDefaultMaxHp, kDefaultPower, kDefaultDex }) : Actor(status) { init("Player"); }
+
+    void update(float dt, const sf::RenderWindow& window,
+        const TileMap& tileMap);
+    void render(sf::RenderWindow& window) override;
+
+    void setDashConfig(DashConfig config);
+    const DashConfig& getDashConfig() const { return m_dashConfig; }
+    int getDashCharges() const { return m_dashCharges; }
+    int getDashMaxCharges() const { return m_dashConfig.maxCharges; }
+    float getDashRechargeProgress() const;
+    bool isDashing() const { return m_isDashing; }
+    void cancelDash();
+    void applyStun(float duration);
+    bool isStunned() const { return m_stunTimer > 0.f; }
+    bool ignoresOneWayPlatforms() const { return m_isDashing || m_ignoreOneWayPlatforms; }
+    void restoreDashCharges(int amount);
+
+private:
+    struct DashAfterimage {
+        sf::Sprite sprite;
+        float remainingTime = 0.f;
+    };
+
+    Controller controller;
+    DashConfig m_dashConfig;
+    int m_dashCharges = 3;
+    float m_dashRechargeTimer = 0.f;
+    bool m_isDashing = false;
+    bool m_ignoreOneWayPlatforms = false;
+    float m_dashElapsed = 0.f;
+    sf::Vector2f m_dashDelta;
+    float m_afterimageTimer = 0.f;
+    float m_stunTimer = 0.f;
+    std::vector<DashAfterimage> m_dashAfterimages;
+
     void changeState(PlayerState newState);
-    /// 현재 상태와 입력을 해석해 이동·점프·공격을 처리합니다. Dead 상태에서는 조작을 무시합니다.
     void handleState(float dt, const InputData& input);
+    bool tryStartDash(const sf::Vector2f& cursorPosition);
+    void updateDash(float dt, const TileMap& tileMap);
+    void updateDashRecharge(float dt);
+    void updateAfterimages(float dt);
+    void spawnDashAfterimage();
 };

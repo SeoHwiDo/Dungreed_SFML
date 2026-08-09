@@ -1,6 +1,15 @@
-﻿#include "Player.h"
-#include"ResourceManager.h"
-#include"Equip.h"
+#include "Player.h"
+
+#include "Collision.h"
+#include "Equip.h"
+#include "ResourceManager.h"
+#include "TileMap.h"
+
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <utility>
+
 void Player::init(const std::string& atlasKey) {
     Actor::init(atlasKey);
     if (!equipment) {
@@ -8,38 +17,27 @@ void Player::init(const std::string& atlasKey) {
         defaultWeapon->init("Equip", "ShortSword_Idle-00");
         setEquipment(defaultWeapon);
     }
-    //애니메이션 가져오기
-    auto& resMgr = ResourceManager::getInstance();
-    std::vector<std::string> allAnims = resMgr.getAnimationNames(atlasKey);
 
-    for (const auto& animName : allAnims) {
-        const auto* frames = resMgr.getAnimationFrames(atlasKey, animName);
-        if (frames) {
-            // 공격과 사망 애니메이션은 마지막 프레임에서 멈춥니다.
-            bool isLoop = true;
-            if (animName.find("Attack") != std::string::npos ||
-                animName.find("Dead") != std::string::npos ||
-                animName.find("Die") != std::string::npos) {
-                isLoop = false;
-            }
-
-            float frameDuration = 0.15f; // 기본 속도
-
-            if (animName.find("Idle") != std::string::npos) {
-                frameDuration = 0.2f;  // 대기는 천천히 (초당 5프레임)
-            } else if (animName.find("Run") != std::string::npos) {
-                frameDuration = 0.05f; // 걷기/뛰기는 조금 빠르게
-            } else if (animName.find("Attack") != std::string::npos) {
-                frameDuration = 0.08f; // 공격은 아주 역동적이고 빠르게
-            } else if (animName.find("Jump") != std::string::npos) {
-                frameDuration = 0.15f;
-            }
-            AnimationClip clip(frames, frameDuration, isLoop);
-            animator.addAnimation(animName, clip);
+    auto& resourceManager = ResourceManager::getInstance();
+    for (const std::string& animationName : resourceManager.getAnimationNames(atlasKey)) {
+        const auto* frames = resourceManager.getAnimationFrames(atlasKey, animationName);
+        if (!frames) {
+            continue;
         }
+
+        const bool isLoop = animationName.find("Attack") == std::string::npos &&
+            animationName.find("Dead") == std::string::npos &&
+            animationName.find("Die") == std::string::npos;
+        float frameDuration = 0.30f;
+        if (animationName.find("Idle") != std::string::npos) {
+            frameDuration = 0.40f;
+        } else if (animationName.find("Run") != std::string::npos) {
+            frameDuration = 0.10f;
+        } else if (animationName.find("Attack") != std::string::npos) {
+            frameDuration = 0.16f;
+        }
+        animator.addAnimation(animationName, AnimationClip(frames, frameDuration, isLoop));
     }
-    
-    // 4. 초기 상태 애니메이션 실행
     animator.play("Player_Idle");
 }
 
@@ -60,8 +58,11 @@ void Player::changeState(PlayerState newState) {
     case PlayerState::Jump:
         playAnimation("Player_Jump");
         break;
+    case PlayerState::Dash:
+        setHorizontalInput(0.f);
+        playAnimation("Player_Run");
+        break;
     case PlayerState::Dead:
-        // 사망 직전의 이동, 점프, 넉백을 모두 제거합니다.
         setHorizontalInput(0.f);
         movement.velocity.y = 0.f;
         m_knockbackVelocity = { 0.f, 0.f };
@@ -71,22 +72,185 @@ void Player::changeState(PlayerState newState) {
     }
 }
 
+void Player::setDashConfig(DashConfig config) {
+    config.maxDistanceMultiplier = std::max(0.f, config.maxDistanceMultiplier);
+    config.maxCharges = std::max(1, config.maxCharges);
+    config.chargeRecoveryTime = std::max(0.01f, config.chargeRecoveryTime);
+    config.duration = std::max(0.01f, config.duration);
+    config.afterimageInterval = std::max(0.01f, config.afterimageInterval);
+    config.afterimageLifetime = std::max(0.01f, config.afterimageLifetime);
+
+    m_dashConfig = config;
+    m_dashCharges = std::min(m_dashCharges, m_dashConfig.maxCharges);
+    if (m_dashCharges >= m_dashConfig.maxCharges) {
+        m_dashRechargeTimer = 0.f;
+    }
+}
+
+float Player::getDashRechargeProgress() const {
+    if (m_dashCharges >= m_dashConfig.maxCharges) {
+        return 1.f;
+    }
+    return std::clamp(m_dashRechargeTimer / m_dashConfig.chargeRecoveryTime, 0.f, 1.f);
+}
+
+void Player::restoreDashCharges(int amount) {
+    m_dashCharges = std::clamp(m_dashCharges + std::max(0, amount), 0, m_dashConfig.maxCharges);
+    if (m_dashCharges >= m_dashConfig.maxCharges) {
+        m_dashRechargeTimer = 0.f;
+    }
+}
+
+bool Player::tryStartDash(const sf::Vector2f& cursorPosition) {
+    if (m_isDashing || m_dashCharges <= 0 || !sprite) {
+        return false;
+    }
+
+    const sf::Vector2f toCursor = cursorPosition - getBodyCenterPosition();
+    const float cursorDistance = std::sqrt(toCursor.x * toCursor.x + toCursor.y * toCursor.y);
+    if (cursorDistance <= 0.01f) {
+        return false;
+    }
+
+    const float maxDistance = getGlobalBounds().size.x * m_dashConfig.maxDistanceMultiplier;
+    const float dashDistance = std::min(cursorDistance, maxDistance);
+    m_dashDelta = toCursor * (dashDistance / cursorDistance);
+    m_dashElapsed = 0.f;
+    m_afterimageTimer = 0.f;
+    m_isDashing = true;
+    --m_dashCharges;
+    changeState(PlayerState::Dash);
+    spawnDashAfterimage();
+    return true;
+}
+
+void Player::cancelDash() {
+    if (!m_isDashing) {
+        return;
+    }
+
+    m_isDashing = false;
+    m_ignoreOneWayPlatforms = true;
+    m_dashElapsed = m_dashConfig.duration;
+    movement.velocity.x = 0.f;
+    setHorizontalInput(0.f);
+}
+
+void Player::updateDash(float dt, const TileMap& tileMap) {
+    m_previousGlobalBounds = getGlobalBounds();
+    const float previousProgress =
+        m_dashElapsed / m_dashConfig.duration;
+    m_dashElapsed = std::min(
+        m_dashElapsed + dt, m_dashConfig.duration);
+    const float currentProgress =
+        m_dashElapsed / m_dashConfig.duration;
+    const sf::Vector2f delta =
+        m_dashDelta * (currentProgress - previousProgress);
+
+    const sf::Vector2f tileSize = tileMap.getTileSize();
+    const float maximumStep = std::max(
+        1.f, std::min(tileSize.x, tileSize.y) * 0.25f);
+    const int stepCount = std::max(1, static_cast<int>(std::ceil(
+        std::max(std::abs(delta.x), std::abs(delta.y)) /
+            maximumStep)));
+    const sf::Vector2f step =
+        delta / static_cast<float>(stepCount);
+
+    for (int index = 0; index < stepCount; ++index) {
+        const sf::Vector2f positionBeforeStep = getPosition();
+        move(step.x, step.y);
+        Collision::resolveMapCollision(*this, tileMap, true);
+
+        const sf::Vector2f actualMovement =
+            getPosition() - positionBeforeStep;
+        constexpr float collisionEpsilon = 0.1f;
+        if (std::abs(actualMovement.x - step.x) >
+                collisionEpsilon ||
+            std::abs(actualMovement.y - step.y) >
+                collisionEpsilon) {
+            cancelDash();
+            break;
+        }
+    }
+
+    m_afterimageTimer += dt;
+    while (m_afterimageTimer >=
+        m_dashConfig.afterimageInterval) {
+        m_afterimageTimer -= m_dashConfig.afterimageInterval;
+        spawnDashAfterimage();
+    }
+
+    if (m_dashElapsed >= m_dashConfig.duration) {
+        cancelDash();
+    }
+}
+void Player::updateDashRecharge(float dt) {
+    if (m_dashCharges >= m_dashConfig.maxCharges) {
+        m_dashRechargeTimer = 0.f;
+        return;
+    }
+
+    m_dashRechargeTimer += dt;
+    while (m_dashRechargeTimer >= m_dashConfig.chargeRecoveryTime &&
+        m_dashCharges < m_dashConfig.maxCharges) {
+        m_dashRechargeTimer -= m_dashConfig.chargeRecoveryTime;
+        ++m_dashCharges;
+    }
+}
+
+void Player::spawnDashAfterimage() {
+    if (!sprite) {
+        return;
+    }
+
+    DashAfterimage afterimage{ *sprite, m_dashConfig.afterimageLifetime };
+    afterimage.sprite.setColor(sf::Color(190, 220, 255, 140));
+    m_dashAfterimages.push_back(std::move(afterimage));
+}
+
+void Player::updateAfterimages(float dt) {
+    for (DashAfterimage& afterimage : m_dashAfterimages) {
+        afterimage.remainingTime -= dt;
+        const float alphaRatio = std::clamp(
+            afterimage.remainingTime / m_dashConfig.afterimageLifetime, 0.f, 1.f);
+        sf::Color color = afterimage.sprite.getColor();
+        color.a = static_cast<std::uint8_t>(140.f * alphaRatio);
+        afterimage.sprite.setColor(color);
+    }
+
+    m_dashAfterimages.erase(std::remove_if(m_dashAfterimages.begin(), m_dashAfterimages.end(),
+        [](const DashAfterimage& afterimage) { return afterimage.remainingTime <= 0.f; }),
+        m_dashAfterimages.end());
+}
+
+void Player::applyStun(float duration) {
+    if (dead() || duration <= 0.f) {
+        return;
+    }
+
+    m_stunTimer = std::max(m_stunTimer, duration);
+    m_isDashing = false;
+    m_ignoreOneWayPlatforms = false;
+    movement.velocity.x = 0.f;
+    setHorizontalInput(0.f);
+}
+
 void Player::handleState(float dt, const InputData& input) {
     if (dead()) {
         changeState(PlayerState::Dead);
         return;
     }
 
-    setHorizontalInput(input.moveDirX);
+    if (input.isDashing && tryStartDash(input.aimWorldPosition)) {
+        return;
+    }
+    if (m_isDashing) {
+        return;
+    }
 
-    // 마우스 위치로부터 추출된 단위 벡터의 x 방향을 기준으로 스프라이트 좌우 반전
+    setHorizontalInput(input.moveDirX);
     if (sprite) {
-        if (input.aimDir.x < 0.f) {
-            sprite->setScale({ -1.f, 1.f });
-        }
-        else {
-            sprite->setScale({ 1.f, 1.f });
-        }
+        sprite->setScale({ input.aimDir.x < 0.f ? -1.f : 1.f, 1.f });
     }
     if (input.isJumping && movement.isGrounded) {
         jump();
@@ -96,8 +260,7 @@ void Player::handleState(float dt, const InputData& input) {
         changeState(PlayerState::Jump);
     } else if (input.moveDirX != 0.f) {
         changeState(PlayerState::Run);
-    }
-    else {
+    } else {
         changeState(PlayerState::Idle);
     }
 
@@ -107,27 +270,60 @@ void Player::handleState(float dt, const InputData& input) {
     if (equipment) {
         equipment->update(dt, getBodyCenterPosition(), input.aimRadian);
     }
-    if (input.isDashing) {
-        // 대시 이펙트 및 특수 물리 로직 처리
-        // 예: EffectManager::spawnTrail(sprite->getPosition()); (잔상 이펙트)
-        // 예: movement.velocity.x = dashSpeed * input.moveDirX; (순간 가속)
-    }
 }
 
-void Player::update(float dt, const sf::RenderWindow& window)  {
-    // 사망한 뒤에는 입력을 무시하고, 중력/피격 피드백/애니메이션만 갱신합니다.
+void Player::update(float dt, const sf::RenderWindow& window,
+    const TileMap& tileMap) {
+    if (!m_isDashing) {
+        m_ignoreOneWayPlatforms = false;
+    }
     if (dead()) {
         changeState(PlayerState::Dead);
         updatePhysics(dt);
         updateHitFeedback(dt);
         updateAnimation(dt);
+        updateAfterimages(dt);
         return;
     }
 
-    // 입력 -> 상태 전환 -> 물리/피격 처리 -> 애니메이션 순서를 유지합니다.
+    if (m_stunTimer > 0.f) {
+        m_stunTimer = std::max(0.f, m_stunTimer - dt);
+        m_isDashing = false;
+        m_ignoreOneWayPlatforms = false;
+        setHorizontalInput(0.f);
+        if (movement.isGrounded) {
+            changeState(PlayerState::Idle);
+        }
+        updatePhysics(dt);
+        updateHitFeedback(dt);
+        updateAnimation(dt);
+        updateAfterimages(dt);
+        return;
+    }
+
     const InputData input = controller.getInput(window, getBodyCenterPosition());
+    updateDashRecharge(dt);
+    updateAfterimages(dt);
     handleState(dt, input);
+
+    if (m_isDashing) {
+        updateDash(dt, tileMap);
+        if (equipment) {
+            equipment->update(dt, getBodyCenterPosition(), input.aimRadian);
+        }
+        updateHitFeedback(dt);
+        updateAnimation(dt);
+        return;
+    }
+
     updatePhysics(dt);
     updateHitFeedback(dt);
     updateAnimation(dt);
+}
+
+void Player::render(sf::RenderWindow& window) {
+    for (const DashAfterimage& afterimage : m_dashAfterimages) {
+        window.draw(afterimage.sprite);
+    }
+    Actor::render(window);
 }
