@@ -1,181 +1,162 @@
-﻿#include "ResourceManager.h"
+#include "ResourceManager.h"
+
 #include <fstream>
-#include <algorithm>
+#include <iostream>
+
 #include <nlohmann/json.hpp>
-#include<iostream>
-#include<stdexcept>
+
 using json = nlohmann::json;
 
-std::string ResourceManager::extractAnimationName(const std::string& frameName) const
-{
-    std::string animName = frameName;
-    size_t slashPos = animName.find_last_of('/');
-    if (slashPos != std::string::npos) {
-        animName = animName.substr(slashPos + 1);
-    }
-    size_t hypenPos = animName.find_last_of('-');//스트링에서 마지막 언더스코어 위치 찾기, size_t인 이유는 find_last_of는 찾지 못하면 npos를 반환하기 때문
-    if (hypenPos != std::string::npos) {
-        //프레임 이름에서 마지막 언더스코어까지의 부분 문자열을 반환
-        return animName.substr(0, hypenPos);
-    }
-    return animName;
+std::string ResourceManager::extractAnimationName(const std::string& frameName) const {
+    const std::size_t slashPosition = frameName.find_last_of('/');
+    const std::string name = slashPosition == std::string::npos
+        ? frameName
+        : frameName.substr(slashPosition + 1);
+
+    const std::size_t hyphenPosition = name.find_last_of('-');
+    return hyphenPosition == std::string::npos
+        ? name
+        : name.substr(0, hyphenPosition);
 }
 
-bool ResourceManager::loadAtlas(const std::string& atlasKey, const std::string& jsonPath, const std::string& imagePath)
-{
-    std::unique_ptr<AtlasData> atlas=std::make_unique<AtlasData>();
-    //atlas에 텍스쳐 로드, 실패시 에러 메시지 출력 후 false 반환
-    if(!atlas->texture.loadFromFile(imagePath)){
-        std::cerr << "텍스쳐 로드 실패: " << imagePath << std::endl;
+bool ResourceManager::loadAtlas(const std::string& atlasKey, const std::string& jsonPath,
+    const std::string& imagePath) {
+    auto atlas = std::make_unique<AtlasData>();
+    if (!atlas->texture.loadFromFile(imagePath)) {
+        std::cerr << "텍스처 로드 실패: " << imagePath << '\n';
         return false;
     }
+
     std::ifstream jsonFile(jsonPath);
-    if(!jsonFile.is_open()) {
-        std::cerr << "JSON 파일 로드 실패: " << jsonPath << std::endl;
+    if (!jsonFile) {
+        std::cerr << "JSON 파일 로드 실패: " << jsonPath << '\n';
         return false;
     }
+
     json root;
     jsonFile >> root;
-    // JSON 구조에서 "frames" 키가 존재하고, 그 값이 객체인지 확인
-    if (root.contains("frames") && root["frames"].is_object()) {
-        //nlohmann::json은 내부적으로 키를 알파벳 오름차순으로 관리;
-        //자리수 패딩시(ex -01,-02) 순차적인 vector 삽입 보장
-        for (auto& [frameName, frameData] : root["frames"].items()) {
-            //현재 프레임의 이름과 데이터를 가져옴
-            auto& f = frameData["frame"];
-            sf::IntRect rect(
-                { f["x"].get<int>(), f["y"].get<int>() },
-                { f["w"].get<int>(), f["h"].get<int>() }
-            );
-            //프레임 이름과 IntRect 저장
-            atlas->frameRects[frameName] = std::make_unique<sf::IntRect>(rect);
-
-            sf::Vector2f sourceSize{ static_cast<float>(rect.size.x), static_cast<float>(rect.size.y) };
-            if (frameData.contains("sourceSize")) {
-                const auto& sourceSizeData = frameData["sourceSize"];
-                if (sourceSizeData.contains("w") && sourceSizeData.contains("h")) {
-                    const sf::Vector2u sourceSizePixels{
-                        sourceSizeData["w"].get<unsigned int>(),
-                        sourceSizeData["h"].get<unsigned int>()
-                    };
-                    atlas->frameSourceSizes[frameName] = sourceSizePixels;
-                    sourceSize = {
-                        static_cast<float>(sourceSizePixels.x),
-                        static_cast<float>(sourceSizePixels.y)
-                    };
-                }
-            }
-
-            // TexturePacker 피벗은 원본 크기 기준의 0~1 정규화 좌표입니다.
-            // 트리밍된 이미지에도 맞도록 spriteSourceSize 오프셋을 반영합니다.
-            sf::Vector2f pivot{ rect.size.x / 2.f, rect.size.y / 2.f };
-            if (frameData.contains("pivot")) {
-                const auto& pivotData = frameData["pivot"];
-                const auto& spriteSourceSize = frameData["spriteSourceSize"];
-                pivot = {
-                    pivotData["x"].get<float>() * sourceSize.x - spriteSourceSize["x"].get<float>(),
-                    pivotData["y"].get<float>() * sourceSize.y - spriteSourceSize["y"].get<float>()
-                };
-            }
-            atlas->framePivots[frameName] = pivot;
-            //프레임 애니메이션 저장
-            std::string animName = extractAnimationName(frameName);
-            if (atlas->animations.find(animName) == atlas->animations.end()) {
-                atlas->animations[animName] = std::make_unique<std::vector<sf::IntRect>>();
-            }
-            atlas->animations[animName]->push_back(rect);
-            atlas->animations[animName]->push_back(rect);
-        }
+    if (!root.contains("frames") || !root["frames"].is_object()) {
+        std::cerr << "프레임 데이터가 없습니다: " << jsonPath << '\n';
+        return false;
     }
-    //최종 관리책임 이양
+
+    for (const auto& [frameName, frameData] : root["frames"].items()) {
+        const auto& frame = frameData.at("frame");
+        const sf::IntRect rect{
+            { frame.at("x").get<int>(), frame.at("y").get<int>() },
+            { frame.at("w").get<int>(), frame.at("h").get<int>() }
+        };
+        atlas->frameRects.emplace(frameName, rect);
+
+        sf::Vector2f sourceSize{
+            static_cast<float>(rect.size.x),
+            static_cast<float>(rect.size.y)
+        };
+        if (frameData.contains("sourceSize")) {
+            const auto& sourceSizeData = frameData.at("sourceSize");
+            const sf::Vector2u sourceSizePixels{
+                sourceSizeData.at("w").get<unsigned int>(),
+                sourceSizeData.at("h").get<unsigned int>()
+            };
+            atlas->frameSourceSizes.emplace(frameName, sourceSizePixels);
+            sourceSize = {
+                static_cast<float>(sourceSizePixels.x),
+                static_cast<float>(sourceSizePixels.y)
+            };
+        }
+
+        sf::Vector2f pivot{ rect.size.x / 2.f, rect.size.y / 2.f };
+        if (frameData.contains("pivot") && frameData.contains("spriteSourceSize")) {
+            const auto& pivotData = frameData.at("pivot");
+            const auto& spriteSourceSize = frameData.at("spriteSourceSize");
+            pivot = {
+                pivotData.at("x").get<float>() * sourceSize.x -
+                    spriteSourceSize.at("x").get<float>(),
+                pivotData.at("y").get<float>() * sourceSize.y -
+                    spriteSourceSize.at("y").get<float>()
+            };
+        }
+        atlas->framePivots.emplace(frameName, pivot);
+
+        const std::string animationName = extractAnimationName(frameName);
+        atlas->animations[animationName].push_back(rect);
+    }
+
     m_atlases[atlasKey] = std::move(atlas);
     return true;
 }
 
-const sf::Texture* ResourceManager::getAtlasTexture(const std::string& atlasKey) const
-{
-    //아틀라스 존재하는지 확인
-    auto it = m_atlases.find(atlasKey);
-    if (it == m_atlases.end()) {
-        std::cerr << "아틀라스 키를 찾을 수 없음:" << atlasKey << std::endl;
-        return nullptr;
-    }
-    return &(it->second->texture);
-}
-//try-catch는 stack 언와인딩 동반하므로 연산이 비쌈
-//단일 리소스 누락의 사소한 건으로 게임 전체를 정지시키는것은 X
-const sf::IntRect* ResourceManager::getFrameRect(const std::string& atlasKey, const std::string& frameName) const
-{
-    //아틀라스 자체가 없으면 게임 속행이 불가
-    auto atlasIt = m_atlases.find(atlasKey);
+const sf::Texture* ResourceManager::getAtlasTexture(const std::string& atlasKey) const {
+    const auto atlasIt = m_atlases.find(atlasKey);
     if (atlasIt == m_atlases.end()) {
-        std::cerr << "[ResourceManager] 아틀라스 키를 찾을 수 없음: " << atlasKey << std::endl;
+        std::cerr << "[ResourceManager] 아틀라스를 찾을 수 없습니다: " << atlasKey << '\n';
         return nullptr;
     }
-    const auto& atlas = atlasIt->second;
-    //단순한 객체 하나정도 없는경우는 게임 속행
-    auto it = atlas->frameRects.find(frameName);
-    if (it != atlas->frameRects.end()) {
-        return it->second.get();
-    }
-    return nullptr;
+    return &atlasIt->second->texture;
 }
 
-std::optional<sf::Vector2f> ResourceManager::getFramePivot(
-    const std::string& atlasKey, const std::string& frameName) const
-{
-    auto atlasIt = m_atlases.find(atlasKey);
+const sf::IntRect* ResourceManager::getFrameRect(const std::string& atlasKey,
+    const std::string& frameName) const {
+    const auto atlasIt = m_atlases.find(atlasKey);
+    if (atlasIt == m_atlases.end()) {
+        std::cerr << "[ResourceManager] 아틀라스를 찾을 수 없습니다: " << atlasKey << '\n';
+        return nullptr;
+    }
+
+    const auto frameIt = atlasIt->second->frameRects.find(frameName);
+    return frameIt == atlasIt->second->frameRects.end() ? nullptr : &frameIt->second;
+}
+
+std::optional<sf::Vector2f> ResourceManager::getFramePivot(const std::string& atlasKey,
+    const std::string& frameName) const {
+    const auto atlasIt = m_atlases.find(atlasKey);
     if (atlasIt == m_atlases.end()) {
         return std::nullopt;
     }
 
     const auto pivotIt = atlasIt->second->framePivots.find(frameName);
-    if (pivotIt == atlasIt->second->framePivots.end()) {
-        return std::nullopt;
-    }
-    return pivotIt->second;
+    return pivotIt == atlasIt->second->framePivots.end()
+        ? std::nullopt
+        : std::optional<sf::Vector2f>(pivotIt->second);
 }
 
-std::optional<sf::Vector2u> ResourceManager::getFrameSourceSize(
-    const std::string& atlasKey, const std::string& frameName) const
-{
-    auto atlasIt = m_atlases.find(atlasKey);
+std::optional<sf::Vector2u> ResourceManager::getFrameSourceSize(const std::string& atlasKey,
+    const std::string& frameName) const {
+    const auto atlasIt = m_atlases.find(atlasKey);
     if (atlasIt == m_atlases.end()) {
         return std::nullopt;
     }
 
     const auto sourceSizeIt = atlasIt->second->frameSourceSizes.find(frameName);
-    if (sourceSizeIt == atlasIt->second->frameSourceSizes.end()) {
-        return std::nullopt;
-    }
-    return sourceSizeIt->second;
+    return sourceSizeIt == atlasIt->second->frameSourceSizes.end()
+        ? std::nullopt
+        : std::optional<sf::Vector2u>(sourceSizeIt->second);
 }
 
-const std::vector<sf::IntRect>* ResourceManager::getAnimationFrames(const std::string& atlasKey, const std::string& animName) const
-{
-    auto atlasIt = m_atlases.find(atlasKey);
+const std::vector<sf::IntRect>* ResourceManager::getAnimationFrames(
+    const std::string& atlasKey, const std::string& animationName) const {
+    const auto atlasIt = m_atlases.find(atlasKey);
     if (atlasIt == m_atlases.end()) {
-        std::cerr << "[ResourceManager] 아틀라스 키를 찾을 수 없음: " << atlasKey << std::endl;
+        std::cerr << "[ResourceManager] 아틀라스를 찾을 수 없습니다: " << atlasKey << '\n';
         return nullptr;
     }
-    const auto& atlas = atlasIt->second;
-    auto it = atlas->animations.find(animName);
-    if (it != atlas->animations.end()) {
-        return it->second.get();
-    }
-    return nullptr;
+
+    const auto animationIt = atlasIt->second->animations.find(animationName);
+    return animationIt == atlasIt->second->animations.end()
+        ? nullptr
+        : &animationIt->second;
 }
 
 std::vector<std::string> ResourceManager::getAnimationNames(const std::string& atlasKey) const {
     std::vector<std::string> names;
-    auto it = m_atlases.find(atlasKey);
-    if (it != m_atlases.end()) {
-        for (const auto& pair : it->second->animations) {
-            names.push_back(pair.first); // 애니메이션 이름(키 값) 추출
-        }
+    const auto atlasIt = m_atlases.find(atlasKey);
+    if (atlasIt == m_atlases.end()) {
+        return names;
+    }
+
+    names.reserve(atlasIt->second->animations.size());
+    for (const auto& [name, frames] : atlasIt->second->animations) {
+        names.push_back(name);
     }
     return names;
 }
-
-
-
