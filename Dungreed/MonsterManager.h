@@ -1,13 +1,46 @@
 #pragma once
 
+#include <random>
+#include <string>
+#include <vector>
+
 #include "ObjectPoolingManager.h"
 
+class GameDataManager;
+struct MonsterData;
 class Player;
+class Room;
 class TileMap;
 
-/// 몬스터 객체를 직접 소유하지 않고, 풀에 있는 활성 몬스터의 AI·물리 업데이트만 조정합니다.
 class MonsterManager {
 public:
-    /// 모든 활성 몬스터를 갱신한 뒤 벽 충돌을 적용합니다. 실제 공격 판정은 CombatManager가 담당합니다.
-    void update(float dt, Player& player, ObjectPoolingManager& objectPool, const TileMap& tileMap) const;
+    void requestRoomMonsters(Room& room, const TileMap& tileMap,
+        const GameDataManager& gameData, ObjectPoolingManager& objectPool,
+        const sf::Vector2f& playerPosition);
+    void update(float dt, Player& player, ObjectPoolingManager& objectPool,
+        const TileMap& tileMap);
+    void clearActiveRoom(ObjectPoolingManager& objectPool);
+
+private:
+    Room* m_activeRoom = nullptr;
+    const GameDataManager* m_gameData = nullptr;
+    const TileMap* m_activeTileMap = nullptr;
+    std::vector<Monster*> m_activeRoomMonsters;
+    bool m_hasSpawnedRoomMonsters = false;
+    bool m_usesPhaseSpawning = false;
+    int m_totalPhaseCount = 0;
+    int m_currentPhase = 0;
+    float m_phaseDelayTimer = 0.f;
+    std::mt19937 m_randomEngine{ std::random_device{}() };
+
+    bool spawnMonster(const MonsterData& monsterData,
+        std::vector<sf::Vector2f>& spawnCandidates,
+        const sf::Vector2f& positionOffset, float activationDelay,
+        const sf::Vector2f& playerPosition,
+        ObjectPoolingManager& objectPool);
+    void spawnNextPhase(const sf::Vector2f& playerPosition,
+        ObjectPoolingManager& objectPool);
+    void spawnConfiguredMonsters(const sf::Vector2f& playerPosition,
+        ObjectPoolingManager& objectPool);
+    void releaseActiveRoomMonsters(ObjectPoolingManager& objectPool);
 };
