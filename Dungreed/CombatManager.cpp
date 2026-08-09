@@ -42,7 +42,20 @@ void CombatManager::resolveMonsterAttacks(float dt, Player& player,
 
     const sf::FloatRect playerBounds = player.getGlobalBounds();
     objectPool.forEachActiveMonster([&](Monster& monster) {
-        if (monster.dead() || playerHitMonsters.find(monster.getId()) != playerHitMonsters.end()) {
+        if (monster.dead()) {
+            return;
+        }
+
+        if (monster.getAttackPattern() == MonsterAttackPattern::ChargeCombo &&
+            monster.state == MonsterState::Charge) {
+            if (monster.getCollision().checkHit(playerBounds).has_value() &&
+                monster.consumeChargeImpact()) {
+                player.applyStun(monster.getChargeStunDuration());
+            }
+            return;
+        }
+
+        if (playerHitMonsters.find(monster.getId()) != playerHitMonsters.end()) {
             // 동일 프레임에 플레이어가 맞힌 몬스터의 공격만 무효화합니다.
             return;
         }
@@ -59,10 +72,11 @@ void CombatManager::resolveMonsterAttacks(float dt, Player& player,
         }
 
         const bool isMelee = weapon->getStat().type == WeaponType::Melee;
-        if (isMelee && !monster.getCollision().checkHit(playerBounds).has_value()) {
+        if (isMelee && monster.requiresBodyContactAttack() &&
+            !monster.getCollision().checkHit(playerBounds).has_value()) {
             return;
         }
-        if (!monster.consumeAttackCooldown(dt)) {
+        if (!monster.consumeAttackAction()) {
             return;
         }
 
