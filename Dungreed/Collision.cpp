@@ -1,7 +1,9 @@
 #include "Collision.h"
+
 #include "Actor.h"
-#include "TileMap.h"
 #include "Projectile.h"
+#include "TileMap.h"
+
 #include <cmath>
 
 std::optional<sf::Vector2f> Collision::checkHit(const sf::FloatRect& attackBox) const {
@@ -13,9 +15,10 @@ std::optional<sf::Vector2f> Collision::checkHit(const sf::FloatRect& attackBox) 
 
 void Collision::resolveMapCollision(Actor& actor, const TileMap& map, bool ignoreOneWay) {
     sf::FloatRect bounds = actor.getGlobalBounds();
+    const sf::FloatRect previousBounds = actor.getPreviousGlobalBounds();
     auto& movement = actor.getMovement();
     movement.isGrounded = false;
-    constexpr float GroundEpsilon = 2.f;
+    constexpr float groundEpsilon = 2.f;
 
     for (const auto& tile : map.getCollisionTiles()) {
         if (tile.type == TileType::None || (ignoreOneWay && tile.type == TileType::OneWay)) continue;
@@ -24,7 +27,12 @@ void Collision::resolveMapCollision(Actor& actor, const TileMap& map, bool ignor
         const sf::FloatRect& overlap = *intersection;
 
         if (tile.type == TileType::OneWay) {
-            if (movement.velocity.y >= 0.f && bounds.position.y < tile.bounds.position.y) {
+            const float previousBottom = previousBounds.position.y + previousBounds.size.y;
+            const float currentBottom = bounds.position.y + bounds.size.y;
+            const bool crossedPlatformTop = previousBottom <= tile.bounds.position.y + groundEpsilon &&
+                currentBottom >= tile.bounds.position.y;
+            if (movement.velocity.y > 0.f && crossedPlatformTop &&
+                bounds.position.y < tile.bounds.position.y) {
                 actor.move(0.f, -overlap.size.y);
                 movement.velocity.y = 0.f;
                 movement.isGrounded = true;
@@ -48,12 +56,20 @@ void Collision::resolveMapCollision(Actor& actor, const TileMap& map, bool ignor
     }
 
     bounds = actor.getGlobalBounds();
-    const sf::FloatRect footCheck({ bounds.position.x + 2.f, bounds.position.y + bounds.size.y }, { bounds.size.x - 4.f, GroundEpsilon });
+    const sf::FloatRect footCheck(
+        { bounds.position.x + 2.f, bounds.position.y + bounds.size.y },
+        { bounds.size.x - 4.f, groundEpsilon });
     movement.isGrounded = false;
     for (const auto& tile : map.getCollisionTiles()) {
-        if (tile.type == TileType::None || (ignoreOneWay && tile.type == TileType::OneWay) ||
-            (tile.type == TileType::OneWay && movement.velocity.y < 0.f)) continue;
-        if (footCheck.findIntersection(tile.bounds)) { movement.isGrounded = true; break; }
+        if (tile.type == TileType::None || (ignoreOneWay && tile.type == TileType::OneWay)) continue;
+        if (tile.type == TileType::OneWay) {
+            const float previousBottom = previousBounds.position.y + previousBounds.size.y;
+            if (movement.velocity.y < 0.f || previousBottom > tile.bounds.position.y + groundEpsilon) continue;
+        }
+        if (footCheck.findIntersection(tile.bounds)) {
+            movement.isGrounded = true;
+            break;
+        }
     }
 }
 
@@ -64,14 +80,15 @@ bool Collision::resolveProjectileMapCollision(Projectile& projectile, const Tile
     const sf::Vector2f delta = end - start;
     const sf::Vector2f tileSize = map.getTileSize();
     const float distance = std::max(std::abs(delta.x), std::abs(delta.y));
-    const unsigned int samples = std::max(1u, static_cast<unsigned int>(std::ceil(distance / std::max(1.f, std::max(tileSize.x, tileSize.y)))));
-    for (unsigned int i = 1; i <= samples; ++i) {
-        const float t = static_cast<float>(i) / static_cast<float>(samples);
-        const sf::Vector2f position = start + delta * t;
+    const unsigned int samples = std::max(1u, static_cast<unsigned int>(
+        std::ceil(distance / std::max(1.f, std::max(tileSize.x, tileSize.y)))));
+    for (unsigned int index = 1; index <= samples; ++index) {
+        const float progress = static_cast<float>(index) / static_cast<float>(samples);
+        const sf::Vector2f position = start + delta * progress;
         for (const auto& tile : map.getCollisionTiles()) {
             if (tile.type == TileType::None || tile.type == TileType::OneWay) continue;
             if (projectile.getGlobalBoundsAt(position).findIntersection(tile.bounds)) {
-                projectile.setPosition(start + delta * (static_cast<float>(i - 1) / samples));
+                projectile.setPosition(start + delta * (static_cast<float>(index - 1) / samples));
                 return true;
             }
         }

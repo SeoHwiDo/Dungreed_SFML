@@ -1,4 +1,4 @@
-﻿#include "TileMap.h"
+#include "TileMap.h"
 #include <array>
 #include <iostream>
 
@@ -35,6 +35,10 @@ bool TileMap::load(const std::string& tileAtlasKey, const std::vector<TileConfig
     // SFML 3.1.0은 Quads를 지원하지 않으므로 Triangles 사용 (타일 1개당 6개 정점)
     m_vertices.resize(width * height * 6);
     m_backgroundVertices.resize(width * height * 6);
+    for (std::size_t index = 0; index < m_vertices.getVertexCount(); ++index) {
+        m_vertices[index].color = sf::Color::Transparent;
+        m_backgroundVertices[index].color = sf::Color::Transparent;
+    }
     m_collisionTiles.clear();
 
     for (unsigned int i = 0; i < width; ++i) {
