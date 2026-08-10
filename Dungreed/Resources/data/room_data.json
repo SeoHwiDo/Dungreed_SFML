@@ -16,8 +16,20 @@
             "platforms": [
               {
                 "x": 5,
-                "y": 9,
+                "y": 7,
                 "length": 4
+              }
+            ],
+            "decorations": [
+              {
+                "atlasKey": "TileMap",
+                "animation": "Back_Door",
+                "position": [ 5.5, 11.5 ],
+                "offset": [ 0, 0 ],
+                "scale": [ 0.7, 0.7 ],
+                "frameDuration": 0.3,
+                "isLoop": false,
+                "drawAboveTiles": false
               }
             ]
           }
@@ -212,8 +224,8 @@
           "roomType": "Hut",
           "layout": {
             "generator": "StyledRoom",
-            "width": 40,
-            "height": 30,
+            "width": 30,
+            "height": 20,
             "outlineWidth": 2,
             "platforms": [
               {
@@ -235,11 +247,15 @@
                 "x": 23,
                 "y": 17,
                 "length": 4
-              },
+              }
+            ],
+            "decorations": [
               {
-                "x": 18,
-                "y": 12,
-                "length": 4
+                "atlasKey": "TileMap",
+                "frame": "Hut.png",
+                "position": [ 13, 14 ],
+                "offset": [ 0, 0 ],
+                "drawAboveTiles": false
               }
             ]
           }
@@ -329,9 +345,32 @@
           "phaseDelay": 1.2,
           "activationDelay": 0.9,
           "monster_pool": [
-            [{ "monsterId": "SkelDog", "count": 2 }, { "monsterId": "Bat", "count": 1 }],
-            [{ "monsterId": "BigWhiteSkel", "count": 1 }, { "monsterId": "Banshee", "count": 1 }]
-          ]
+            [
+              {
+                "monsterId": "SkelDog",
+                "count": 2
+              },
+              {
+                "monsterId": "Bat",
+                "count": 1
+              }
+            ],
+            [
+              {
+                "monsterId": "BigWhiteSkel",
+                "count": 2
+              },
+              {
+                "monsterId": "Banshee",
+                "count": 1
+              }
+            ]
+          ],
+          "clearReward": {
+            "fairy": "S",
+            "maxHpIncrease": 10,
+            "powerIncrease": 1
+          }
         },
         {
           "id": "floor01_monster_02",
@@ -354,9 +393,32 @@
           "phaseDelay": 1.2,
           "activationDelay": 0.9,
           "monster_pool": [
-            [{ "monsterId": "LittleGhost", "count": 2 }, { "monsterId": "SkelDog", "count": 1 }],
-            [{ "monsterId": "Minotaurs", "count": 1 }, { "monsterId": "Bat", "count": 2 }]
-          ]
+            [
+              {
+                "monsterId": "LittleGhost",
+                "count": 2
+              },
+              {
+                "monsterId": "SkelDog",
+                "count": 1
+              }
+            ],
+            [
+              {
+                "monsterId": "Minotaurs",
+                "count": 1
+              },
+              {
+                "monsterId": "Bat",
+                "count": 2
+              }
+            ]
+          ],
+          "clearReward": {
+            "fairy": "M",
+            "maxHpIncrease": 20,
+            "powerIncrease": 2
+          }
         },
         {
           "id": "floor01_monster_03",
@@ -379,9 +441,32 @@
           "phaseDelay": 1.2,
           "activationDelay": 0.9,
           "monster_pool": [
-            [{ "monsterId": "Banshee", "count": 2 }],
-            [{ "monsterId": "BigWhiteSkel", "count": 1 }, { "monsterId": "SkelDog", "count": 2 }]
-          ]
+            [
+              {
+                "monsterId": "Banshee",
+                "count": 1
+              },
+              {
+                "monsterId": "Bat",
+                "count": 2
+              }
+            ],
+            [
+              {
+                "monsterId": "BigWhiteSkel",
+                "count": 1
+              },
+              {
+                "monsterId": "SkelDog",
+                "count": 2
+              }
+            ]
+          ],
+          "clearReward": {
+            "fairy": "L",
+            "maxHpIncrease": 30,
+            "powerIncrease": 3
+          }
         },
         {
           "id": "floor01_monster_04",
@@ -404,9 +489,32 @@
           "phaseDelay": 1.2,
           "activationDelay": 0.9,
           "monster_pool": [
-            [{ "monsterId": "Bat", "count": 3 }, { "monsterId": "LittleGhost", "count": 1 }],
-            [{ "monsterId": "Minotaurs", "count": 1 }, { "monsterId": "Banshee", "count": 1 }]
-          ]
+            [
+              {
+                "monsterId": "Bat",
+                "count": 3
+              },
+              {
+                "monsterId": "LittleGhost",
+                "count": 1
+              }
+            ],
+            [
+              {
+                "monsterId": "Minotaurs",
+                "count": 1
+              },
+              {
+                "monsterId": "Banshee",
+                "count": 1
+              }
+            ]
+          ],
+          "clearReward": {
+            "fairy": "XL",
+            "maxHpIncrease": 50,
+            "powerIncrease": 5
+          }
         },
         {
           "id": "floor01_monster_05",
@@ -429,9 +537,32 @@
           "phaseDelay": 1.2,
           "activationDelay": 0.9,
           "monster_pool": [
-            [{ "monsterId": "SkelDog", "count": 2 }, { "monsterId": "Banshee", "count": 1 }],
-            [{ "monsterId": "BigWhiteSkel", "count": 1 }, { "monsterId": "Minotaurs", "count": 1 }]
-          ]
+            [
+              {
+                "monsterId": "SkelDog",
+                "count": 2
+              },
+              {
+                "monsterId": "Banshee",
+                "count": 1
+              }
+            ],
+            [
+              {
+                "monsterId": "BigWhiteSkel",
+                "count": 1
+              },
+              {
+                "monsterId": "Minotaurs",
+                "count": 1
+              }
+            ]
+          ],
+          "clearReward": {
+            "fairy": "M",
+            "maxHpIncrease": 20,
+            "powerIncrease": 3
+          }
         },
         {
           "id": "floor01_hut_01",

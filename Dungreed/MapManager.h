@@ -14,6 +14,7 @@ class GameDataManager;
 struct FloorData;
 class MonsterManager;
 class ObjectPoolingManager;
+class EffectManager;
 
 class MapManager {
 public:
@@ -29,7 +30,8 @@ public:
         const RoomTileSet& tileSet) const;
     void requestCurrentRoomMonsters(MonsterManager& monsterManager,
         ObjectPoolingManager& objectPool, const GameDataManager& gameData,
-        const TileMap& tileMap, const sf::Vector2f& playerPosition);
+        const TileMap& tileMap, const sf::Vector2f& playerPosition,
+        EffectManager& effectManager);
     Room* getCurrentRoom() const { return m_currentRoom; }
     const TileMap* getCurrentTileMap() const { return m_currentTileMap; }
     /// JSON 연결 생성 순서에 맞춘 방 목록을 반환합니다. 디버그 프리뷰 등 읽기 전용 소비자가 사용합니다.

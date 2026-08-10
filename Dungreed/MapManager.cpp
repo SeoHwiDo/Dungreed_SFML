@@ -148,10 +148,13 @@ bool MapManager::createCurrentRoomFromData(const FloorData& floor,
 
     for (const auto& [instanceId, managedRoom] : m_floorRooms) {
         const RoomReferenceData& reference = *referenceData.at(instanceId);
-        managedRoom.room->loadLayout(reference.type, reference.layout, doorPositions.at(instanceId));
+        managedRoom.room->loadLayout(reference.type, reference.layout,
+            doorPositions.at(instanceId), reference.decorations);
         managedRoom.room->setMonsterSpawns(instanceData.at(instanceId)->monsterSpawns);
         managedRoom.room->setMonsterPhaseConfig(
             instanceData.at(instanceId)->monsterPhaseConfig);
+        managedRoom.room->setClearRewardConfig(
+            instanceData.at(instanceId)->clearReward);
     }
     for (const RoomConnection& connection : connections) {
         Room* fromRoom = m_floorRooms.at(connection.fromId).room.get();
@@ -214,11 +217,13 @@ bool MapManager::buildCurrentRoom(TileMap& tileMap, const std::string& tileAtlas
 
 void MapManager::requestCurrentRoomMonsters(MonsterManager& monsterManager,
     ObjectPoolingManager& objectPool, const GameDataManager& gameData,
-    const TileMap& tileMap, const sf::Vector2f& playerPosition) {
+    const TileMap& tileMap, const sf::Vector2f& playerPosition,
+    EffectManager& effectManager) {
     if (!m_currentRoom || m_currentRoom->getInfo().isClear) {
         return;
     }
-    monsterManager.requestRoomMonsters(*m_currentRoom, tileMap, gameData, objectPool, playerPosition);
+    monsterManager.requestRoomMonsters(*m_currentRoom, tileMap, gameData,
+        objectPool, playerPosition, effectManager);
 }
 
 const TileMap* MapManager::findFloorTileMap(const Room* room) const {

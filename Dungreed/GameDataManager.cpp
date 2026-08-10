@@ -75,6 +75,49 @@ DoorPosition parseDoorPosition(const std::string& value) {
     return DoorPosition::Right;
 }
 
+FairyRewardSize parseFairyRewardSize(const std::string& value) {
+    if (value == "M") {
+        return FairyRewardSize::Medium;
+    }
+    if (value == "L") {
+        return FairyRewardSize::Large;
+    }
+    if (value == "XL") {
+        return FairyRewardSize::ExtraLarge;
+    }
+    return FairyRewardSize::Small;
+}
+
+/// 방 레퍼런스의 자유 배치 장식 정보를 읽습니다. 잘못된 좌표 배열 항목은 건너뜁니다.
+std::vector<DecorativeTileConfig> parseDecorations(const json& decorationsJson) {
+    std::vector<DecorativeTileConfig> decorations;
+    for (const auto& decorationJson : decorationsJson) {
+        DecorativeTileConfig decoration;
+        decoration.atlasKey = decorationJson.value("atlasKey", "TileMap");
+        decoration.frameName = decorationJson.value("frame", "");
+        decoration.animationName = decorationJson.value("animation", "");
+        decoration.frameDuration = decorationJson.value("frameDuration", 0.15f);
+        decoration.isLoop = decorationJson.value("isLoop", true);
+        decoration.drawAboveTiles = decorationJson.value("drawAboveTiles", false);
+
+        const std::vector<float> position = decorationJson.value(
+            "position", std::vector<float>{ 0.f, 0.f });
+        const std::vector<float> offset = decorationJson.value(
+            "offset", std::vector<float>{ 0.f, 0.f });
+        const std::vector<float> scale = decorationJson.value(
+            "scale", std::vector<float>{ 1.f, 1.f });
+        if (position.size() != 2 || offset.size() != 2 || scale.size() != 2) {
+            continue;
+        }
+
+        decoration.position = { position[0], position[1] };
+        decoration.offset = { offset[0], offset[1] };
+        decoration.scale = { scale[0], scale[1] };
+        decorations.push_back(std::move(decoration));
+    }
+    return decorations;
+}
+
 RoomLayout createStyledRoomLayout(const json& layoutJson) {
     const unsigned int width = layoutJson.at("width").get<unsigned int>();
     const unsigned int height = layoutJson.at("height").get<unsigned int>();
@@ -263,6 +306,15 @@ bool GameDataManager::loadRoomData(const std::string& path) {
             reference.id = referenceJson.at("id").get<std::string>();
             reference.type = parseRoomType(referenceJson.value("roomType", "Start"));
             reference.layout = createStyledRoomLayout(referenceJson.at("layout"));
+            // 장식은 레퍼런스 최상위와 layout 내부 형식을 모두 허용합니다.
+            // 레이아웃과 함께 관리하기 쉬운 layout.decorations를 우선 사용합니다.
+            const json& layoutJson = referenceJson.at("layout");
+            if (layoutJson.contains("decorations")) {
+                reference.decorations = parseDecorations(layoutJson.at("decorations"));
+            } else {
+                reference.decorations = parseDecorations(
+                    referenceJson.value("decorations", json::array()));
+            }
             if (reference.layout.cells.empty()) {
                 return false;
             }
@@ -311,6 +363,17 @@ bool GameDataManager::loadRoomData(const std::string& path) {
                     room.monsterPhaseConfig.monsterPool.push_back(
                         std::move(phaseEntries));
                 }
+            }
+
+            if (roomJson.contains("clearReward")) {
+                const json& rewardJson = roomJson.at("clearReward");
+                room.clearReward.enabled = true;
+                room.clearReward.fairySize = parseFairyRewardSize(
+                    rewardJson.value("fairy", "S"));
+                room.clearReward.maxHpIncrease = rewardJson.value(
+                    "maxHpIncrease", 0.f);
+                room.clearReward.powerIncrease = rewardJson.value(
+                    "powerIncrease", 0.f);
             }
 
             floor.rooms.emplace(room.id, std::move(room));

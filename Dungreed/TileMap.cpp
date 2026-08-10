@@ -4,7 +4,8 @@
 
 /// 첫 유효 타일의 원본 크기를 셀 크기로 삼아, 전경/백타일 버텍스와 충돌 목록을 한 번에 재생성합니다.
 bool TileMap::load(const std::string& tileAtlasKey, const std::vector<TileConfig>& grid,
-    unsigned int width, unsigned int height) {
+    unsigned int width, unsigned int height,
+    const std::vector<DecorativeTileConfig>& decorations) {
     auto& resMgr = ResourceManager::getInstance();
     m_tileset = resMgr.getAtlasTexture(tileAtlasKey);
     if (!m_tileset) return false;
@@ -112,7 +113,91 @@ bool TileMap::load(const std::string& tileAtlasKey, const std::vector<TileConfig
             }
         }
     }
+    return createDecorations(tileAtlasKey, decorations);
+}
+
+/// 장식 타일은 일반 격자 버텍스와 달리 각자 다른 크기·아틀라스·애니메이션을 가질 수 있습니다.
+/// 물리 TileData를 생성하지 않으므로 캐릭터와 충돌하거나 이동을 막지 않습니다.
+bool TileMap::createDecorations(const std::string& defaultAtlasKey,
+    const std::vector<DecorativeTileConfig>& decorations) {
+    m_backDecorations.clear();
+    m_frontDecorations.clear();
+
+    auto& resMgr = ResourceManager::getInstance();
+    for (const DecorativeTileConfig& config : decorations) {
+        const std::string& atlasKey = config.atlasKey.empty()
+            ? defaultAtlasKey
+            : config.atlasKey;
+        const sf::Texture* texture = resMgr.getAtlasTexture(atlasKey);
+        if (!texture) {
+            std::cerr << "[TileMap] 장식 타일 아틀라스를 찾을 수 없습니다: "
+                << atlasKey << std::endl;
+            return false;
+        }
+
+        AnimatedDecoration decoration{ sf::Sprite(*texture) };
+        const bool isAnimated = !config.animationName.empty();
+        const std::string& initialFrame = isAnimated
+            ? config.animationName
+            : config.frameName;
+        if (initialFrame.empty()) {
+            std::cerr << "[TileMap] 장식 타일에는 frame 또는 animation이 필요합니다." << std::endl;
+            return false;
+        }
+
+        if (isAnimated) {
+            const std::vector<sf::IntRect>* frames =
+                resMgr.getAnimationFrames(atlasKey, config.animationName);
+            if (!frames || frames->empty()) {
+                std::cerr << "[TileMap] 장식 애니메이션을 찾을 수 없습니다: "
+                    << config.animationName << std::endl;
+                return false;
+            }
+            decoration.sprite.setTextureRect(frames->front());
+            decoration.animator.addAnimation(config.animationName,
+                AnimationClip(frames, config.frameDuration, config.isLoop));
+            decoration.animator.play(config.animationName);
+            decoration.isAnimated = true;
+        } else {
+            const sf::IntRect* frame = resMgr.getFrameRect(atlasKey, config.frameName);
+            if (!frame) {
+                std::cerr << "[TileMap] 장식 프레임을 찾을 수 없습니다: "
+                    << config.frameName << std::endl;
+                return false;
+            }
+            decoration.sprite.setTextureRect(*frame);
+        }
+
+        const std::optional<sf::Vector2f> pivot = isAnimated
+            ? resMgr.getAnimationFirstFramePivot(atlasKey, config.animationName)
+            : resMgr.getFramePivot(atlasKey, config.frameName);
+        if (pivot) {
+            decoration.sprite.setOrigin(*pivot);
+        }
+        decoration.sprite.setPosition({
+            config.position.x * m_tileSize.x + config.offset.x,
+            config.position.y * m_tileSize.y + config.offset.y
+        });
+        decoration.sprite.setScale(config.scale);
+
+        std::vector<AnimatedDecoration>& layer = config.drawAboveTiles
+            ? m_frontDecorations
+            : m_backDecorations;
+        layer.push_back(std::move(decoration));
+    }
     return true;
+}
+
+void TileMap::update(float dt) const {
+    const auto updateLayer = [dt](std::vector<AnimatedDecoration>& decorations) {
+        for (AnimatedDecoration& decoration : decorations) {
+            if (decoration.isAnimated) {
+                decoration.animator.update(dt, decoration.sprite);
+            }
+        }
+    };
+    updateLayer(m_backDecorations);
+    updateLayer(m_frontDecorations);
 }
 
 /// 단일 배경 프레임을 선택해 타일 버텍스보다 먼저 그릴 스프라이트로 보관합니다.
@@ -141,7 +226,15 @@ void TileMap::draw(sf::RenderTarget& target, sf::RenderStates states) const {
         states.texture = m_tileset;
         target.draw(m_backgroundVertices, states);
 
+        for (const AnimatedDecoration& decoration : m_backDecorations) {
+            target.draw(decoration.sprite, states);
+        }
+
         // 3. 상호작용 타일 렌더링
         target.draw(m_vertices, states);
+
+        for (const AnimatedDecoration& decoration : m_frontDecorations) {
+            target.draw(decoration.sprite, states);
+        }
     }
 }

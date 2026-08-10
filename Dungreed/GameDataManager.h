@@ -28,6 +28,7 @@ struct RoomReferenceData {
     std::string id;
     RoomType type = RoomType::Start;
     RoomLayout layout;
+    std::vector<DecorativeTileConfig> decorations;
 };
 
 struct RoomInstanceData {
@@ -39,6 +40,7 @@ struct RoomInstanceData {
     int maxDoorCount = 0;
     std::vector<RoomMonsterSpawn> monsterSpawns;
     RoomMonsterPhaseConfig monsterPhaseConfig;
+    RoomClearRewardConfig clearReward;
 };
 
 struct FloorData {

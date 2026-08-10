@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <optional>
+#include "Animator.h"
 #include "ResourceManager.h"
 
 // 타일의 물리적 특성 정의
@@ -18,6 +19,21 @@ struct TileConfig {
     TileType type = TileType::None;
     bool isBackground = false; // true면 렌더링만 하고 충돌을 만들지 않음
     int rotationQuarterTurns = 0; // 시계 방향 90도 단위 텍스처 회전
+};
+
+// 격자 한 칸에 맞추지 않고, 충돌 없이 맵을 꾸미는 스프라이트 설정입니다.
+// position은 타일 단위의 월드 좌표이며 소수 값을 사용해 자유롭게 배치할 수 있습니다.
+struct DecorativeTileConfig {
+    std::string atlasKey;
+    std::string frameName;
+    std::string animationName;
+    sf::Vector2f position{};
+    sf::Vector2f offset{};
+    sf::Vector2f scale{ 1.f, 1.f };
+    float frameDuration = 0.15f;
+    bool isLoop = true;
+    // false면 벽·플랫폼보다 뒤, true면 그 앞에 그립니다. 어느 경우에도 충돌은 만들지 않습니다.
+    bool drawAboveTiles = false;
 };
 
 // 게임 내 실제 물리 충돌에 쓰일 데이터
@@ -37,7 +53,11 @@ public:
     /// 셀 그리드와 아틀라스로 렌더링 버텍스 및 물리 충돌 타일을 구성합니다.
     /// 셀 크기는 첫 유효 프레임의 sourceSize에서 자동으로 읽습니다.
     bool load(const std::string& tileAtlasKey, const std::vector<TileConfig>& grid,
-        unsigned int width, unsigned int height);
+        unsigned int width, unsigned int height,
+        const std::vector<DecorativeTileConfig>& decorations = {});
+
+    /// 장식 스프라이트의 애니메이션 프레임만 갱신합니다. 충돌 타일에는 영향을 주지 않습니다.
+    void update(float dt) const;
 
     /// 타일맵 뒤에 그릴 단일 배경 스프라이트를 설정합니다. 프레임을 못 찾으면 배경을 비웁니다.
     void setBackground(const std::string& bgAtlasKey, const std::string& bgFrameName);
@@ -56,6 +76,16 @@ protected:
     void draw(sf::RenderTarget& target, sf::RenderStates states) const override;
 
 private:
+    struct AnimatedDecoration {
+        sf::Sprite sprite;
+        Animator animator;
+        bool isAnimated = false;
+    };
+
+    /// JSON 장식 설정을 독립 스프라이트로 만들고, 렌더링 순서별 목록에 넣습니다.
+    bool createDecorations(const std::string& defaultAtlasKey,
+        const std::vector<DecorativeTileConfig>& decorations);
+
     sf::VertexArray m_backgroundVertices;
     sf::VertexArray m_vertices;
     const sf::Texture* m_tileset = nullptr;
@@ -65,4 +95,6 @@ private:
     unsigned int m_height = 0;
 
     std::optional<sf::Sprite> m_background;
+    mutable std::vector<AnimatedDecoration> m_backDecorations;
+    mutable std::vector<AnimatedDecoration> m_frontDecorations;
 };

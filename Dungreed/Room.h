@@ -94,6 +94,22 @@ struct RoomMonsterPhaseConfig {
     }
 };
 
+/// 방 클리어 보상에 사용할 요정의 크기입니다. 실제 이미지와 능력치 수치는 room_data.json이 결정합니다.
+enum class FairyRewardSize {
+    Small,
+    Medium,
+    Large,
+    ExtraLarge
+};
+
+/// 전투방을 클리어했을 때 생성할 보상 상자의 구성입니다.
+struct RoomClearRewardConfig {
+    bool enabled = false;
+    FairyRewardSize fairySize = FairyRewardSize::Small;
+    float maxHpIncrease = 0.f;
+    float powerIncrease = 0.f;
+};
+
 struct RoomInfo {
     std::vector<Door> doors;
     std::optional<sf::Vector2u> playerSpawnCell;
@@ -105,7 +121,12 @@ struct RoomInfo {
     std::vector<RoomMonsterSpawn> encounterMonsters;
     int encounterPhaseCount = 0;
     bool isEncounterInitialized = false;
+    RoomClearRewardConfig clearReward;
+    bool clearRewardChestOpened = false;
+    bool clearRewardCollected = false;
     RoomLayout layout;
+    // 방 레퍼런스에 저장한 충돌 없는 비규격 장식 타일 목록입니다.
+    std::vector<DecorativeTileConfig> decorations;
 };
 
 struct RoomTileSet {
@@ -151,14 +172,23 @@ public:
 
     /// 하드코딩된 레퍼런스 방을 다시 읽고 지정한 방향에만 문 확장 공간을 만듭니다.
     void loadReference(RoomType type, DoorPositions doorPositions = { false, false, true, true });
-    void loadLayout(RoomType type, RoomLayout layout, DoorPositions doorPositions);
+    void loadLayout(RoomType type, RoomLayout layout, DoorPositions doorPositions,
+        std::vector<DecorativeTileConfig> decorations = {});
     void setMonsterSpawns(std::vector<RoomMonsterSpawn> monsterSpawns);
     void setMonsterPhaseConfig(RoomMonsterPhaseConfig config);
+    /// 방 인스턴스 데이터가 지정한 클리어 보상 구성을 적용합니다.
+    void setClearRewardConfig(RoomClearRewardConfig config);
     /// 최초 활성화 때 확정한 몬스터 목록과 페이즈 수를 저장합니다. 빈 목록은 즉시 클리어됩니다.
     void prepareMonsterEncounter(std::vector<RoomMonsterSpawn> monsters, int phaseCount);
     void setClear(bool isClear);
     /// 몬스터가 하나라도 남아 있는, 이동을 막아야 하는 전투방인지 반환합니다.
     bool isTraversalLocked() const;
+    /// 전투방 클리어 보상 상자의 개방·수령 상태를 보관합니다.
+    bool isClearRewardChestOpened() const { return info.clearRewardChestOpened; }
+    bool isClearRewardCollected() const { return info.clearRewardCollected; }
+    const RoomClearRewardConfig& getClearRewardConfig() const { return info.clearReward; }
+    void setClearRewardChestOpened(bool opened) { info.clearRewardChestOpened = opened; }
+    void setClearRewardCollected(bool collected) { info.clearRewardCollected = collected; }
 
     /// RoomCell 레이아웃을 TileConfig로 변환해 타일맵 렌더링 및 충돌 데이터를 생성합니다.
     /// tileSet에는 벽·문·백타일·플랫폼에 대응하는 아틀라스 프레임 이름을 전달합니다.

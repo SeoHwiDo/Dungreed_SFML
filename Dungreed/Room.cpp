@@ -198,14 +198,18 @@ void Room::loadReference(RoomType type, DoorPositions doorPositions) {
     loadLayout(type, getReferenceLayout(type), doorPositions);
 }
 
-void Room::loadLayout(RoomType type, RoomLayout layout, DoorPositions doorPositions) {
+void Room::loadLayout(RoomType type, RoomLayout layout, DoorPositions doorPositions,
+    std::vector<DecorativeTileConfig> decorations) {
     info.type = type;
     info.isClear = false;
     info.encounterMonsters.clear();
     info.encounterPhaseCount = 0;
     info.isEncounterInitialized = false;
+    info.clearRewardChestOpened = false;
+    info.clearRewardCollected = false;
     info.doorPositions = doorPositions;
     info.layout = std::move(layout);
+    info.decorations = std::move(decorations);
     applyDoorways(info.layout, doorPositions);
     info.doors.resize(4);
     for (std::size_t index = 0; index < info.doors.size(); ++index) {
@@ -235,6 +239,12 @@ void Room::setMonsterPhaseConfig(RoomMonsterPhaseConfig config) {
     info.encounterPhaseCount = 0;
     info.isEncounterInitialized = false;
     info.isClear = false;
+}
+
+void Room::setClearRewardConfig(RoomClearRewardConfig config) {
+    info.clearReward = config;
+    info.clearRewardChestOpened = false;
+    info.clearRewardCollected = false;
 }
 
 void Room::prepareMonsterEncounter(std::vector<RoomMonsterSpawn> monsters,
@@ -586,7 +596,8 @@ bool Room::buildTileMap(TileMap& tileMap, const std::string& tileAtlasKey,
         }
 
     }
-    return tileMap.load(tileAtlasKey, grid, info.layout.width, info.layout.height);
+    return tileMap.load(tileAtlasKey, grid, info.layout.width, info.layout.height,
+        info.decorations);
 }
 
 /// 논리 스폰 셀의 발밑 중심을 반환해 Actor의 bottom-center 원점과 맞춥니다.
