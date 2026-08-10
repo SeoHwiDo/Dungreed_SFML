@@ -60,6 +60,9 @@ public:
     virtual void takeDamage(float damage);
     /// 공격자 위치를 이용해 반대 방향 넉백과 피격 효과를 함께 적용합니다.
     virtual void takeDamage(float damage, const sf::Vector2f& attackerPosition);
+    /// 공격자 위치와 넉백 배율을 이용해 피해·피격 효과를 적용합니다.
+    virtual void takeDamage(float damage, const sf::Vector2f& attackerPosition,
+        float knockbackMultiplier);
     /// 피격 색상/넉백 타이머가 남아 있는지 반환합니다. 피격 중복 처리 제한에 사용합니다.
     inline bool isHit() const { return m_hitTimer > 0.f; }
     /// 지면 위일 때만 위쪽 초기 속도를 부여합니다. 점프가 실제로 시작되면 true를 반환합니다.

@@ -60,12 +60,19 @@ void Actor::takeDamage(float damage) {
 }
 
 void Actor::takeDamage(float damage, const sf::Vector2f& attackerPosition) {
+    takeDamage(damage, attackerPosition, 1.f);
+}
+
+void Actor::takeDamage(float damage, const sf::Vector2f& attackerPosition,
+    float knockbackMultiplier) {
     if (dead()) return;
 
     status.tmpHp -= damage;
     const float knockbackDirection =
         (getCenterPosition().x >= attackerPosition.x) ? 1.f : -1.f;
-    m_knockbackVelocity = { knockbackDirection * kKnockbackSpeed, 100.f };
+    const float clampedMultiplier = std::max(0.f, knockbackMultiplier);
+    m_knockbackVelocity = { knockbackDirection * kKnockbackSpeed * clampedMultiplier,
+        100.f * clampedMultiplier };
     m_knockbackTimer = kKnockbackDuration;
     m_hitTimer = kHitColorDuration;
 

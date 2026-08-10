@@ -15,6 +15,7 @@ public:
 
     /// 몬스터의 근접/원거리 공격을 처리합니다. playerHitMonsters에는 이번 프레임 플레이어가 맞힌 몬스터를 전달합니다.
     void resolveMonsterAttacks(float dt, Player& player, ObjectPoolingManager& objectPool,
+        const TileMap& tileMap,
         const std::unordered_set<EntityId>& playerHitMonsters) const;
 
     /// 지정한 대상 그룹의 투사체만 한 번 갱신합니다. 벽 충돌을 가장 먼저 검사합니다.

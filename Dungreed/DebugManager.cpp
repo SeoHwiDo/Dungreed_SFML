@@ -8,6 +8,7 @@
 #include "Monster.h"
 #include "ObjectPoolingManager.h"
 #include "Player.h"
+#include "Projectile.h"
 #include "Room.h"
 #include "TileMap.h"
 
@@ -22,20 +23,17 @@ void drawBounds(sf::RenderWindow& window, const sf::FloatRect& bounds,
     window.draw(shape);
 }
 
-void drawMonsterAttackRange(sf::RenderWindow& window, const Monster& monster,
-    bool isAttackActive) {
-    const float range = monster.getAttackRange();
+void drawCircularRange(sf::RenderWindow& window, const sf::Vector2f& center,
+    float range, const sf::Color& fillColor, const sf::Color& outlineColor) {
     if (range <= 0.f) {
         return;
     }
 
     sf::CircleShape shape(range);
     shape.setOrigin({ range, range });
-    shape.setPosition(monster.getBodyCenterPosition());
-    shape.setFillColor(isAttackActive ? sf::Color(255, 80, 80, 24) :
-        sf::Color(255, 190, 60, 16));
-    shape.setOutlineColor(isAttackActive ? sf::Color(255, 80, 80, 220) :
-        sf::Color(255, 190, 60, 130));
+    shape.setPosition(center);
+    shape.setFillColor(fillColor);
+    shape.setOutlineColor(outlineColor);
     shape.setOutlineThickness(1.5f);
     window.draw(shape);
 }
@@ -61,16 +59,36 @@ void DebugManager::renderCombatBounds(sf::RenderWindow& window,
 
         // 청록색: 몬스터가 피해를 받는 실제 몸체 충돌 상자입니다.
         drawBounds(window, monster.getCollision().getHitbox(), sf::Color::Cyan);
-        const bool isAttackActive = monster.state == MonsterState::Attack;
-        // 노란 원은 설정된 공격 사거리, 붉은 원은 현재 실제 공격 중인 사거리입니다.
-        drawMonsterAttackRange(window, monster, isAttackActive);
-        if (isAttackActive && monster.requiresBodyContactAttack()) {
-            // 접촉 공격 몬스터는 사거리 외에도 몸체 겹침이 필요하므로 이를 강조합니다.
-            drawBounds(window, monster.getCollision().getHitbox(), sf::Color::Red, 2.f);
-        } else if (monster.getAttackPattern() == MonsterAttackPattern::ChargeCombo &&
+        const bool isAttackActive = monster.isAttackDamageWindowActive();
+        const auto weapon = monster.getEquipment();
+        const bool isMelee = weapon && weapon->getStat().type == WeaponType::Melee;
+        const sf::Vector2f center = monster.getBodyCenterPosition();
+
+        // 파란 원: 플레이어를 감지해 추적을 시작하는 범위입니다.
+        drawCircularRange(window, center, monster.getDetectRange(),
+            sf::Color(70, 160, 255, 10), sf::Color(70, 160, 255, 100));
+        // 노란 원: 공격 상태 진입 여부를 판단하는 설정 사거리입니다.
+        drawCircularRange(window, center, monster.getAttackRange(),
+            sf::Color(255, 190, 60, 12), sf::Color(255, 190, 60, 150));
+
+        if (isMelee) {
+            // 빨간 상자: 근접 공격이 실제로 유효한 몬스터 전면 충돌 영역입니다.
+            drawBounds(window, monster.getFrontAttackBounds(),
+                isAttackActive ? sf::Color(255, 70, 70, 230) : sf::Color(255, 70, 70, 90),
+                isAttackActive ? 2.f : 1.5f);
+        }
+        if (monster.getAttackPattern() == MonsterAttackPattern::ChargeCombo &&
             monster.state == MonsterState::Charge) {
             // 돌진 공격의 실제 판정은 몸체 충돌이므로 주황색 상자로 표시합니다.
             drawBounds(window, monster.getCollision().getHitbox(), sf::Color(255, 160, 0), 2.f);
+        }
+    });
+
+    objectPool.forEachActiveProjectile([&](Projectile& projectile) {
+        if (projectile.getTarget() == ProjectileTarget::Player &&
+            projectile.isDamageActive()) {
+            // 빨간 상자: 원거리 몬스터 투사체가 실제 피해를 주는 충돌 영역입니다.
+            drawBounds(window, projectile.getGlobalBounds(), sf::Color::Red, 2.f);
         }
     });
 }

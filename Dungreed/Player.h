@@ -34,6 +34,10 @@ public:
     void update(float dt, const sf::RenderWindow& window,
         const TileMap& tileMap);
     void render(sf::RenderWindow& window) override;
+    using Actor::takeDamage;
+    /// 대시 중에는 체력·넉백·피격 효과를 적용하지 않습니다.
+    void takeDamage(float damage, const sf::Vector2f& attackerPosition,
+        float knockbackMultiplier) override;
 
     void setDashConfig(DashConfig config);
     const DashConfig& getDashConfig() const { return m_dashConfig; }

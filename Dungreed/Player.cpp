@@ -1,4 +1,4 @@
-#include "Player.h"
+﻿#include "Player.h"
 
 #include "Collision.h"
 #include "Equip.h"
@@ -25,17 +25,15 @@ void Player::init(const std::string& atlasKey) {
             continue;
         }
 
-        const bool isLoop = animationName.find("Attack") == std::string::npos &&
-            animationName.find("Dead") == std::string::npos &&
-            animationName.find("Die") == std::string::npos;
-        float frameDuration = 0.30f;
-        if (animationName.find("Idle") != std::string::npos) {
-            frameDuration = 0.40f;
-        } else if (animationName.find("Run") != std::string::npos) {
-            frameDuration = 0.10f;
-        } else if (animationName.find("Attack") != std::string::npos) {
-            frameDuration = 0.16f;
-        }
+        const bool isLoop = animationName.find("Attack") == std::string::npos &&animationName.find("Dead") == std::string::npos &&animationName.find("Die") == std::string::npos;
+        float frameDuration = 0.10f;
+        //if (animationName.find("Idle") != std::string::npos) {
+        //    frameDuration = 0.10f;
+        //} else if (animationName.find("Run") != std::string::npos) {
+        //    frameDuration = 0.10f;
+        //} else if (animationName.find("Attack") != std::string::npos) {
+        //    frameDuration = 0.10f;
+        //}
         animator.addAnimation(animationName, AnimationClip(frames, frameDuration, isLoop));
     }
     animator.play("Player_Idle");
@@ -152,7 +150,7 @@ void Player::updateDash(float dt, const TileMap& tileMap) {
         1.f, std::min(tileSize.x, tileSize.y) * 0.25f);
     const int stepCount = std::max(1, static_cast<int>(std::ceil(
         std::max(std::abs(delta.x), std::abs(delta.y)) /
-            maximumStep)));
+        maximumStep)));
     const sf::Vector2f step =
         delta / static_cast<float>(stepCount);
 
@@ -165,9 +163,9 @@ void Player::updateDash(float dt, const TileMap& tileMap) {
             getPosition() - positionBeforeStep;
         constexpr float collisionEpsilon = 0.1f;
         if (std::abs(actualMovement.x - step.x) >
-                collisionEpsilon ||
+            collisionEpsilon ||
             std::abs(actualMovement.y - step.y) >
-                collisionEpsilon) {
+            collisionEpsilon) {
             cancelDash();
             break;
         }
@@ -242,9 +240,17 @@ void Player::handleState(float dt, const InputData& input) {
     }
 
     if (input.isDashing && tryStartDash(input.aimWorldPosition)) {
+        // 대시 시작과 동시에 장비 공격을 실행해, 이동 중에도 무기 판정을 유지합니다.
+        if (equipment) {
+            equipment->attack();
+        }
         return;
     }
     if (m_isDashing) {
+        // 대시 도중의 공격 입력도 무시하지 않습니다.
+        if (input.isAttacking && equipment) {
+            equipment->attack();
+        }
         return;
     }
 
@@ -326,4 +332,12 @@ void Player::render(sf::RenderWindow& window) {
         window.draw(afterimage.sprite);
     }
     Actor::render(window);
+}
+
+void Player::takeDamage(float damage, const sf::Vector2f& attackerPosition,
+    float knockbackMultiplier) {
+    if (m_isDashing) {
+        return;
+    }
+    Actor::takeDamage(damage, attackerPosition, knockbackMultiplier);
 }
