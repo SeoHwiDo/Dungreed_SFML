@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <array>
 #include <cstdint>
 #include <optional>
@@ -110,6 +110,7 @@ struct RoomInfo {
 };
 
 struct RoomTileSet {
+    std::string WallOutterFrameName;
     std::string wallTopFrameName;
     std::string wallGroundFrameName;
     std::string wallLeftFrameName;

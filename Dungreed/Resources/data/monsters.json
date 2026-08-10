@@ -6,7 +6,7 @@
       "enabled": true,
       "atlasKey": "Monster",
       "movement": {
-        "mode": "Ground",
+        "mode": "Flying",
         "moveSpeed": 80
       },
       "status": {

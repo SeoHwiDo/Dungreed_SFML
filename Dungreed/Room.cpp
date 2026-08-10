@@ -28,7 +28,7 @@ void applyDoorways(RoomLayout& layout, const DoorPositions& positions) {
     const unsigned int height = layout.height;
     if (width < 2 * kOutlineWidth + kCenterDoorWidth ||
         height < 2 * kOutlineWidth + kDoorHeight + 1) {
-        return;
+        return;  
     }
 
     const auto setCell = [&](unsigned int x, unsigned int y, RoomCell cell) {
@@ -580,7 +580,8 @@ bool Room::buildTileMap(TileMap& tileMap, const std::string& tileAtlasKey,
             config = makeBackTile(getBackFrame(x, y, RoomCell::Door));
             break;
         case RoomCell::Empty:
-            config = { "", TileType::None };
+            // 방 기준 레이아웃의 외곽 여백은 외부 벽으로 채워 통로 밖 이탈을 막습니다.
+            config = { tileSet.WallOutterFrameName, TileType::Solid };
             break;
         }
 

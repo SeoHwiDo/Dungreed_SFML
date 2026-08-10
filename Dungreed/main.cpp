@@ -71,6 +71,7 @@ int main() {
     }
     Room* room = mapManager.getCurrentRoom();
     const RoomTileSet roomTiles{
+        "Wall_Outter.png",
         "Wall_Top.png",
         "Wall_Ground.png",
         "Wall_Left.png",
@@ -126,7 +127,7 @@ int main() {
 
     // 맵의 최하단에서는 뷰 하단이 맵 바닥과 정확히 맞춰집니다.
     Camera camera(window.getSize(),
-        sf::FloatRect({ 0.f, 0.f }, initialTileMap->getPixelSize()), 1.f);
+        sf::FloatRect({ 0.f, 0.f }, initialTileMap->getPixelSize()), 4.f);
     camera.update(player.getCenterPosition());
     // 디버그 프리뷰는 월드 카메라가 아닌 창 좌표계를 사용해야 전체 배치가 잘리지 않습니다.
     window.setView(kShowAllRoomsDebug ? window.getDefaultView() : camera.getView());

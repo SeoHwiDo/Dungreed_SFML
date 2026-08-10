@@ -25,24 +25,62 @@ void MonsterManager::requestRoomMonsters(Room& room, const TileMap& tileMap,
         return;
     }
 
+    if (!room.isMonsterEncounterPrepared()) {
+        prepareRoomEncounter(room, gameData);
+    }
+    if (room.getInfo().isClear) {
+        return;
+    }
+
     releaseActiveRoomMonsters(objectPool);
     m_activeRoom = &room;
     m_gameData = &gameData;
     m_activeTileMap = &tileMap;
 
-    const RoomMonsterPhaseConfig& phaseConfig =
-        room.getInfo().monsterPhaseConfig;
-    m_usesPhaseSpawning = phaseConfig.isEnabled();
-    if (m_usesPhaseSpawning) {
-        m_totalPhaseCount = randomBetween(m_randomEngine,
+    m_totalPhaseCount = room.getEncounterPhaseCount();
+    m_currentPhase = 0;
+    m_phaseDelayTimer = 0.f;
+    spawnNextPhase(playerPosition, objectPool);
+}
+
+void MonsterManager::prepareRoomEncounter(Room& room,
+    const GameDataManager& gameData) {
+    std::vector<RoomMonsterSpawn> encounterMonsters;
+    int phaseCount = 1;
+    const RoomMonsterPhaseConfig& phaseConfig = room.getInfo().monsterPhaseConfig;
+    if (phaseConfig.isEnabled()) {
+        phaseCount = randomBetween(m_randomEngine,
             phaseConfig.minPhaseCount, phaseConfig.maxPhaseCount);
-        m_currentPhase = 0;
-        m_phaseDelayTimer = 0.f;
-        spawnNextPhase(playerPosition, objectPool);
-        return;
+        std::uniform_int_distribution<std::size_t> monsterDistribution(
+            0, phaseConfig.monsterPool.size() - 1);
+
+        for (int phaseIndex = 0; phaseIndex < phaseCount; ++phaseIndex) {
+            const int monsterCount = randomBetween(m_randomEngine,
+                phaseConfig.minMonstersPerPhase, phaseConfig.maxMonstersPerPhase);
+            for (int index = 0; index < monsterCount; ++index) {
+                const std::string& monsterId =
+                    phaseConfig.monsterPool[monsterDistribution(m_randomEngine)];
+                const MonsterData* monsterData = gameData.findMonster(monsterId);
+                if (!monsterData || !monsterData->enabled) {
+                    continue;
+                }
+
+                encounterMonsters.push_back({
+                    monsterId,
+                    monsterData->behavior.isFlying ? sf::Vector2f{ 0.f, -96.f } : sf::Vector2f{},
+                    phaseConfig.activationDelay,
+                    phaseIndex
+                });
+            }
+        }
+    } else {
+        encounterMonsters = room.getInfo().monsterSpawns;
+        for (RoomMonsterSpawn& spawn : encounterMonsters) {
+            spawn.phaseIndex = 0;
+        }
     }
 
-    spawnConfiguredMonsters(playerPosition, objectPool);
+    room.prepareMonsterEncounter(std::move(encounterMonsters), phaseCount);
 }
 
 bool MonsterManager::spawnMonster(const MonsterData& monsterData,
@@ -99,7 +137,6 @@ bool MonsterManager::spawnMonster(const MonsterData& monsterData,
         monster->beginSpawn(activationDelay);
         m_activeRoomMonsters.push_back(monster);
         spawnCandidates.erase(spawnCandidates.begin() + index);
-        m_hasSpawnedRoomMonsters = true;
         return true;
     }
 
@@ -107,36 +144,6 @@ bool MonsterManager::spawnMonster(const MonsterData& monsterData,
               << monsterData.id << '\n';
     objectPool.releaseMonster(monster);
     return false;
-}
-
-void MonsterManager::spawnConfiguredMonsters(
-    const sf::Vector2f& playerPosition,
-    ObjectPoolingManager& objectPool) {
-    if (!m_activeRoom || !m_gameData || !m_activeTileMap) {
-        return;
-    }
-
-    std::vector<sf::Vector2f> spawnCandidates =
-        m_activeRoom->getMonsterSpawnPositions(*m_activeTileMap);
-    if (spawnCandidates.empty()) {
-        std::cerr << "[몬스터] 방 스폰 후보 위치 없음\n";
-        return;
-    }
-
-    for (const RoomMonsterSpawn& spawnInfo :
-        m_activeRoom->getInfo().monsterSpawns) {
-        const MonsterData* monsterData =
-            m_gameData->findMonster(spawnInfo.monsterId);
-        if (!monsterData || !monsterData->enabled) {
-            std::cerr << "[몬스터] 사용할 수 없는 데이터: "
-                      << spawnInfo.monsterId << '\n';
-            continue;
-        }
-
-        spawnMonster(*monsterData, spawnCandidates,
-            spawnInfo.positionOffset, spawnInfo.activationDelay,
-            playerPosition, objectPool);
-    }
 }
 
 void MonsterManager::spawnNextPhase(
@@ -147,48 +154,35 @@ void MonsterManager::spawnNextPhase(
         return;
     }
 
-    const RoomMonsterPhaseConfig& config =
-        m_activeRoom->getInfo().monsterPhaseConfig;
+    const int phaseIndex = m_currentPhase++;
     std::vector<sf::Vector2f> spawnCandidates =
         m_activeRoom->getMonsterSpawnPositions(*m_activeTileMap);
-    if (spawnCandidates.empty()) {
-        std::cerr << "[몬스터 페이즈] 방 스폰 후보 위치 없음\n";
-        ++m_currentPhase;
-        return;
-    }
-
-    const int requestedCount = randomBetween(m_randomEngine,
-        config.minMonstersPerPhase, config.maxMonstersPerPhase);
-    std::uniform_int_distribution<std::size_t> monsterDistribution(
-        0, config.monsterPool.size() - 1);
-
-    ++m_currentPhase;
+    int requestedCount = 0;
     int spawnedCount = 0;
-    for (int index = 0; index < requestedCount; ++index) {
-        const std::string& monsterId =
-            config.monsterPool[monsterDistribution(m_randomEngine)];
-        const MonsterData* monsterData = m_gameData->findMonster(monsterId);
-        if (!monsterData || !monsterData->enabled) {
-            std::cerr << "[몬스터 페이즈] 사용할 수 없는 데이터: "
-                      << monsterId << '\n';
+    for (const RoomMonsterSpawn& spawnInfo :
+        m_activeRoom->getEncounterMonsters()) {
+        if (spawnInfo.phaseIndex != phaseIndex) {
             continue;
         }
+        ++requestedCount;
 
-        const sf::Vector2f positionOffset = monsterData->behavior.isFlying
-            ? sf::Vector2f{ 0.f, -96.f }
-            : sf::Vector2f{};
+        const MonsterData* monsterData =
+            m_gameData->findMonster(spawnInfo.monsterId);
+        if (!monsterData || !monsterData->enabled) {
+            continue;
+        }
         if (spawnMonster(*monsterData, spawnCandidates,
-            positionOffset, config.activationDelay,
+            spawnInfo.positionOffset, spawnInfo.activationDelay,
             playerPosition, objectPool)) {
             ++spawnedCount;
         }
     }
 
     m_phaseDelayTimer = 0.f;
-    std::cout << "[몬스터 페이즈] " << m_currentPhase
+    std::cout << "[Monster phase] " << (phaseIndex + 1)
               << '/' << m_totalPhaseCount
-              << ", 요청=" << requestedCount
-              << ", 생성=" << spawnedCount << '\n';
+              << ", requested=" << requestedCount
+              << ", spawned=" << spawnedCount << '\n';
 }
 
 void MonsterManager::update(float dt, Player& player,
@@ -237,32 +231,17 @@ void MonsterManager::update(float dt, Player& player,
         return;
     }
 
-    if (m_usesPhaseSpawning) {
-        if (m_currentPhase < m_totalPhaseCount) {
-            m_phaseDelayTimer += dt;
-            if (m_phaseDelayTimer >=
-                m_activeRoom->getInfo().monsterPhaseConfig.phaseDelay) {
-                spawnNextPhase(player.getBodyCenterPosition(), objectPool);
-            }
-            return;
+    if (m_currentPhase < m_totalPhaseCount) {
+        m_phaseDelayTimer += dt;
+        if (m_phaseDelayTimer >=
+            m_activeRoom->getInfo().monsterPhaseConfig.phaseDelay) {
+            spawnNextPhase(player.getBodyCenterPosition(), objectPool);
         }
-
-        m_activeRoom->setClear(true);
-        m_activeRoom = nullptr;
-        m_gameData = nullptr;
-        m_activeTileMap = nullptr;
-        m_hasSpawnedRoomMonsters = false;
-        m_usesPhaseSpawning = false;
         return;
     }
 
-    if (m_hasSpawnedRoomMonsters) {
-        m_activeRoom->setClear(true);
-        m_activeRoom = nullptr;
-        m_gameData = nullptr;
-        m_activeTileMap = nullptr;
-        m_hasSpawnedRoomMonsters = false;
-    }
+    m_activeRoom->setClear(true);
+    releaseActiveRoomMonsters(objectPool);
 }
 
 void MonsterManager::clearActiveRoom(
@@ -279,8 +258,6 @@ void MonsterManager::releaseActiveRoomMonsters(
     m_activeRoom = nullptr;
     m_gameData = nullptr;
     m_activeTileMap = nullptr;
-    m_hasSpawnedRoomMonsters = false;
-    m_usesPhaseSpawning = false;
     m_totalPhaseCount = 0;
     m_currentPhase = 0;
     m_phaseDelayTimer = 0.f;
