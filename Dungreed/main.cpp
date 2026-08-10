@@ -1,4 +1,4 @@
-﻿#include <SFML/Graphics.hpp>
+#include <SFML/Graphics.hpp>
 #include <Windows.h>
 #include <iostream>
 #include <vector>
@@ -20,6 +20,7 @@
 #include "Camera.h"
 #include "DebugManager.h"
 #include "GameDataManager.h"
+#include "UIManager.h"
 
 /// 프로그램 진입점입니다. 공용 리소스와 테스트 방을 준비한 뒤 입력·AI·충돌·렌더링 루프를 실행합니다.
 int main() {
@@ -54,7 +55,7 @@ int main() {
     if (!resMgr.loadAtlas("Effect", std::string(kEffectAtlasJsonPath), std::string(kEffectAtlasPath))) {
         std::cerr << "이펙트 아틀라스 로드 실패\n";
     }
-    GameDataManager gameData;
+    auto& gameData = GameDataManager::getInstance();
     const std::filesystem::path dataDirectory =
         std::filesystem::path(__FILE__).parent_path() / "Resources" / "data";
     if (!gameData.loadWeapons((dataDirectory / "weapons.json").string()) ||
@@ -64,8 +65,8 @@ int main() {
         return 1;
     }
     // 3. 고정 레퍼런스 방 데이터를 TileMap으로 변환
-    MapManager mapManager;
-    DebugManager debugManager;
+    auto& mapManager = MapManager::getInstance();
+    auto& debugManager = DebugManager::getInstance();
     const FloorData* floorData = gameData.findFloor("floor_01");
     if (!floorData || !mapManager.createCurrentRoomFromData(
         *floorData, floorData->startRoomId)) {
@@ -129,16 +130,21 @@ int main() {
     // 맵의 최하단에서는 뷰 하단이 맵 바닥과 정확히 맞춰집니다.
     Camera camera(window.getSize(),
         sf::FloatRect({ 0.f, 0.f }, initialTileMap->getPixelSize()), 3.5f);
-    camera.update(player.getCenterPosition());
+    camera.update(player.getPosition());
     // 디버그 프리뷰는 월드 카메라가 아닌 창 좌표계를 사용해야 전체 배치가 잘리지 않습니다.
     window.setView(kShowAllRoomsDebug ? window.getDefaultView() : camera.getView());
 
-    ObjectPoolingManager objectPool;
+    auto& objectPool = ObjectPoolingManager::getInstance();
     objectPool.prewarmFromGameData(gameData);
-    MonsterManager monsterManager;
-    CombatManager combatManager;
-    EffectManager effectManager;
-    RewardChestManager rewardChestManager;
+    auto& monsterManager = MonsterManager::getInstance();
+    auto& combatManager = CombatManager::getInstance();
+    auto& effectManager = EffectManager::getInstance();
+    auto& rewardChestManager = RewardChestManager::getInstance();
+    auto& uiManager = UIManager::getInstance();
+    if (!uiManager.init(window)) {
+        return 1;
+    }
+
     if (!rewardChestManager.init()) {
         return 1;
     }
@@ -178,6 +184,9 @@ int main() {
                     debugManager.renderCombatBounds(window, player, objectPool);
                 }
             }
+            window.setView(window.getDefaultView());
+            uiManager.update(player, 0.f, window);
+            uiManager.render(window);
             window.display();
             isGameplayActive = true;
             clock.restart();
@@ -188,6 +197,10 @@ int main() {
         // 장식 타일은 렌더링 전용이므로 물리·전투 처리와 독립적으로 프레임만 갱신합니다.
         tileMap.update(dt);
         effectManager.update(dt, objectPool);
+
+        if (!kShowAllRoomsDebug) {
+            window.setView(camera.getView());
+        }
 
         // 업데이트 처리
         player.update(dt, window, tileMap);
@@ -223,7 +236,7 @@ int main() {
 
                     camera.setMapBounds(sf::FloatRect(
                         { 0.f, 0.f }, nextTileMap.getPixelSize()));
-                    camera.update(player.getCenterPosition());
+                    camera.update(player.getPosition());
                     areMonstersActivated = false;
                     didChangeRoom = true;
                 }
@@ -251,7 +264,7 @@ int main() {
         }
 
         // 충돌 보정까지 끝난 실제 플레이어 위치를 즉시 카메라에 반영합니다.
-        camera.update(player.getCenterPosition());
+        camera.update(player.getPosition());
         if (!kShowAllRoomsDebug) {
             window.setView(camera.getView());
         }
@@ -272,6 +285,10 @@ int main() {
                 debugManager.renderCombatBounds(window, player, objectPool);
             }
         }
+
+        window.setView(window.getDefaultView());
+        uiManager.update(player, dt, window);
+        uiManager.render(window);
 
         window.display();
     }
