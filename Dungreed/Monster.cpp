@@ -100,6 +100,7 @@ void Monster::resetForReuse(Status newStatus, MonsterBehaviorConfig behavior) {
     m_chargeDirection = 1.f;
     m_spawnActivationTimer = 0.f;
     m_spawnEffectDuration = 0.f;
+    m_spawnRevealTimer = 0.f;
     if (m_isFlying) {
         movement.velocity = { 0.f, 0.f };
         movement.isGrounded = false;
@@ -153,9 +154,10 @@ void Monster::beginAttack() {
     changeState(MonsterState::Attack);
 }
 
-void Monster::beginSpawn(float duration) {
+void Monster::beginSpawn(float duration, float revealDelay) {
     m_spawnEffectDuration = std::max(0.f, duration);
     m_spawnActivationTimer = m_spawnEffectDuration;
+    m_spawnRevealTimer = std::clamp(revealDelay, 0.f, m_spawnEffectDuration);
     setHorizontalInput(0.f);
     if (m_isFlying) {
         movement.velocity.y = 0.f;
@@ -523,6 +525,7 @@ void Monster::update(float dt, Player& player) {
     }
     if (m_spawnActivationTimer > 0.f) {
         m_spawnActivationTimer = std::max(0.f, m_spawnActivationTimer - dt);
+        m_spawnRevealTimer = std::max(0.f, m_spawnRevealTimer - dt);
         setHorizontalInput(0.f);
         if (m_isFlying) {
             movement.velocity.y = 0.f;
@@ -535,6 +538,10 @@ void Monster::update(float dt, Player& player) {
 }
 
 void Monster::render(sf::RenderWindow& window) {
+    // 매직서클 전반부에는 몬스터 본체를 숨겨 이펙트만 먼저 보이게 합니다.
+    if (m_spawnRevealTimer > 0.f) {
+        return;
+    }
     Actor::render(window);
     if (!isSpawning()) {
         return;

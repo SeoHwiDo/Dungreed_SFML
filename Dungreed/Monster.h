@@ -94,7 +94,8 @@ public:
         const std::string& atlasKey = "Monster", MonsterBehaviorConfig behavior = {});
 
     void beginAttack();
-    void beginSpawn(float duration);
+    /// 소환 중 행동을 멈추고, revealDelay가 끝난 뒤에만 스프라이트를 표시합니다.
+    void beginSpawn(float duration, float revealDelay = 0.f);
     bool isSpawning() const { return m_spawnActivationTimer > 0.f; }
     void render(sf::RenderWindow& window) override;
     bool consumeAttackAction();
@@ -143,6 +144,7 @@ private:
     float m_chargeDirection = 1.f;
     float m_spawnActivationTimer = 0.f;
     float m_spawnEffectDuration = 0.f;
+    float m_spawnRevealTimer = 0.f;
 
     void setBehavior(MonsterBehaviorConfig behavior);
     bool canStartAttack() const;

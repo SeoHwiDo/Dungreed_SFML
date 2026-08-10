@@ -6,13 +6,14 @@
 
 #include "Collision.h"
 #include "GameDataManager.h"
+#include "EffectManager.h"
 #include "Player.h"
 #include "Room.h"
 #include "TileMap.h"
 
 void MonsterManager::requestRoomMonsters(Room& room, const TileMap& tileMap,
     const GameDataManager& gameData, ObjectPoolingManager& objectPool,
-    const sf::Vector2f& playerPosition) {
+    const sf::Vector2f& playerPosition, EffectManager& effectManager) {
     if (&room == m_activeRoom || room.getInfo().isClear) {
         return;
     }
@@ -31,8 +32,8 @@ void MonsterManager::requestRoomMonsters(Room& room, const TileMap& tileMap,
 
     m_totalPhaseCount = room.getEncounterPhaseCount();
     m_currentPhase = 0;
-    m_phaseDelayTimer = 0.f;
-    spawnNextPhase(playerPosition, objectPool);
+    // 첫 페이즈는 방 중앙까지 진입한 뒤에만 시작합니다.
+    m_isWaitingForMidpoint = true;
 }
 
 void MonsterManager::prepareRoomEncounter(Room& room,
@@ -74,7 +75,8 @@ bool MonsterManager::spawnMonster(const MonsterData& monsterData,
     std::vector<sf::Vector2f>& spawnCandidates,
     const sf::Vector2f& positionOffset, float activationDelay,
     const sf::Vector2f& playerPosition,
-    ObjectPoolingManager& objectPool) {
+    int phaseIndex, ObjectPoolingManager& objectPool,
+    EffectManager& effectManager) {
     if (!m_activeTileMap) {
         return false;
     }
@@ -83,17 +85,27 @@ bool MonsterManager::spawnMonster(const MonsterData& monsterData,
         monsterData.status, monsterData.atlasKey, monsterData.behavior);
     monster->setEquipment(m_gameData->createEquip(monsterData.weaponId));
 
-    constexpr float spawnSafetyMargin = 32.f;
-    const float minimumDistance =
-        monsterData.behavior.attackRange + spawnSafetyMargin;
+    constexpr float kMinimumSpawnDistance = 48.f;
+    constexpr float kPreferredSpawnDistance = 224.f;
     const sf::Vector2f mapSize = m_activeTileMap->getPixelSize();
+
+    // 플레이어 주변의 가까운 바닥부터 검사하되, 즉시 충돌하는 위치는 피합니다.
+    std::stable_sort(spawnCandidates.begin(), spawnCandidates.end(),
+        [&playerPosition](const sf::Vector2f& left, const sf::Vector2f& right) {
+            const sf::Vector2f leftDelta = left - playerPosition;
+            const sf::Vector2f rightDelta = right - playerPosition;
+            return leftDelta.x * leftDelta.x + leftDelta.y * leftDelta.y <
+                rightDelta.x * rightDelta.x + rightDelta.y * rightDelta.y;
+        });
 
     for (std::size_t index = 0; index < spawnCandidates.size(); ++index) {
         const sf::Vector2f spawnPosition =
             spawnCandidates[index] + positionOffset;
         const sf::Vector2f playerDelta = spawnPosition - playerPosition;
-        if (playerDelta.x * playerDelta.x + playerDelta.y * playerDelta.y <=
-            minimumDistance * minimumDistance) {
+        const float distanceSquared = playerDelta.x * playerDelta.x +
+            playerDelta.y * playerDelta.y;
+        if (distanceSquared < kMinimumSpawnDistance * kMinimumSpawnDistance ||
+            distanceSquared > kPreferredSpawnDistance * kPreferredSpawnDistance) {
             continue;
         }
 
@@ -104,7 +116,7 @@ bool MonsterManager::spawnMonster(const MonsterData& monsterData,
             bounds.position.y >= 0.f &&
             bounds.position.x + bounds.size.x <= mapSize.x &&
             bounds.position.y + bounds.size.y <= mapSize.y;
-        if (!isInsideMap || monster->isTargetInAttackRange(playerPosition)) {
+        if (!isInsideMap) {
             continue;
         }
 
@@ -120,8 +132,11 @@ bool MonsterManager::spawnMonster(const MonsterData& monsterData,
             continue;
         }
 
-        monster->beginSpawn(activationDelay);
+        const float revealDelay = effectManager.spawnMonsterMagicCircle(objectPool,
+            monster->getBodyCenterPosition());
+        monster->beginSpawn(std::max(activationDelay, revealDelay), revealDelay);
         m_activeRoomMonsters.push_back(monster);
+        m_monsterPhaseIndices.emplace(monster, phaseIndex);
         spawnCandidates.erase(spawnCandidates.begin() + index);
         return true;
     }
@@ -134,7 +149,7 @@ bool MonsterManager::spawnMonster(const MonsterData& monsterData,
 
 void MonsterManager::spawnNextPhase(
     const sf::Vector2f& playerPosition,
-    ObjectPoolingManager& objectPool) {
+    ObjectPoolingManager& objectPool, EffectManager& effectManager) {
     if (!m_activeRoom || !m_gameData || !m_activeTileMap ||
         m_currentPhase >= m_totalPhaseCount) {
         return;
@@ -159,12 +174,11 @@ void MonsterManager::spawnNextPhase(
         }
         if (spawnMonster(*monsterData, spawnCandidates,
             spawnInfo.positionOffset, spawnInfo.activationDelay,
-            playerPosition, objectPool)) {
+            playerPosition, phaseIndex, objectPool, effectManager)) {
             ++spawnedCount;
         }
     }
 
-    m_phaseDelayTimer = 0.f;
     std::cout << "[Monster phase] " << (phaseIndex + 1)
               << '/' << m_totalPhaseCount
               << ", requested=" << requestedCount
@@ -172,7 +186,16 @@ void MonsterManager::spawnNextPhase(
 }
 
 void MonsterManager::update(float dt, Player& player,
-    ObjectPoolingManager& objectPool, const TileMap& tileMap) {
+    ObjectPoolingManager& objectPool, const TileMap& tileMap,
+    EffectManager& effectManager) {
+    if (m_activeRoom && m_isWaitingForMidpoint) {
+        if (player.getBodyCenterPosition().x < m_activeTileMap->getPixelSize().x * 0.5f) {
+            return;
+        }
+        m_isWaitingForMidpoint = false;
+        spawnNextPhase(player.getBodyCenterPosition(), objectPool, effectManager);
+    }
+
     std::vector<Monster*> finished;
     objectPool.forEachActiveMonster([&](Monster& monster) {
         monster.update(dt, player);
@@ -207,22 +230,35 @@ void MonsterManager::update(float dt, Player& player,
 
     for (Monster* monster : finished) {
         objectPool.releaseMonster(monster);
+        m_monsterPhaseIndices.erase(monster);
         m_activeRoomMonsters.erase(
             std::remove(m_activeRoomMonsters.begin(),
                 m_activeRoomMonsters.end(), monster),
             m_activeRoomMonsters.end());
     }
 
-    if (!m_activeRoom || !m_activeRoomMonsters.empty()) {
+    if (!m_activeRoom) {
         return;
     }
 
+    const int activePhaseIndex = m_currentPhase - 1;
+    const int aliveInActivePhase = static_cast<int>(std::count_if(
+        m_activeRoomMonsters.begin(), m_activeRoomMonsters.end(),
+        [&](Monster* monster) {
+            const auto phaseIt = m_monsterPhaseIndices.find(monster);
+            return monster && !monster->dead() && phaseIt != m_monsterPhaseIndices.end() &&
+                phaseIt->second == activePhaseIndex;
+        }));
+
     if (m_currentPhase < m_totalPhaseCount) {
-        m_phaseDelayTimer += dt;
-        if (m_phaseDelayTimer >=
-            m_activeRoom->getInfo().monsterPhaseConfig.phaseDelay) {
-            spawnNextPhase(player.getBodyCenterPosition(), objectPool);
+        // 현재 페이즈에 한 마리만 남으면 다음 페이즈를 즉시 겹쳐 소환합니다.
+        if (aliveInActivePhase <= 1) {
+            spawnNextPhase(player.getBodyCenterPosition(), objectPool, effectManager);
         }
+        return;
+    }
+
+    if (!m_activeRoomMonsters.empty()) {
         return;
     }
 
@@ -241,10 +277,11 @@ void MonsterManager::releaseActiveRoomMonsters(
         objectPool.releaseMonster(monster);
     }
     m_activeRoomMonsters.clear();
+    m_monsterPhaseIndices.clear();
     m_activeRoom = nullptr;
     m_gameData = nullptr;
     m_activeTileMap = nullptr;
     m_totalPhaseCount = 0;
     m_currentPhase = 0;
-    m_phaseDelayTimer = 0.f;
+    m_isWaitingForMidpoint = false;
 }
