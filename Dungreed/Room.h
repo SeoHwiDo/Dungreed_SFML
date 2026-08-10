@@ -158,9 +158,8 @@ struct RoomTileSet {
     std::string backDoorTopRightFrameName;
     std::string backDoorBottomLeftFrameName;
     std::string backDoorBottomRightFrameName;
-    std::string platformLeftFrameName;
-    std::string platformInnerFrameName;
-    std::string platformRightFrameName;
+    // 플랫폼은 길이·양끝 위치와 무관하게 같은 단일 타일을 사용합니다.
+    std::string platformFrameName;
 };
 
 class Room {

@@ -573,13 +573,7 @@ bool Room::buildTileMap(TileMap& tileMap, const std::string& tileAtlasKey,
             config = { tileSet.wallRightFrameName, TileType::Solid };
             break;
         case RoomCell::Platform:
-            if (getCell(static_cast<int>(x) - 1, static_cast<int>(y)) != RoomCell::Platform) {
-                config = { tileSet.platformLeftFrameName, TileType::OneWay };
-            } else if (getCell(static_cast<int>(x) + 1, static_cast<int>(y)) != RoomCell::Platform) {
-                config = { tileSet.platformRightFrameName, TileType::OneWay };
-            } else {
-                config = { tileSet.platformInnerFrameName, TileType::OneWay };
-            }
+            config = { tileSet.platformFrameName, TileType::OneWay };
             break;
         case RoomCell::BackTile:
         case RoomCell::SpawnPoint:

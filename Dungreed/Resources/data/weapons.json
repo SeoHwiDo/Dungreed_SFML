@@ -6,7 +6,7 @@
       "atlasKey": "Equip",
       "frame": "ShortSword_Idle-00.png",
       "type": "Melee",
-      "damage": 10.0,
+      "damage": 100.0,
       "attackSpeed": 2.5,
       "range": 40.0
     },
@@ -34,14 +34,14 @@
     {
       "id": "BansheeRadial",
       "type": "Ranged",
-      "damage": 7.0,
+      "damage": 2.0,
       "attackSpeed": 0.25,
       "range": 160.0,
       "projectile": {
         "type": "BansheeBullet",
         "target": "Player",
-        "speed": 70.0,
-        "damage": 7.0,
+        "speed": 50.0,
+        "damage": 2.0,
         "count": 10,
         "spreadRadian": 0.62831853,
         "lifetime": 6.0
@@ -57,14 +57,14 @@
     {
       "id": "BabyBatBullet",
       "type": "Ranged",
-      "damage": 8.0,
+      "damage": 2.0,
       "attackSpeed": 0.3,
       "range": 300.0,
       "projectile": {
         "type": "BabyBatBullet",
         "target": "Player",
-        "speed": 130.0,
-        "damage": 8.0,
+        "speed": 50.0,
+        "damage": 2.0,
         "count": 1,
         "spreadRadian": 0.0,
         "lifetime": 4.0

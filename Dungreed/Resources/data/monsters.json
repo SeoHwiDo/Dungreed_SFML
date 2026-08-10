@@ -11,8 +11,8 @@
         "moveSpeed": 80
       },
       "status": {
-        "maxHp": 50.0,
-        "power": 8.0,
+        "maxHp": 42.0,
+        "power": 4.0,
         "dex": 1.0
       },
       "ai": {
@@ -51,8 +51,8 @@
         "fallbackAnimation": "Bat_Idle"
       },
       "status": {
-        "maxHp": 30.0,
-        "power": 4.0,
+        "maxHp": 22.0,
+        "power": 2.0,
         "dex": 1.0
       },
       "ai": {
@@ -85,8 +85,8 @@
         "moveSpeed": 65
       },
       "status": {
-        "maxHp": 80.0,
-        "power": 15.0,
+        "maxHp": 62.0,
+        "power": 8.0,
         "dex": 1.0
       },
       "ai": {
@@ -126,8 +126,8 @@
         "ignoresWalls": true
       },
       "status": {
-        "maxHp": 30.0,
-        "power": 5.0,
+        "maxHp": 22.0,
+        "power": 2.0,
         "dex": 1.0
       },
       "ai": {
@@ -163,8 +163,8 @@
         "moveSpeed": 80
       },
       "status": {
-        "maxHp": 150.0,
-        "power": 20.0,
+        "maxHp": 82.0,
+        "power": 10.0,
         "dex": 1.0
       },
       "ai": {
@@ -204,8 +204,8 @@
         "moveSpeed": 75
       },
       "status": {
-        "maxHp": 30.0,
-        "power": 3.0,
+        "maxHp": 21.0,
+        "power": 2.0,
         "dex": 1.0
       },
       "ai": {
