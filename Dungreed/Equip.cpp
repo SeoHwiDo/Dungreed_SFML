@@ -1,4 +1,4 @@
-#include "Equip.h"
+﻿#include "Equip.h"
 #include "Actor.h"
 #include <algorithm>
 #include <cmath>
@@ -73,6 +73,8 @@ std::vector<ProjectileSpawnRequest> Equip::consumeProjectileRequests() {
             (static_cast<float>(index) - center) * config.spreadRadian;
         requests.push_back({
             config.type,
+            m_stat.type == WeaponType::Ranged,
+            config.animationKey,
             config.target,
             m_lastOwnerPosition,
             { std::cos(angle), std::sin(angle) },
@@ -114,9 +116,10 @@ void Equip::update(float dt, const sf::Vector2f& ownerPos, float aimRadian) {
     // 현재 대기 각도에서 반대쪽 끝까지 한 번만 스윙합니다.
     // startOffset은 대기 상태의 각도와 같아야 공격 시작 시 반대편으로
     // 되돌아가는(왕복처럼 보이는) 순간 이동이 발생하지 않습니다.
-    float startOffset = m_isSwung ? 45.f : -45.f;
-    float endOffset = m_isSwung ? -45.f : 45.f;
-    float swingOffset = m_isSwung ? 45.f : -45.f; // 공격 대기 상태
+    float angle = 70.f;
+    float startOffset = m_isSwung ? angle : -angle;
+    float endOffset = m_isSwung ? -angle : angle;
+    float swingOffset = m_isSwung ? angle : -angle; // 공격 대기 상태
 
     if (m_isAttacking) {
         m_attackTimer += dt;

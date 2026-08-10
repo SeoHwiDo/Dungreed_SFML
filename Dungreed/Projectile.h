@@ -18,6 +18,12 @@ public:
 
     /// 투사체가 아직 유효한지 반환합니다.
     bool isActive() const { return m_active; }
+    /// 이동·충돌·피해 판정을 수행하는 발사 상태인지 반환합니다.
+    bool isDamageActive() const { return m_active && !m_isPlayingReturnTrail; }
+    /// 밴시 투사체가 반환 전 재생하는 Trail 상태인지 반환합니다.
+    bool isPlayingReturnTrail() const { return m_isPlayingReturnTrail; }
+    /// 밴시 투사체라면 Trail 애니메이션을 시작하고 즉시 풀 반환을 지연합니다.
+    bool beginReturnTrail();
     /// 플레이어 또는 몬스터 중 투사체가 공격할 대상을 반환합니다.
     ProjectileTarget getTarget() const { return m_target; }
     /// 현재 투사체의 피해량을 반환합니다.
@@ -39,6 +45,9 @@ public:
 
 private:
     bool m_active = false;
+    bool m_isPlayingReturnTrail = false;
+    bool m_isRangedWeapon = false;
+    std::string m_animationKey;
     ProjectileTarget m_target = ProjectileTarget::Monster;
     sf::Vector2f m_previousPosition;
     sf::Vector2f m_velocity;

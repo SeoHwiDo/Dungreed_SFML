@@ -103,6 +103,10 @@ void ObjectPoolingManager::releaseProjectile(Projectile* projectile) {
             if (!slot.active) {
                 return;
             }
+            // 밴시 투사체는 Trail을 끝까지 보인 후, 다음 반환 요청에서 실제 비활성 슬롯이 됩니다.
+            if (slot.object->beginReturnTrail()) {
+                return;
+            }
             slot.object->deactivate();
             slot.active = false;
             enqueueInactiveProjectile(index);

@@ -31,6 +31,8 @@ enum class ProjectileTarget {
 /// 원거리 장비가 생성할 투사체의 공통 설정입니다.
 struct ProjectileConfig {
     ProjectileType type = ProjectileType::Arrow;
+    /// 아틀라스 애니메이션 접두사입니다. 예: BansheeBullet_Fly, BansheeBullet_Trail.
+    std::string animationKey;
     ProjectileTarget target = ProjectileTarget::Monster;
     float speed = 400.f;
     float damage = 10.f;
@@ -42,6 +44,9 @@ struct ProjectileConfig {
 /// 장비가 풀 매니저에 전달하는 투사체 생성 요청입니다. 실제 Projectile 객체는 장비가 만들지 않습니다.
 struct ProjectileSpawnRequest {
     ProjectileType type = ProjectileType::Arrow;
+    /// 발사 장비가 원거리 장비인지 나타냅니다. 반환 Trail 재생 여부의 기준입니다.
+    bool isRangedWeapon = false;
+    std::string animationKey;
     ProjectileTarget target = ProjectileTarget::Monster;
     sf::Vector2f position;
     sf::Vector2f direction{ 1.f, 0.f };

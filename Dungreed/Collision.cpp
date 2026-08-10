@@ -74,7 +74,7 @@ void Collision::resolveMapCollision(Actor& actor, const TileMap& map, bool ignor
 }
 
 bool Collision::resolveProjectileMapCollision(Projectile& projectile, const TileMap& map) {
-    if (!projectile.isActive()) return false;
+    if (!projectile.isDamageActive()) return false;
     const sf::Vector2f start = projectile.getPreviousPosition();
     const sf::Vector2f end = projectile.getPosition();
     const sf::Vector2f delta = end - start;
