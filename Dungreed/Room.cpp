@@ -1,4 +1,4 @@
-#include "Room.h"
+﻿#include "Room.h"
 
 #include <algorithm>
 #include <cmath>
@@ -100,10 +100,8 @@ void applyDoorways(RoomLayout& layout, const DoorPositions& positions) {
         setCell(kOutlineWidth + 1, sideDoorTop,
             RoomCell::BackDoorTopLeft);
 
-        for (unsigned int y = groundY + 1; y < height; ++y) {
+        for (unsigned int y = groundY - kDoorHeight; y < groundY; ++y) {
             setCell(0, y, RoomCell::LeftWall);
-            setCell(1, y, RoomCell::BackTile);
-            setCell(kOutlineWidth, y, RoomCell::BackTile);
         }
     }
 
@@ -124,11 +122,8 @@ void applyDoorways(RoomLayout& layout, const DoorPositions& positions) {
         setCell(width - 1, groundY, RoomCell::BottomRightCorner);
         setCell(rightWallX - 1, sideDoorTop,
             RoomCell::BackDoorTopRight);
-
-        for (unsigned int y = groundY + 1; y < height; ++y) {
-            setCell(rightWallX, y, RoomCell::BackTile);
-            setCell(width - 2, y, RoomCell::BackTile);
-            setCell(width - 1, y, RoomCell::RightWall);
+        for (unsigned int y = groundY - kDoorHeight; y < groundY; ++y) {
+            setCell(width-1, y, RoomCell::RightWall);
         }
     }
 }
@@ -161,7 +156,7 @@ RoomLayout makeStyledRoom(unsigned int width, unsigned int height,
     setCell(rightWallX, topWallY, RoomCell::TopRightCorner);
 
     // 좌우 문 확장 공간 아래까지 바닥을 이어서, 문 바깥으로 플레이어가 떨어지지 않게 합니다.
-    for (unsigned int x = 0; x < width; ++x) {
+    for (unsigned int x = kOutlineWidth; x < width; ++x) {
         setCell(x, groundY, RoomCell::Ground);
     }
     setCell(leftWallX, groundY, RoomCell::BottomLeftCorner);
