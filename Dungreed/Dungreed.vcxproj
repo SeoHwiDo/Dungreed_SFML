@@ -146,6 +146,9 @@
     <ClCompile Include="MonsterManager.cpp" />
     <ClCompile Include="CombatManager.cpp" />
     <ClCompile Include="DebugManager.cpp" />
+    <ClCompile Include="Effect.cpp" />
+    <ClCompile Include="EffectManager.cpp" />
+    <ClCompile Include="RewardChestManager.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="MapManager.cpp" />
     <ClCompile Include="main.cpp" />
@@ -167,6 +170,9 @@
     <ClInclude Include="MonsterManager.h" />
     <ClInclude Include="CombatManager.h" />
     <ClInclude Include="DebugManager.h" />
+    <ClInclude Include="Effect.h" />
+    <ClInclude Include="EffectManager.h" />
+    <ClInclude Include="RewardChestManager.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="MapManager.h" />
     <ClInclude Include="Player.h" />
@@ -181,12 +187,14 @@
     <None Include="resources\data\room_data.json" />
     <None Include="Resources\data\weapons.json" />
     <None Include="Resources\images\equip_atlas.json" />
+    <None Include="Resources\images\effect_atlas.json" />
     <None Include="resources\images\monster_atlas.json" />
     <None Include="resources\images\player_atlas.json" />
     <None Include="resources\images\tilemap_atlas.json" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Resources\images\equip_atlas.png" />
+    <Image Include="Resources\images\effect_atlas.png" />
     <Image Include="resources\images\monster_atlas.png" />
     <Image Include="resources\images\player_atlas.png" />
     <Image Include="resources\images\tilemap_atlas.png" />

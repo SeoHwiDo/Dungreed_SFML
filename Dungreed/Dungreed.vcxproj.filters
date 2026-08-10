@@ -66,6 +66,15 @@
     <ClCompile Include="DebugManager.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="Effect.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="EffectManager.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="RewardChestManager.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
     <ClCompile Include="MapManager.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
@@ -122,6 +131,15 @@
     <ClInclude Include="DebugManager.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="Effect.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="EffectManager.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="RewardChestManager.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
     <ClInclude Include="MapManager.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
@@ -141,6 +159,7 @@
     <None Include="..\README.md" />
     <None Include="resources\images\monster_atlas.json" />
     <None Include="Resources\images\equip_atlas.json" />
+    <None Include="Resources\images\effect_atlas.json" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="resources\images\player_atlas.png">
@@ -153,6 +172,9 @@
       <Filter>리소스 파일</Filter>
     </Image>
     <Image Include="Resources\images\equip_atlas.png">
+      <Filter>리소스 파일</Filter>
+    </Image>
+    <Image Include="Resources\images\effect_atlas.png">
       <Filter>리소스 파일</Filter>
     </Image>
   </ItemGroup>

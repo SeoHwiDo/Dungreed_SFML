@@ -1,7 +1,6 @@
 #include "Actor.h"
 
-
-
+#include <algorithm>
 #include <iostream>
 
 Actor::Actor() {
@@ -61,6 +60,12 @@ void Actor::takeDamage(float damage) {
 
 void Actor::takeDamage(float damage, const sf::Vector2f& attackerPosition) {
     takeDamage(damage, attackerPosition, 1.f);
+}
+
+void Actor::applyPermanentReward(float maxHpIncrease, float powerIncrease) {
+    status.maxHp += std::max(0.f, maxHpIncrease);
+    status.power += std::max(0.f, powerIncrease);
+    status.tmpHp = status.maxHp;
 }
 
 void Actor::takeDamage(float damage, const sf::Vector2f& attackerPosition,

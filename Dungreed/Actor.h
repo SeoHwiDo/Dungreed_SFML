@@ -56,6 +56,8 @@ public:
     inline bool dead() const { return status.tmpHp <= 0; }
     /// 기본 공격력 값을 반환합니다. 장비 공격력과 함께 피해량 계산에 사용합니다.
     inline float attack() const { return status.power; };
+    /// 보상 획득 시 최대 체력과 공격력을 올리고 현재 체력을 전부 회복합니다.
+    void applyPermanentReward(float maxHpIncrease, float powerIncrease);
     /// 공격자 위치를 모를 때 체력과 피격 효과만 적용합니다.
     virtual void takeDamage(float damage);
     /// 공격자 위치를 이용해 반대 방향 넉백과 피격 효과를 함께 적용합니다.

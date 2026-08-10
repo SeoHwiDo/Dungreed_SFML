@@ -11,6 +11,8 @@
 #include "ObjectPoolingManager.h"
 #include "MonsterManager.h"
 #include "CombatManager.h"
+#include "EffectManager.h"
+#include "RewardChestManager.h"
 #include "TileMap.h"
 #include "Collision.h"
 #include "Room.h"
@@ -49,8 +51,9 @@ int main() {
     if (!resMgr.loadAtlas("Projectile", std::string(kProjectileAtlasJsonPath), std::string(kProjectileAtlasPath))) {
         std::cerr << "프로젝타일 아틀라스 로드 실패\n";
     }
-
-
+    if (!resMgr.loadAtlas("Effect", std::string(kEffectAtlasJsonPath), std::string(kEffectAtlasPath))) {
+        std::cerr << "이펙트 아틀라스 로드 실패\n";
+    }
     GameDataManager gameData;
     const std::filesystem::path dataDirectory =
         std::filesystem::path(__FILE__).parent_path() / "Resources" / "data";
@@ -97,9 +100,7 @@ int main() {
         "Back_DoorTopR.png",
         "Back_DoorBotL.png",
         "Back_DoorBotR.png",
-        "Flatform_L.png",
-        "Flatform_In.png",
-        "Flatform_R.png"
+        "Platform.png"
     };
     if (!mapManager.preloadFloorTileMaps("TileMap", roomTiles)) {
         std::cerr << "층 타일맵 사전 생성 실패\n";
@@ -127,7 +128,7 @@ int main() {
 
     // 맵의 최하단에서는 뷰 하단이 맵 바닥과 정확히 맞춰집니다.
     Camera camera(window.getSize(),
-        sf::FloatRect({ 0.f, 0.f }, initialTileMap->getPixelSize()), 0.5f);
+        sf::FloatRect({ 0.f, 0.f }, initialTileMap->getPixelSize()), 3.5f);
     camera.update(player.getCenterPosition());
     // 디버그 프리뷰는 월드 카메라가 아닌 창 좌표계를 사용해야 전체 배치가 잘리지 않습니다.
     window.setView(kShowAllRoomsDebug ? window.getDefaultView() : camera.getView());
@@ -136,6 +137,11 @@ int main() {
     objectPool.prewarmFromGameData(gameData);
     MonsterManager monsterManager;
     CombatManager combatManager;
+    EffectManager effectManager;
+    RewardChestManager rewardChestManager;
+    if (!rewardChestManager.init()) {
+        return 1;
+    }
 
     bool areMonstersActivated = false;
     sf::Clock clock;
@@ -166,6 +172,8 @@ int main() {
                 window.draw(tileMap);
                 player.render(window);
                 objectPool.render(window);
+                effectManager.render(window, objectPool);
+                rewardChestManager.render(window);
                 if (kShowCombatBoundsDebug) {
                     debugManager.renderCombatBounds(window, player, objectPool);
                 }
@@ -177,16 +185,21 @@ int main() {
         }
         float dt = clock.restart().asSeconds();
 
+        // 장식 타일은 렌더링 전용이므로 물리·전투 처리와 독립적으로 프레임만 갱신합니다.
+        tileMap.update(dt);
+        effectManager.update(dt, objectPool);
+
         // 업데이트 처리
         player.update(dt, window, tileMap);
 
         // 1순위: 각 몬스터의 이동 후 벽 충돌을 해결합니다.
         if (!areMonstersActivated) {
             Collision::resolveMapCollision(player, tileMap, player.ignoresOneWayPlatforms());
-            mapManager.requestCurrentRoomMonsters(monsterManager, objectPool, gameData, tileMap, player.getBodyCenterPosition());
+            mapManager.requestCurrentRoomMonsters(monsterManager, objectPool, gameData,
+                tileMap, player.getBodyCenterPosition(), effectManager);
             areMonstersActivated = true;
         } else {
-            monsterManager.update(dt, player, objectPool, tileMap);
+            monsterManager.update(dt, player, objectPool, tileMap, effectManager);
             Collision::resolveMapCollision(player, tileMap, player.ignoresOneWayPlatforms());
         }
 
@@ -198,6 +211,7 @@ int main() {
                     player.getPreviousGlobalBounds(), tileMap);
                 if (enteredDoor && mapManager.moveCurrentRoom(*enteredDoor)) {
                     monsterManager.clearActiveRoom(objectPool);
+                    effectManager.clear(objectPool);
                     player.cancelDash();
 
                     const TileMap& nextTileMap = *mapManager.getCurrentTileMap();
@@ -219,7 +233,7 @@ int main() {
         if (!didChangeRoom) {
             // 2순위: 플레이어의 공격을 먼저 처리합니다.
             std::unordered_set<EntityId> playerHitMonsters =
-                combatManager.resolvePlayerAttack(player, objectPool);
+                combatManager.resolvePlayerAttack(player, objectPool, effectManager);
             const auto projectileHits = combatManager.updateProjectiles(
                 dt, player, objectPool, tileMap, ProjectileTarget::Monster);
             playerHitMonsters.insert(projectileHits.begin(), projectileHits.end());
@@ -228,6 +242,12 @@ int main() {
             combatManager.resolveMonsterAttacks(dt, player, objectPool, tileMap,
                 playerHitMonsters);
             combatManager.updateProjectiles(dt, player, objectPool, tileMap, ProjectileTarget::Player);
+
+            // 전투방을 완전히 정리한 뒤에만 상자를 활성화하고, 개방 및 보상 충돌을 처리합니다.
+            if (Room* currentRoom = mapManager.getCurrentRoom()) {
+                rewardChestManager.update(dt, *currentRoom, tileMap, player,
+                    effectManager, objectPool);
+            }
         }
 
         // 충돌 보정까지 끝난 실제 플레이어 위치를 즉시 카메라에 반영합니다.
@@ -246,6 +266,8 @@ int main() {
             window.draw(*mapManager.getCurrentTileMap());
             player.render(window);
             objectPool.render(window);
+            effectManager.render(window, objectPool);
+            rewardChestManager.render(window);
             if (kShowCombatBoundsDebug) {
                 debugManager.renderCombatBounds(window, player, objectPool);
             }
