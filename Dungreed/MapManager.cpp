@@ -192,7 +192,7 @@ bool MapManager::preloadFloorTileMaps(const std::string& tileAtlasKey,
 }
 
 bool MapManager::moveCurrentRoom(DoorPosition doorPosition) {
-    if (!m_currentRoom) {
+    if (!m_currentRoom || m_currentRoom->isTraversalLocked()) {
         return false;
     }
 

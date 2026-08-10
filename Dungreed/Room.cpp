@@ -201,6 +201,9 @@ void Room::loadReference(RoomType type, DoorPositions doorPositions) {
 void Room::loadLayout(RoomType type, RoomLayout layout, DoorPositions doorPositions) {
     info.type = type;
     info.isClear = false;
+    info.encounterMonsters.clear();
+    info.encounterPhaseCount = 0;
+    info.isEncounterInitialized = false;
     info.doorPositions = doorPositions;
     info.layout = std::move(layout);
     applyDoorways(info.layout, doorPositions);
@@ -220,14 +223,34 @@ void Room::loadLayout(RoomType type, RoomLayout layout, DoorPositions doorPositi
 }
 void Room::setMonsterSpawns(std::vector<RoomMonsterSpawn> monsterSpawns) {
     info.monsterSpawns = std::move(monsterSpawns);
+    info.encounterMonsters.clear();
+    info.encounterPhaseCount = 0;
+    info.isEncounterInitialized = false;
+    info.isClear = false;
 }
 
 void Room::setMonsterPhaseConfig(RoomMonsterPhaseConfig config) {
     info.monsterPhaseConfig = std::move(config);
+    info.encounterMonsters.clear();
+    info.encounterPhaseCount = 0;
+    info.isEncounterInitialized = false;
+    info.isClear = false;
+}
+
+void Room::prepareMonsterEncounter(std::vector<RoomMonsterSpawn> monsters,
+    int phaseCount) {
+    info.encounterMonsters = std::move(monsters);
+    info.encounterPhaseCount = std::max(phaseCount, 1);
+    info.isEncounterInitialized = true;
+    info.isClear = info.encounterMonsters.empty();
 }
 
 void Room::setClear(bool isClear) {
     info.isClear = isClear;
+}
+
+bool Room::isTraversalLocked() const {
+    return info.isEncounterInitialized && !info.isClear;
 }
 
 std::optional<DoorPosition> Room::getEnteredDoor(

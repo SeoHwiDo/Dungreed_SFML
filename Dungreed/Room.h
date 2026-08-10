@@ -75,6 +75,7 @@ struct RoomMonsterSpawn {
     std::string monsterId;
     sf::Vector2f positionOffset{};
     float activationDelay = 1.f;
+    int phaseIndex = 0;
 };
 
 struct RoomMonsterPhaseConfig {
@@ -102,6 +103,9 @@ struct RoomInfo {
     bool isClear = false;
     std::vector<RoomMonsterSpawn> monsterSpawns;
     RoomMonsterPhaseConfig monsterPhaseConfig;
+    std::vector<RoomMonsterSpawn> encounterMonsters;
+    int encounterPhaseCount = 0;
+    bool isEncounterInitialized = false;
     RoomLayout layout;
 };
 
@@ -150,7 +154,11 @@ public:
     void loadLayout(RoomType type, RoomLayout layout, DoorPositions doorPositions);
     void setMonsterSpawns(std::vector<RoomMonsterSpawn> monsterSpawns);
     void setMonsterPhaseConfig(RoomMonsterPhaseConfig config);
+    /// 최초 활성화 때 확정한 몬스터 목록과 페이즈 수를 저장합니다. 빈 목록은 즉시 클리어됩니다.
+    void prepareMonsterEncounter(std::vector<RoomMonsterSpawn> monsters, int phaseCount);
     void setClear(bool isClear);
+    /// 몬스터가 하나라도 남아 있는, 이동을 막아야 하는 전투방인지 반환합니다.
+    bool isTraversalLocked() const;
 
     /// RoomCell 레이아웃을 TileConfig로 변환해 타일맵 렌더링 및 충돌 데이터를 생성합니다.
     /// tileSet에는 벽·문·백타일·플랫폼에 대응하는 아틀라스 프레임 이름을 전달합니다.
@@ -169,6 +177,14 @@ public:
 
     /// 현재 방의 레이아웃·문·스폰 정보를 읽기 전용으로 반환합니다.
     inline const RoomInfo& getInfo() const { return info; }
+    /// 최초 한 번 확정한 몬스터 목록을 반환합니다.
+    inline const std::vector<RoomMonsterSpawn>& getEncounterMonsters() const {
+        return info.encounterMonsters;
+    }
+    /// 확정된 전투 페이즈 수를 반환합니다.
+    inline int getEncounterPhaseCount() const { return info.encounterPhaseCount; }
+    /// 몬스터 목록이 이미 확정되었는지 반환합니다.
+    inline bool isMonsterEncounterPrepared() const { return info.isEncounterInitialized; }
 
     /// Up/Down/Left/Right 방향 슬롯에 연결할 다음 Room 객체를 지정합니다.
     void setDoorNext(DoorPosition position, Room* nextRoom);
