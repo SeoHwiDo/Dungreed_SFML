@@ -326,23 +326,12 @@
             "Left": null,
             "Right": null
           },
-          "monsters": [],
-          "spawnPhases": {
-            "minPhaseCount": 2,
-            "maxPhaseCount": 3,
-            "minMonstersPerPhase": 3,
-            "maxMonstersPerPhase": 4,
-            "phaseDelay": 1.2,
-            "activationDelay": 0.9,
-            "monsterPool": [
-              "Banshee",
-              "Bat",
-              "BigWhiteSkel",
-              "LittleGhost",
-              "Minotaurs",
-              "SkelDog"
-            ]
-          }
+          "phaseDelay": 1.2,
+          "activationDelay": 0.9,
+          "monster_pool": [
+            [{ "monsterId": "SkelDog", "count": 2 }, { "monsterId": "Bat", "count": 1 }],
+            [{ "monsterId": "BigWhiteSkel", "count": 1 }, { "monsterId": "Banshee", "count": 1 }]
+          ]
         },
         {
           "id": "floor01_monster_02",
@@ -362,23 +351,12 @@
             "Left": null,
             "Right": null
           },
-          "monsters": [],
-          "spawnPhases": {
-            "minPhaseCount": 2,
-            "maxPhaseCount": 3,
-            "minMonstersPerPhase": 3,
-            "maxMonstersPerPhase": 4,
-            "phaseDelay": 1.2,
-            "activationDelay": 0.9,
-            "monsterPool": [
-              "Banshee",
-              "Bat",
-              "BigWhiteSkel",
-              "LittleGhost",
-              "Minotaurs",
-              "SkelDog"
-            ]
-          }
+          "phaseDelay": 1.2,
+          "activationDelay": 0.9,
+          "monster_pool": [
+            [{ "monsterId": "LittleGhost", "count": 2 }, { "monsterId": "SkelDog", "count": 1 }],
+            [{ "monsterId": "Minotaurs", "count": 1 }, { "monsterId": "Bat", "count": 2 }]
+          ]
         },
         {
           "id": "floor01_monster_03",
@@ -398,23 +376,12 @@
             "Left": null,
             "Right": null
           },
-          "monsters": [],
-          "spawnPhases": {
-            "minPhaseCount": 2,
-            "maxPhaseCount": 3,
-            "minMonstersPerPhase": 3,
-            "maxMonstersPerPhase": 4,
-            "phaseDelay": 1.2,
-            "activationDelay": 0.9,
-            "monsterPool": [
-              "Banshee",
-              "Bat",
-              "BigWhiteSkel",
-              "LittleGhost",
-              "Minotaurs",
-              "SkelDog"
-            ]
-          }
+          "phaseDelay": 1.2,
+          "activationDelay": 0.9,
+          "monster_pool": [
+            [{ "monsterId": "Banshee", "count": 2 }],
+            [{ "monsterId": "BigWhiteSkel", "count": 1 }, { "monsterId": "SkelDog", "count": 2 }]
+          ]
         },
         {
           "id": "floor01_monster_04",
@@ -434,23 +401,12 @@
             "Left": null,
             "Right": null
           },
-          "monsters": [],
-          "spawnPhases": {
-            "minPhaseCount": 2,
-            "maxPhaseCount": 3,
-            "minMonstersPerPhase": 3,
-            "maxMonstersPerPhase": 4,
-            "phaseDelay": 1.2,
-            "activationDelay": 0.9,
-            "monsterPool": [
-              "Banshee",
-              "Bat",
-              "BigWhiteSkel",
-              "LittleGhost",
-              "Minotaurs",
-              "SkelDog"
-            ]
-          }
+          "phaseDelay": 1.2,
+          "activationDelay": 0.9,
+          "monster_pool": [
+            [{ "monsterId": "Bat", "count": 3 }, { "monsterId": "LittleGhost", "count": 1 }],
+            [{ "monsterId": "Minotaurs", "count": 1 }, { "monsterId": "Banshee", "count": 1 }]
+          ]
         },
         {
           "id": "floor01_monster_05",
@@ -470,23 +426,12 @@
             "Left": null,
             "Right": null
           },
-          "monsters": [],
-          "spawnPhases": {
-            "minPhaseCount": 2,
-            "maxPhaseCount": 3,
-            "minMonstersPerPhase": 3,
-            "maxMonstersPerPhase": 4,
-            "phaseDelay": 1.2,
-            "activationDelay": 0.9,
-            "monsterPool": [
-              "Banshee",
-              "Bat",
-              "BigWhiteSkel",
-              "LittleGhost",
-              "Minotaurs",
-              "SkelDog"
-            ]
-          }
+          "phaseDelay": 1.2,
+          "activationDelay": 0.9,
+          "monster_pool": [
+            [{ "monsterId": "SkelDog", "count": 2 }, { "monsterId": "Banshee", "count": 1 }],
+            [{ "monsterId": "BigWhiteSkel", "count": 1 }, { "monsterId": "Minotaurs", "count": 1 }]
+          ]
         },
         {
           "id": "floor01_hut_01",

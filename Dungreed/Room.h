@@ -79,19 +79,18 @@ struct RoomMonsterSpawn {
 };
 
 struct RoomMonsterPhaseConfig {
-    int minPhaseCount = 0;
-    int maxPhaseCount = 0;
-    int minMonstersPerPhase = 0;
-    int maxMonstersPerPhase = 0;
+    struct MonsterCount {
+        std::string monsterId;
+        int count = 0;
+    };
+
     float phaseDelay = 1.2f;
     float activationDelay = 0.9f;
-    std::vector<std::string> monsterPool;
+    /// 바깥 배열의 인덱스가 페이즈이며, 내부 항목은 해당 페이즈의 몬스터 종류와 수량입니다.
+    std::vector<std::vector<MonsterCount>> monsterPool;
 
     bool isEnabled() const {
-        return minPhaseCount > 0 && maxPhaseCount >= minPhaseCount &&
-            minMonstersPerPhase > 0 &&
-            maxMonstersPerPhase >= minMonstersPerPhase &&
-            !monsterPool.empty();
+        return !monsterPool.empty();
     }
 };
 

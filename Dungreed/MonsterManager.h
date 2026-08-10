@@ -1,6 +1,5 @@
 #pragma once
 
-#include <random>
 #include <string>
 #include <vector>
 
@@ -29,8 +28,6 @@ private:
     int m_totalPhaseCount = 0;
     int m_currentPhase = 0;
     float m_phaseDelayTimer = 0.f;
-    std::mt19937 m_randomEngine{ std::random_device{}() };
-
     void prepareRoomEncounter(Room& room, const GameDataManager& gameData);
     bool spawnMonster(const MonsterData& monsterData,
         std::vector<sf::Vector2f>& spawnCandidates,

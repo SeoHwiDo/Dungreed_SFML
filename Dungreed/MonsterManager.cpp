@@ -1,7 +1,6 @@
 #include "MonsterManager.h"
 
 #include <algorithm>
-#include <cmath>
 #include <iostream>
 #include <vector>
 
@@ -10,13 +9,6 @@
 #include "Player.h"
 #include "Room.h"
 #include "TileMap.h"
-
-namespace {
-int randomBetween(std::mt19937& engine, int minimum, int maximum) {
-    std::uniform_int_distribution<int> distribution(minimum, maximum);
-    return distribution(engine);
-}
-}
 
 void MonsterManager::requestRoomMonsters(Room& room, const TileMap& tileMap,
     const GameDataManager& gameData, ObjectPoolingManager& objectPool,
@@ -49,28 +41,23 @@ void MonsterManager::prepareRoomEncounter(Room& room,
     int phaseCount = 1;
     const RoomMonsterPhaseConfig& phaseConfig = room.getInfo().monsterPhaseConfig;
     if (phaseConfig.isEnabled()) {
-        phaseCount = randomBetween(m_randomEngine,
-            phaseConfig.minPhaseCount, phaseConfig.maxPhaseCount);
-        std::uniform_int_distribution<std::size_t> monsterDistribution(
-            0, phaseConfig.monsterPool.size() - 1);
-
+        phaseCount = static_cast<int>(phaseConfig.monsterPool.size());
         for (int phaseIndex = 0; phaseIndex < phaseCount; ++phaseIndex) {
-            const int monsterCount = randomBetween(m_randomEngine,
-                phaseConfig.minMonstersPerPhase, phaseConfig.maxMonstersPerPhase);
-            for (int index = 0; index < monsterCount; ++index) {
-                const std::string& monsterId =
-                    phaseConfig.monsterPool[monsterDistribution(m_randomEngine)];
-                const MonsterData* monsterData = gameData.findMonster(monsterId);
+            for (const RoomMonsterPhaseConfig::MonsterCount& entry :
+                phaseConfig.monsterPool[phaseIndex]) {
+                const MonsterData* monsterData = gameData.findMonster(entry.monsterId);
                 if (!monsterData || !monsterData->enabled) {
                     continue;
                 }
 
-                encounterMonsters.push_back({
-                    monsterId,
-                    monsterData->behavior.isFlying ? sf::Vector2f{ 0.f, -96.f } : sf::Vector2f{},
-                    phaseConfig.activationDelay,
-                    phaseIndex
-                });
+                for (int count = 0; count < std::max(entry.count, 0); ++count) {
+                    encounterMonsters.push_back({
+                        entry.monsterId,
+                        monsterData->behavior.isFlying ? sf::Vector2f{ 0.f, -96.f } : sf::Vector2f{},
+                        phaseConfig.activationDelay,
+                        phaseIndex
+                    });
+                }
             }
         }
     } else {
@@ -101,7 +88,6 @@ bool MonsterManager::spawnMonster(const MonsterData& monsterData,
         monsterData.behavior.attackRange + spawnSafetyMargin;
     const sf::Vector2f mapSize = m_activeTileMap->getPixelSize();
 
-    std::shuffle(spawnCandidates.begin(), spawnCandidates.end(), m_randomEngine);
     for (std::size_t index = 0; index < spawnCandidates.size(); ++index) {
         const sf::Vector2f spawnPosition =
             spawnCandidates[index] + positionOffset;

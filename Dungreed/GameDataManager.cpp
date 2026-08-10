@@ -159,7 +159,8 @@ bool GameDataManager::loadWeapons(const std::string& path) {
         if (entry.contains("projectile")) {
             const auto& projectile = entry.at("projectile");
             ProjectileConfig config;
-            config.type = parseProjectileType(projectile.value("type", "Arrow"));
+            config.animationKey = projectile.value("type", "Arrow");
+            config.type = parseProjectileType(config.animationKey);
             config.target = parseTarget(projectile.value("target", "Monster"));
             config.speed = projectile.value("speed", 400.f);
             config.damage = projectile.value("damage", data.stat.damage);
@@ -201,7 +202,17 @@ bool GameDataManager::loadMonsters(const std::string& path) {
         data.behavior.detectRange = ai.value("detectRange", 100.f);
         data.behavior.attackRange = ai.value("attackRange", 50.f);
         data.behavior.attackWindup = ai.value("attackWindup", 0.35f);
-        data.behavior.attackOnLastFrame = ai.value("attackOnLastFrame", true);
+        data.behavior.idleDuration = ai.value("idleDuration", 2.f);
+        data.behavior.patrolDuration = ai.value("patrolDuration", 1.f);
+        data.behavior.patrolSpeedMultiplier = ai.value("patrolSpeedMultiplier", 0.2f);
+        data.behavior.chaseExitRangeMultiplier = ai.value("chaseExitRangeMultiplier", 1.5f);
+        data.behavior.attackReadyDuration = ai.value("attackReadyDuration", 0.4f);
+        data.behavior.attackRecoveryDuration = ai.value("attackRecoveryDuration", 0.4f);
+        data.behavior.attackActiveTimeout = ai.value("attackActiveTimeout", 1.5f);
+        data.behavior.lockAttackFacing = ai.value("lockAttackFacing", false);
+        data.behavior.playReleaseAnimation = ai.value("playReleaseAnimation", false);
+        data.behavior.waitForAttackCooldownAfterRelease =
+            ai.value("waitForAttackCooldownAfterRelease", false);
         data.behavior.chargeDuration = ai.value("chargeDuration", 0.55f);
         data.behavior.chargeSpeedMultiplier = ai.value("chargeSpeedMultiplier", 3.f);
         data.behavior.stunDuration = ai.value("stunDuration", 0.45f);
@@ -211,8 +222,18 @@ bool GameDataManager::loadMonsters(const std::string& path) {
         if (entry.contains("movement")) {
             const auto& movement = entry.at("movement");
             data.behavior.moveSpeed = movement.value("moveSpeed", 300.f);
+            data.behavior.gravity = movement.value("gravity", 980.f);
             data.behavior.isFlying = movement.value("mode", "Ground") == "Flying";
             data.behavior.ignoresWalls = movement.value("ignoresWalls", false);
+        }
+
+        if (entry.contains("animations")) {
+            for (const auto& [stateName, animation] : entry.at("animations").items()) {
+                MonsterAnimationConfig config;
+                config.isLoop = animation.value("isLoop", true);
+                config.frameDuration = animation.value("frameDuration", 0.2f);
+                data.behavior.animations.emplace(stateName, config);
+            }
         }
 
         data.weaponId = entry.value("weaponId", "");
@@ -274,21 +295,21 @@ bool GameDataManager::loadRoomData(const std::string& path) {
                 room.monsterSpawns.push_back(monsterSpawn);
             }
 
-            if (roomJson.contains("spawnPhases")) {
-                const auto& phases = roomJson.at("spawnPhases");
-                room.monsterPhaseConfig.minPhaseCount = phases.value("minPhaseCount", 2);
-                room.monsterPhaseConfig.maxPhaseCount = phases.value("maxPhaseCount", 3);
-                room.monsterPhaseConfig.minMonstersPerPhase =
-                    phases.value("minMonstersPerPhase", 3);
-                room.monsterPhaseConfig.maxMonstersPerPhase =
-                    phases.value("maxMonstersPerPhase", 4);
-                room.monsterPhaseConfig.phaseDelay = phases.value("phaseDelay", 1.2f);
+            if (roomJson.contains("monster_pool")) {
+                room.monsterPhaseConfig.phaseDelay =
+                    roomJson.value("phaseDelay", 1.2f);
                 room.monsterPhaseConfig.activationDelay =
-                    phases.value("activationDelay", 0.9f);
-                for (const auto& monsterId :
-                    phases.value("monsterPool", json::array())) {
+                    roomJson.value("activationDelay", 0.9f);
+                for (const auto& phase : roomJson.at("monster_pool")) {
+                    std::vector<RoomMonsterPhaseConfig::MonsterCount> phaseEntries;
+                    for (const auto& entry : phase) {
+                        phaseEntries.push_back({
+                            entry.at("monsterId").get<std::string>(),
+                            entry.value("count", 0)
+                        });
+                    }
                     room.monsterPhaseConfig.monsterPool.push_back(
-                        monsterId.get<std::string>());
+                        std::move(phaseEntries));
                 }
             }
 
@@ -337,32 +358,28 @@ PoolPrewarmPlan GameDataManager::createPoolPrewarmPlan(float reserveRatio) const
     for (const auto& [floorId, floor] : m_floors) {
         for (const auto& [roomId, room] : floor.rooms) {
             if (room.monsterPhaseConfig.isEnabled()) {
-                const std::size_t maximumMonsterCount =
-                    static_cast<std::size_t>(
-                        room.monsterPhaseConfig.maxMonstersPerPhase);
-                std::size_t maximumProjectileCount = 0;
+                for (const auto& phase : room.monsterPhaseConfig.monsterPool) {
+                    std::unordered_map<std::string, std::size_t> phaseMonsterCounts;
+                    std::size_t phaseProjectileCount = 0;
+                    for (const RoomMonsterPhaseConfig::MonsterCount& entry : phase) {
+                        const MonsterData* monsterData = findMonster(entry.monsterId);
+                        if (!monsterData || !monsterData->enabled || entry.count <= 0) {
+                            continue;
+                        }
 
-                for (const std::string& monsterId :
-                    room.monsterPhaseConfig.monsterPool) {
-                    const MonsterData* monsterData = findMonster(monsterId);
-                    if (!monsterData || !monsterData->enabled) {
-                        continue;
+                        const std::size_t count = static_cast<std::size_t>(entry.count);
+                        phaseMonsterCounts[monsterData->id] += count;
+                        const WeaponData* weaponData = findWeapon(monsterData->weaponId);
+                        if (weaponData && weaponData->stat.projectile) {
+                            phaseProjectileCount += count * weaponData->stat.projectile->count;
+                        }
                     }
 
-                    monsterCounts[monsterData->id] = std::max(
-                        monsterCounts[monsterData->id], maximumMonsterCount);
-                    const WeaponData* weaponData =
-                        findWeapon(monsterData->weaponId);
-                    if (weaponData && weaponData->stat.projectile) {
-                        maximumProjectileCount = std::max(
-                            maximumProjectileCount,
-                            maximumMonsterCount *
-                                weaponData->stat.projectile->count);
+                    for (const auto& [monsterId, count] : phaseMonsterCounts) {
+                        monsterCounts[monsterId] = std::max(monsterCounts[monsterId], count);
                     }
+                    projectileSpawnCount = std::max(projectileSpawnCount, phaseProjectileCount);
                 }
-
-                projectileSpawnCount = std::max(
-                    projectileSpawnCount, maximumProjectileCount);
                 continue;
             }
 

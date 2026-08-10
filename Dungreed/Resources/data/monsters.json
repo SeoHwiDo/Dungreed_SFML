@@ -7,19 +7,34 @@
       "atlasKey": "Monster",
       "movement": {
         "mode": "Flying",
+        "gravity": 0.0,
         "moveSpeed": 80
       },
       "status": {
-        "maxHp": 100.0,
-        "power": 10.0,
+        "maxHp": 50.0,
+        "power": 8.0,
         "dex": 1.0
       },
       "ai": {
         "detectRange": 220,
         "attackRange": 160,
         "attackWindup": 0.55,
-        "attackOnLastFrame": true,
-        "attackPattern": "RadialProjectile"
+        "attackPattern": "RadialProjectile",
+        "idleDuration": 2.0,
+        "patrolDuration": 1.0,
+        "patrolSpeedMultiplier": 0.2,
+        "chaseExitRangeMultiplier": 1.5,
+        "attackReadyDuration": 0.4,
+        "attackRecoveryDuration": 0.4,
+        "attackActiveTimeout": 1.55,
+        "lockAttackFacing": false,
+        "playReleaseAnimation": false,
+        "waitForAttackCooldownAfterRelease": false
+      },
+      "animations": {
+        "Idle": { "isLoop": true, "frameDuration": 0.2 },
+        "Attack": { "isLoop": false, "frameDuration": 0.1 },
+        "Die": { "isLoop": false, "frameDuration": 0.2 }
       },
       "weaponId": "BansheeRadial"
     },
@@ -36,13 +51,27 @@
         "fallbackAnimation": "Bat_Idle"
       },
       "status": {
-        "maxHp": 100.0,
-        "power": 10.0,
+        "maxHp": 30.0,
+        "power": 4.0,
         "dex": 1.0
       },
       "ai": {
         "detectRange": 260,
-        "attackRange": 130
+        "attackRange": 130,
+        "idleDuration": 2.0,
+        "patrolDuration": 1.0,
+        "patrolSpeedMultiplier": 0.2,
+        "chaseExitRangeMultiplier": 1.5,
+        "attackReadyDuration": 0.4,
+        "attackRecoveryDuration": 0.4,
+        "attackActiveTimeout": 1.0,
+        "lockAttackFacing": false,
+        "playReleaseAnimation": false,
+        "waitForAttackCooldownAfterRelease": false
+      },
+      "animations": {
+        "Idle": { "isLoop": true, "frameDuration": 0.1 },
+        "Die": { "isLoop": false, "frameDuration": 0.2 }
       },
       "weaponId": "BabyBatBullet"
     },
@@ -52,10 +81,11 @@
       "atlasKey": "Monster",
       "movement": {
         "mode": "Ground",
+        "gravity": 980.0,
         "moveSpeed": 65
       },
       "status": {
-        "maxHp": 150.0,
+        "maxHp": 80.0,
         "power": 15.0,
         "dex": 1.0
       },
@@ -63,8 +93,25 @@
         "detectRange": 180,
         "attackRange": 65,
         "attackWindup": 0.55,
-        "attackOnLastFrame": true,
-        "attackPattern": "Standard"
+        "attackPattern": "Standard",
+        "idleDuration": 2.0,
+        "patrolDuration": 1.0,
+        "patrolSpeedMultiplier": 0.2,
+        "chaseExitRangeMultiplier": 1.5,
+        "attackReadyDuration": 0.2,
+        "attackRecoveryDuration": 0.4,
+        "attackActiveTimeout": 1.55,
+        "lockAttackFacing": true,
+        "playReleaseAnimation": true,
+        "waitForAttackCooldownAfterRelease": true
+      },
+      "animations": {
+        "Idle": { "isLoop": true, "frameDuration": 0.2 },
+        "Run": { "isLoop": true, "frameDuration": 0.2 },
+        "AttackReady": { "isLoop": false, "frameDuration": 0.3 },
+        "Attack": { "isLoop": false, "frameDuration": 0.1 },
+        "Release": { "isLoop": false, "frameDuration": 0.3 },
+        "Die": { "isLoop": false, "frameDuration": 0.2 }
       },
       "weaponId": "BigWhiteSword"
     },
@@ -74,20 +121,35 @@
       "atlasKey": "Monster",
       "movement": {
         "mode": "Flying",
+        "gravity": 0.0,
         "moveSpeed": 70,
         "ignoresWalls": true
       },
       "status": {
-        "maxHp": 80.0,
-        "power": 8.0,
+        "maxHp": 30.0,
+        "power": 5.0,
         "dex": 1.0
       },
       "ai": {
         "detectRange": 180,
         "attackRange": 55,
         "attackWindup": 0.45,
-        "attackOnLastFrame": true,
-        "attackPattern": "GhostTouch"
+        "attackPattern": "GhostTouch",
+        "idleDuration": 2.0,
+        "patrolDuration": 1.0,
+        "patrolSpeedMultiplier": 0.2,
+        "chaseExitRangeMultiplier": 1.5,
+        "attackReadyDuration": 0.4,
+        "attackRecoveryDuration": 0.4,
+        "attackActiveTimeout": 1.45,
+        "lockAttackFacing": false,
+        "playReleaseAnimation": false,
+        "waitForAttackCooldownAfterRelease": false
+      },
+      "animations": {
+        "Idle": { "isLoop": true, "frameDuration": 0.2 },
+        "Attack": { "isLoop": false, "frameDuration": 0.1 },
+        "Die": { "isLoop": false, "frameDuration": 0.2 }
       },
       "weaponId": "LittleGhostTouch"
     },
@@ -97,10 +159,11 @@
       "atlasKey": "Monster",
       "movement": {
         "mode": "Ground",
+        "gravity": 980.0,
         "moveSpeed": 80
       },
       "status": {
-        "maxHp": 200.0,
+        "maxHp": 150.0,
         "power": 20.0,
         "dex": 1.0
       },
@@ -108,11 +171,26 @@
         "detectRange": 440,
         "attackRange": 70,
         "attackWindup": 0.45,
-        "attackOnLastFrame": true,
         "attackPattern": "ChargeCombo",
         "chargeDuration": 0.65,
         "chargeSpeedMultiplier": 3.2,
-        "stunDuration": 0.45
+        "stunDuration": 0.4,
+        "idleDuration": 2.0,
+        "patrolDuration": 1.0,
+        "patrolSpeedMultiplier": 0.2,
+        "chaseExitRangeMultiplier": 1.5,
+        "attackReadyDuration": 0.4,
+        "attackRecoveryDuration": 0.4,
+        "attackActiveTimeout": 1.45,
+        "lockAttackFacing": true,
+        "playReleaseAnimation": false,
+        "waitForAttackCooldownAfterRelease": false
+      },
+      "animations": {
+        "AttackReady": { "isLoop": false, "frameDuration": 0.3 },
+        "Attack": { "isLoop": false, "frameDuration": 0.1 },
+        "Charge": { "isLoop": false, "frameDuration": 0.1 },
+        "Die": { "isLoop": false, "frameDuration": 0.2 }
       },
       "weaponId": "MinotaursSlam"
     },
@@ -122,19 +200,34 @@
       "atlasKey": "Monster",
       "movement": {
         "mode": "Ground",
+        "gravity": 980.0,
         "moveSpeed": 75
       },
       "status": {
-        "maxHp": 100.0,
-        "power": 10.0,
+        "maxHp": 30.0,
+        "power": 3.0,
         "dex": 1.0
       },
       "ai": {
         "detectRange": 130,
         "attackRange": 45,
         "attackWindup": 0.3,
-        "attackOnLastFrame": true,
-        "attackPattern": "Standard"
+        "attackPattern": "Standard",
+        "idleDuration": 2.0,
+        "patrolDuration": 1.0,
+        "patrolSpeedMultiplier": 0.2,
+        "chaseExitRangeMultiplier": 1.5,
+        "attackReadyDuration": 0.4,
+        "attackRecoveryDuration": 0.4,
+        "attackActiveTimeout": 0.75,
+        "lockAttackFacing": false,
+        "playReleaseAnimation": false,
+        "waitForAttackCooldownAfterRelease": false
+      },
+      "animations": {
+        "Idle": { "isLoop": true, "frameDuration": 0.2 },
+        "Run": { "isLoop": true, "frameDuration": 0.2 },
+        "Die": { "isLoop": false, "frameDuration": 0.2 }
       },
       "weaponId": "MonsterClaw"
     }
