@@ -16,6 +16,7 @@ constexpr std::string_view kTileMapAtlasPath = "resources/images/tilemap_atlas.p
 constexpr std::string_view kEquipAtlasPath = "resources/images/equip_atlas.png";
 constexpr std::string_view kProjectileAtlasPath = "resources/images/projectile_atlas.png";
 constexpr std::string_view kEffectAtlasPath = "resources/images/effect_atlas.png";
+constexpr std::string_view kUiAtlasPath = "resources/images/ui_atlas.png";
 
 constexpr std::string_view kPlayerAtlasJsonPath = "resources/images/player_atlas.json";
 constexpr std::string_view kMonsterAtlasJsonPath = "resources/images/monster_atlas.json";
@@ -24,6 +25,7 @@ constexpr std::string_view kTileMapAtlasJsonPath = "resources/images/tilemap_atl
 constexpr std::string_view kEquipAtlasJsonPath = "resources/images/equip_atlas.json";
 constexpr std::string_view kProjectileAtlasJsonPath = "resources/images/projectile_atlas.json";
 constexpr std::string_view kEffectAtlasJsonPath = "resources/images/effect_atlas.json";
+constexpr std::string_view kUiAtlasJsonPath = "resources/images/ui_atlas.json";
 constexpr std::string_view kBackgroundPath = "resources/images/Backgrounds/";
 
 struct AtlasData {
