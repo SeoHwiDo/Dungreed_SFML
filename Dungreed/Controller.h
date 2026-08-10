@@ -11,6 +11,7 @@ struct InputData {
     bool isAttacking = false;
     sf::Vector2f aimDir;
     sf::Vector2f aimWorldPosition;
+
     float aimRadian = 0.f;
 };
 

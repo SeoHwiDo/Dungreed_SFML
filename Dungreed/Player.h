@@ -67,10 +67,12 @@ private:
     sf::Vector2f m_dashDelta;
     float m_afterimageTimer = 0.f;
     float m_stunTimer = 0.f;
+    float m_facingDirection = 1.f;
     std::vector<DashAfterimage> m_dashAfterimages;
 
     void changeState(PlayerState newState);
     void handleState(float dt, const InputData& input);
+    void updateFacingDirection(const sf::Vector2f& aimWorldPosition);
     bool tryStartDash(const sf::Vector2f& cursorPosition);
     void updateDash(float dt, const TileMap& tileMap);
     void updateDashRecharge(float dt);

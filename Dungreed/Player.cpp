@@ -1,4 +1,4 @@
-﻿#include "Player.h"
+#include "Player.h"
 
 #include "Collision.h"
 #include "Equip.h"
@@ -233,6 +233,18 @@ void Player::applyStun(float duration) {
     setHorizontalInput(0.f);
 }
 
+void Player::updateFacingDirection(const sf::Vector2f& aimWorldPosition) {
+    const float horizontalDistance =
+        aimWorldPosition.x - getBodyCenterPosition().x;
+    if (horizontalDistance == 0) {
+        return;
+    }
+
+    m_facingDirection = horizontalDistance < 0 ? -1.f : 1.f;
+    if (sprite) {
+        sprite->setScale({ m_facingDirection, 1.f });
+    }
+}
 void Player::handleState(float dt, const InputData& input) {
     if (dead()) {
         changeState(PlayerState::Dead);
@@ -254,10 +266,6 @@ void Player::handleState(float dt, const InputData& input) {
         return;
     }
 
-    setHorizontalInput(input.moveDirX);
-    if (sprite) {
-        sprite->setScale({ input.aimDir.x < 0.f ? -1.f : 1.f, 1.f });
-    }
     if (input.isJumping && movement.isGrounded) {
         jump();
     }
@@ -269,6 +277,8 @@ void Player::handleState(float dt, const InputData& input) {
     } else {
         changeState(PlayerState::Idle);
     }
+
+    setHorizontalInput(input.moveDirX);
 
     if (input.isAttacking && equipment) {
         equipment->attack();
@@ -308,6 +318,7 @@ void Player::update(float dt, const sf::RenderWindow& window,
     }
 
     const InputData input = controller.getInput(window, getBodyCenterPosition());
+    updateFacingDirection(input.aimWorldPosition);
     updateDashRecharge(dt);
     updateAfterimages(dt);
     handleState(dt, input);

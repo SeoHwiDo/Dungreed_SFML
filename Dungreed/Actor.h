@@ -54,6 +54,8 @@ public:
     }
     /// 현재 체력이 0 이하인지 반환합니다. 사망 상태 전환과 입력 차단의 기준으로 사용합니다.
     inline bool dead() const { return status.tmpHp <= 0; }
+    inline float getTmpHp() const { return status.tmpHp; }
+    inline float getMaxHp() const { return status.maxHp; }
     /// 기본 공격력 값을 반환합니다. 장비 공격력과 함께 피해량 계산에 사용합니다.
     inline float attack() const { return status.power; };
     /// 보상 획득 시 최대 체력과 공격력을 올리고 현재 체력을 전부 회복합니다.
