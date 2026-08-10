@@ -10,20 +10,131 @@
           "roomType": "Start",
           "layout": {
             "generator": "StyledRoom",
-            "width": 40,
-            "height": 30,
+            "width": 20,
+            "height": 16,
             "outlineWidth": 2,
             "platforms": [
               {
-                "x": 13,
+                "x": 5,
                 "y": 9,
-                "length": 5
+                "length": 4
               }
             ]
           }
         },
         {
-          "id": "floor01_ref_monster",
+          "id": "floor01_ref_monster_01",
+          "roomType": "Monster",
+          "layout": {
+            "generator": "StyledRoom",
+            "width": 40,
+            "height": 30,
+            "outlineWidth": 2,
+            "platforms": [
+              {
+                "x": 5,
+                "y": 21,
+                "length": 5
+              },
+              {
+                "x": 30,
+                "y": 21,
+                "length": 5
+              },
+              {
+                "x": 11,
+                "y": 15,
+                "length": 4
+              },
+              {
+                "x": 25,
+                "y": 15,
+                "length": 4
+              },
+              {
+                "x": 18,
+                "y": 9,
+                "length": 4
+              }
+            ]
+          }
+        },
+        {
+          "id": "floor01_ref_monster_02",
+          "roomType": "Monster",
+          "layout": {
+            "generator": "StyledRoom",
+            "width": 40,
+            "height": 30,
+            "outlineWidth": 2,
+            "platforms": [
+              {
+                "x": 9,
+                "y": 22,
+                "length": 4
+              },
+              {
+                "x": 27,
+                "y": 22,
+                "length": 4
+              },
+              {
+                "x": 4,
+                "y": 17,
+                "length": 5
+              },
+              {
+                "x": 31,
+                "y": 17,
+                "length": 5
+              },
+              {
+                "x": 18,
+                "y": 12,
+                "length": 4
+              }
+            ]
+          }
+        },
+        {
+          "id": "floor01_ref_monster_03",
+          "roomType": "Monster",
+          "layout": {
+            "generator": "StyledRoom",
+            "width": 40,
+            "height": 30,
+            "outlineWidth": 2,
+            "platforms": [
+              {
+                "x": 4,
+                "y": 22,
+                "length": 4
+              },
+              {
+                "x": 32,
+                "y": 22,
+                "length": 4
+              },
+              {
+                "x": 12,
+                "y": 18,
+                "length": 4
+              },
+              {
+                "x": 24,
+                "y": 18,
+                "length": 4
+              },
+              {
+                "x": 18,
+                "y": 13,
+                "length": 4
+              }
+            ]
+          }
+        },
+        {
+          "id": "floor01_ref_monster_04",
           "roomType": "Monster",
           "layout": {
             "generator": "StyledRoom",
@@ -33,22 +144,64 @@
             "platforms": [
               {
                 "x": 10,
-                "y": 5,
+                "y": 22,
                 "length": 5
               },
               {
-                "x": 6,
-                "y": 8,
-                "length": 3
+                "x": 25,
+                "y": 22,
+                "length": 5
+              },
+              {
+                "x": 5,
+                "y": 17,
+                "length": 4
+              },
+              {
+                "x": 31,
+                "y": 17,
+                "length": 4
               },
               {
                 "x": 18,
-                "y": 8,
-                "length": 3
+                "y": 12,
+                "length": 4
+              }
+            ]
+          }
+        },
+        {
+          "id": "floor01_ref_monster_05",
+          "roomType": "Monster",
+          "layout": {
+            "generator": "StyledRoom",
+            "width": 40,
+            "height": 30,
+            "outlineWidth": 2,
+            "platforms": [
+              {
+                "x": 6,
+                "y": 23,
+                "length": 4
               },
               {
-                "x": 11,
-                "y": 10,
+                "x": 30,
+                "y": 23,
+                "length": 4
+              },
+              {
+                "x": 14,
+                "y": 19,
+                "length": 4
+              },
+              {
+                "x": 22,
+                "y": 19,
+                "length": 4
+              },
+              {
+                "x": 18,
+                "y": 15,
                 "length": 4
               }
             ]
@@ -64,14 +217,29 @@
             "outlineWidth": 2,
             "platforms": [
               {
-                "x": 13,
-                "y": 7,
-                "length": 5
+                "x": 6,
+                "y": 22,
+                "length": 4
               },
               {
-                "x": 12,
-                "y": 10,
-                "length": 3
+                "x": 30,
+                "y": 22,
+                "length": 4
+              },
+              {
+                "x": 13,
+                "y": 17,
+                "length": 4
+              },
+              {
+                "x": 23,
+                "y": 17,
+                "length": 4
+              },
+              {
+                "x": 18,
+                "y": 12,
+                "length": 4
               }
             ]
           }
@@ -86,24 +254,34 @@
             "outlineWidth": 2,
             "platforms": [
               {
-                "x": 10,
-                "y": 14,
-                "length": 25
+                "x": 5,
+                "y": 32,
+                "length": 5
               },
               {
-                "x": 8,
-                "y": 9,
-                "length": 6
+                "x": 46,
+                "y": 32,
+                "length": 5
               },
               {
-                "x": 40,
-                "y": 9,
-                "length": 6
+                "x": 7,
+                "y": 8,
+                "length": 5
+              },
+              {
+                "x": 44,
+                "y": 8,
+                "length": 5
+              },
+              {
+                "x": 15,
+                "y": 26,
+                "length": 26
               },
               {
                 "x": 20,
-                "y": 5,
-                "length": 6
+                "y": 12,
+                "length": 16
               }
             ]
           }
@@ -114,7 +292,12 @@
           "id": "floor01_start_01",
           "roomReferenceId": "floor01_ref_start",
           "role": "Start",
-          "availableDoorPositions": [ "Up", "Down", "Left", "Right" ],
+          "availableDoorPositions": [
+            "Up",
+            "Down",
+            "Left",
+            "Right"
+          ],
           "minDoorCount": 1,
           "maxDoorCount": 1,
           "doorConnections": {
@@ -127,9 +310,14 @@
         },
         {
           "id": "floor01_monster_01",
-          "roomReferenceId": "floor01_ref_monster",
+          "roomReferenceId": "floor01_ref_monster_01",
           "role": "Monster",
-          "availableDoorPositions": [ "Up", "Down", "Left", "Right" ],
+          "availableDoorPositions": [
+            "Up",
+            "Down",
+            "Left",
+            "Right"
+          ],
           "minDoorCount": 2,
           "maxDoorCount": 2,
           "doorConnections": {
@@ -158,9 +346,14 @@
         },
         {
           "id": "floor01_monster_02",
-          "roomReferenceId": "floor01_ref_monster",
+          "roomReferenceId": "floor01_ref_monster_02",
           "role": "Monster",
-          "availableDoorPositions": [ "Up", "Down", "Left", "Right" ],
+          "availableDoorPositions": [
+            "Up",
+            "Down",
+            "Left",
+            "Right"
+          ],
           "minDoorCount": 2,
           "maxDoorCount": 2,
           "doorConnections": {
@@ -189,9 +382,86 @@
         },
         {
           "id": "floor01_monster_03",
-          "roomReferenceId": "floor01_ref_monster",
+          "roomReferenceId": "floor01_ref_monster_03",
           "role": "Monster",
-          "availableDoorPositions": [ "Up", "Down", "Left", "Right" ],
+          "availableDoorPositions": [
+            "Up",
+            "Down",
+            "Left",
+            "Right"
+          ],
+          "minDoorCount": 2,
+          "maxDoorCount": 2,
+          "doorConnections": {
+            "Up": null,
+            "Down": null,
+            "Left": null,
+            "Right": null
+          },
+          "monsters": [],
+          "spawnPhases": {
+            "minPhaseCount": 2,
+            "maxPhaseCount": 3,
+            "minMonstersPerPhase": 3,
+            "maxMonstersPerPhase": 4,
+            "phaseDelay": 1.2,
+            "activationDelay": 0.9,
+            "monsterPool": [
+              "Banshee",
+              "Bat",
+              "BigWhiteSkel",
+              "LittleGhost",
+              "Minotaurs",
+              "SkelDog"
+            ]
+          }
+        },
+        {
+          "id": "floor01_monster_04",
+          "roomReferenceId": "floor01_ref_monster_04",
+          "role": "Monster",
+          "availableDoorPositions": [
+            "Up",
+            "Down",
+            "Left",
+            "Right"
+          ],
+          "minDoorCount": 2,
+          "maxDoorCount": 2,
+          "doorConnections": {
+            "Up": null,
+            "Down": null,
+            "Left": null,
+            "Right": null
+          },
+          "monsters": [],
+          "spawnPhases": {
+            "minPhaseCount": 2,
+            "maxPhaseCount": 3,
+            "minMonstersPerPhase": 3,
+            "maxMonstersPerPhase": 4,
+            "phaseDelay": 1.2,
+            "activationDelay": 0.9,
+            "monsterPool": [
+              "Banshee",
+              "Bat",
+              "BigWhiteSkel",
+              "LittleGhost",
+              "Minotaurs",
+              "SkelDog"
+            ]
+          }
+        },
+        {
+          "id": "floor01_monster_05",
+          "roomReferenceId": "floor01_ref_monster_05",
+          "role": "Monster",
+          "availableDoorPositions": [
+            "Up",
+            "Down",
+            "Left",
+            "Right"
+          ],
           "minDoorCount": 2,
           "maxDoorCount": 2,
           "doorConnections": {
@@ -222,7 +492,12 @@
           "id": "floor01_hut_01",
           "roomReferenceId": "floor01_ref_hut",
           "role": "Hut",
-          "availableDoorPositions": [ "Up", "Down", "Left", "Right" ],
+          "availableDoorPositions": [
+            "Up",
+            "Down",
+            "Left",
+            "Right"
+          ],
           "minDoorCount": 2,
           "maxDoorCount": 2,
           "doorConnections": {
@@ -237,7 +512,12 @@
           "id": "floor01_boss_01",
           "roomReferenceId": "floor01_ref_boss",
           "role": "Boss",
-          "availableDoorPositions": [ "Up", "Down", "Left", "Right" ],
+          "availableDoorPositions": [
+            "Up",
+            "Down",
+            "Left",
+            "Right"
+          ],
           "minDoorCount": 1,
           "maxDoorCount": 1,
           "doorConnections": {
@@ -257,6 +537,8 @@
           "floor01_monster_01",
           "floor01_monster_02",
           "floor01_monster_03",
+          "floor01_monster_04",
+          "floor01_monster_05",
           "floor01_hut_01"
         ],
         "doorSelection": "RandomUnused",
