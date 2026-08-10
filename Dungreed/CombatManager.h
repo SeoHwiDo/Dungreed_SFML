@@ -5,13 +5,15 @@
 
 class Player;
 class TileMap;
+class EffectManager;
 
 /// 벽 → 플레이어 공격 → 몬스터 공격 → 투사체 순서로 전투 상호작용을 실행합니다.
 /// 몬스터·투사체의 생성과 소유는 ObjectPoolingManager에 위임하고, 이 클래스는 판정만 담당합니다.
 class CombatManager {
 public:
     /// 플레이어의 근접 공격과 원거리 생성 요청을 처리하고, 이번 프레임에 맞은 몬스터 ID를 반환합니다.
-    std::unordered_set<EntityId> resolvePlayerAttack(Player& player, ObjectPoolingManager& objectPool) const;
+    std::unordered_set<EntityId> resolvePlayerAttack(Player& player,
+        ObjectPoolingManager& objectPool, EffectManager& effectManager) const;
 
     /// 몬스터의 근접/원거리 공격을 처리합니다. playerHitMonsters에는 이번 프레임 플레이어가 맞힌 몬스터를 전달합니다.
     void resolveMonsterAttacks(float dt, Player& player, ObjectPoolingManager& objectPool,

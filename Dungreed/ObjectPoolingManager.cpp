@@ -22,6 +22,16 @@ void ObjectPoolingManager::prewarmProjectiles(std::size_t count) {
         enqueueInactiveProjectile(m_projectiles.size() - 1);
     }
 }
+
+void ObjectPoolingManager::prewarmEffects(std::size_t count) {
+    for (std::size_t index = 0; index < count; ++index) {
+        EffectSlot slot;
+        slot.object = std::make_unique<Effect>();
+        slot.active = false;
+        m_effects.push_back(std::move(slot));
+        enqueueInactiveEffect(m_effects.size() - 1);
+    }
+}
 void ObjectPoolingManager::prewarmFromGameData(const GameDataManager& gameData,
     float reserveRatio) {
     const PoolPrewarmPlan plan = gameData.createPoolPrewarmPlan(reserveRatio);
@@ -30,6 +40,8 @@ void ObjectPoolingManager::prewarmFromGameData(const GameDataManager& gameData,
             monster.atlasKey, monster.behavior);
     }
     prewarmProjectiles(plan.projectileCount);
+    // 플레이어 스윙과 다수 적중 시의 SlashFX를 위해 기본 효과 풀을 준비합니다.
+    prewarmEffects(16);
 }
 
 Monster* ObjectPoolingManager::acquireMonster(const std::string& type,
@@ -115,12 +127,51 @@ void ObjectPoolingManager::releaseProjectile(Projectile* projectile) {
     }
 }
 
+Effect* ObjectPoolingManager::acquireEffect(const EffectSpawnRequest& request) {
+    if (EffectSlot* slot = dequeueInactiveEffect()) {
+        if (!slot->object->activate(request)) {
+            enqueueInactiveEffect(static_cast<std::size_t>(slot - m_effects.data()));
+            return nullptr;
+        }
+        slot->active = true;
+        return slot->object.get();
+    }
+
+    EffectSlot slot;
+    slot.object = std::make_unique<Effect>();
+    if (!slot.object->activate(request)) {
+        return nullptr;
+    }
+    slot.active = true;
+    Effect* result = slot.object.get();
+    m_effects.push_back(std::move(slot));
+    return result;
+}
+
+void ObjectPoolingManager::releaseEffect(Effect* effect) {
+    if (!effect) {
+        return;
+    }
+    for (std::size_t index = 0; index < m_effects.size(); ++index) {
+        EffectSlot& slot = m_effects[index];
+        if (slot.object.get() == effect && slot.active) {
+            slot.active = false;
+            enqueueInactiveEffect(index);
+            return;
+        }
+    }
+}
+
 void ObjectPoolingManager::enqueueInactiveMonster(std::size_t index) {
     m_inactiveMonsterSlots.push({ index, m_nextAvailableOrder++ });
 }
 
 void ObjectPoolingManager::enqueueInactiveProjectile(std::size_t index) {
     m_inactiveProjectileSlots.push({ index, m_nextAvailableOrder++ });
+}
+
+void ObjectPoolingManager::enqueueInactiveEffect(std::size_t index) {
+    m_inactiveEffectSlots.push({ index, m_nextAvailableOrder++ });
 }
 
 ObjectPoolingManager::MonsterSlot* ObjectPoolingManager::dequeueInactiveMonster() {
@@ -145,9 +196,29 @@ ObjectPoolingManager::ProjectileSlot* ObjectPoolingManager::dequeueInactiveProje
     return nullptr;
 }
 
+ObjectPoolingManager::EffectSlot* ObjectPoolingManager::dequeueInactiveEffect() {
+    while (!m_inactiveEffectSlots.empty()) {
+        const std::size_t index = m_inactiveEffectSlots.top().index;
+        m_inactiveEffectSlots.pop();
+        if (index < m_effects.size() && !m_effects[index].active && m_effects[index].object) {
+            return &m_effects[index];
+        }
+    }
+    return nullptr;
+}
+
 void ObjectPoolingManager::forEachActiveProjectile(
     const std::function<void(Projectile&)>& operation) {
     for (ProjectileSlot& slot : m_projectiles) {
+        if (slot.active && slot.object) {
+            operation(*slot.object);
+        }
+    }
+}
+
+void ObjectPoolingManager::forEachActiveEffect(
+    const std::function<void(Effect&)>& operation) const {
+    for (const EffectSlot& slot : m_effects) {
         if (slot.active && slot.object) {
             operation(*slot.object);
         }

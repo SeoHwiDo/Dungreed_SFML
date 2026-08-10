@@ -42,19 +42,18 @@ void Equip::attack() {
     // 이미 공격 중이 아닐 때만 공격 실행
     if (!m_isAttacking) {
         m_isAttacking = true;
-        m_hitTargets.clear();
+        m_meleeSwingStarted = true;
         m_attackTimer = 0.f;
         // stat의 attackSpeed를 반영하여 공격 시간 설정 (기본 0.5초 기준)
         m_attackDuration = 0.1f / (m_stat.attackSpeed > 0.f ? m_stat.attackSpeed : 1.f);
     }
 }
 
-bool Equip::consumeHit(EntityId targetId) {
-    if (!m_isAttacking || m_hitTargets.find(targetId) != m_hitTargets.end()) {
+bool Equip::consumeMeleeSwingStarted() {
+    if (!m_meleeSwingStarted) {
         return false;
     }
-
-    m_hitTargets.insert(targetId);
+    m_meleeSwingStarted = false;
     return true;
 }
 

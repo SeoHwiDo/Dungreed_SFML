@@ -80,6 +80,7 @@ bool ResourceManager::loadAtlas(const std::string& atlasKey, const std::string& 
 
         const std::string animationName = extractAnimationName(frameName);
         atlas->animations[animationName].push_back(rect);
+        atlas->animationPivots[animationName].push_back(pivot);
     }
 
     m_atlases[atlasKey] = std::move(atlas);
@@ -159,4 +160,40 @@ std::vector<std::string> ResourceManager::getAnimationNames(const std::string& a
         names.push_back(name);
     }
     return names;
+}
+
+bool ResourceManager::loadStandaloneSprite(const std::string& atlasKey,
+    const std::string& imagePath, const std::string& frameName) {
+    auto atlas = std::make_unique<AtlasData>();
+    if (!atlas->texture.loadFromFile(imagePath)) {
+        std::cerr << "단일 스프라이트 로드 실패: " << imagePath << '\n';
+        return false;
+    }
+
+    const sf::Vector2u size = atlas->texture.getSize();
+    if (size.x == 0 || size.y == 0) {
+        std::cerr << "단일 스프라이트 크기가 유효하지 않습니다: " << imagePath << '\n';
+        return false;
+    }
+    const sf::IntRect frameRect({ 0, 0 },
+        { static_cast<int>(size.x), static_cast<int>(size.y) });
+    atlas->frameRects.emplace(frameName, frameRect);
+    atlas->framePivots.emplace(frameName,
+        sf::Vector2f{ size.x * 0.5f, size.y * 0.5f });
+    atlas->frameSourceSizes.emplace(frameName, size);
+    m_atlases[atlasKey] = std::move(atlas);
+    return true;
+}
+
+std::optional<sf::Vector2f> ResourceManager::getAnimationFirstFramePivot(
+    const std::string& atlasKey, const std::string& animationName) const {
+    const auto atlasIt = m_atlases.find(atlasKey);
+    if (atlasIt == m_atlases.end()) {
+        return std::nullopt;
+    }
+    const auto pivotIt = atlasIt->second->animationPivots.find(animationName);
+    if (pivotIt == atlasIt->second->animationPivots.end() || pivotIt->second.empty()) {
+        return std::nullopt;
+    }
+    return pivotIt->second.front();
 }

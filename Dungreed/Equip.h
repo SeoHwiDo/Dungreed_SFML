@@ -3,7 +3,6 @@
 #include <string>
 #include <optional>
 #include <vector>
-#include <unordered_set>
 #include <cstdint>
 #include "ResourceManager.h"
 
@@ -92,8 +91,11 @@ public:
     void attack();
     /// 스윙 애니메이션이 진행 중인지 반환합니다.
     inline bool isAttacking() const { return m_isAttacking; }
-    /// 한 스윙에서 처음 호출될 때만 true를 반환해 중복 피해를 막습니다.
-    bool consumeHit(EntityId targetId);
+    /// 새 근접 스윙이 시작됐을 때 한 번만 true를 반환합니다.
+    /// 반환된 신호로 EffectManager가 실제 타격 주체인 SwingFX를 생성합니다.
+    bool consumeMeleeSwingStarted();
+    /// 마지막으로 갱신한 조준 방향을 라디안 단위로 반환합니다.
+    float getAimRadian() const { return m_lastAimRadian; }
 
     /// 원거리 공격 요청을 장비 설정에 맞춰 생성하고, 같은 공격 요청의 중복 생성을 막습니다.
     std::vector<ProjectileSpawnRequest> consumeProjectileRequests();
@@ -106,7 +108,7 @@ protected:
 
     // 공격 애니메이션 및 상태 처리를 위한 변수
     bool m_isAttacking = false;
-    std::unordered_set<EntityId> m_hitTargets;
+    bool m_meleeSwingStarted = false;
     bool m_isSwung = false;   // 추가: 현재 무기가 꺾인 상태(토글)인지 확인
     float m_attackTimer = 0.f;
     float m_attackDuration = 0.5f;

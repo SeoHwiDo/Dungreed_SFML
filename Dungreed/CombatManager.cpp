@@ -4,11 +4,12 @@
 #include "Monster.h"
 #include "TileMap.h"
 #include "Collision.h"
+#include "EffectManager.h"
 #include <cmath>
 #include <vector>
 
 std::unordered_set<EntityId> CombatManager::resolvePlayerAttack(
-    Player& player, ObjectPoolingManager& objectPool) const {
+    Player& player, ObjectPoolingManager& objectPool, EffectManager& effectManager) const {
     std::unordered_set<EntityId> hitMonsters;
     const auto weapon = player.getEquipment();
     if (!weapon) {
@@ -16,15 +17,29 @@ std::unordered_set<EntityId> CombatManager::resolvePlayerAttack(
     }
 
     // 근접 무기는 공격 중인 스프라이트 경계를 즉시 검사합니다.
-    if (const auto attackBox = weapon->getAttackHitbox()) {
+    if (weapon->getStat().type == WeaponType::Melee &&
+        weapon->consumeMeleeSwingStarted()) {
+        effectManager.spawnPlayerSwing(objectPool, player.getBodyCenterPosition(),
+            weapon->getAimRadian(), weapon->getStat().damage);
+    }
+    // 무기 스프라이트가 아닌 활성 SwingFX의 현재 스프라이트 범위로만 적중을 판정합니다.
+    effectManager.forEachActiveAttackEffect(objectPool, [&](Effect& effect) {
+        const auto attackBox = effect.getAttackHitbox();
+        if (!attackBox) {
+            return;
+        }
         objectPool.forEachActiveMonster([&](Monster& monster) {
-            if (!monster.dead() && monster.getCollision().checkHit(*attackBox).has_value()
-                && weapon->consumeHit(monster.getId())) {
-                monster.takeDamage(weapon->getStat().damage, player.getBodyCenterPosition());
+            const auto hitPosition = monster.dead()
+                ? std::nullopt
+                : monster.getCollision().checkHit(*attackBox);
+            if (hitPosition && effect.consumeHit(monster.getId())) {
+                monster.takeDamage(effect.getDamage(), effect.getAttackerPosition());
                 hitMonsters.insert(monster.getId());
+                effectManager.spawnHitSlash(objectPool, *hitPosition,
+                    effect.getRotationRadian());
             }
         });
-    }
+    });
 
     // 원거리 무기는 장비의 설정을 요청으로 변환하고, 실제 객체 생성은 풀에 맡깁니다.
     for (const ProjectileSpawnRequest& request : weapon->consumeProjectileRequests()) {

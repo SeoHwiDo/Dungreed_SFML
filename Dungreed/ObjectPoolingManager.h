@@ -8,6 +8,7 @@
 
 #include "Monster.h"
 #include "Projectile.h"
+#include "Effect.h"
 
 class GameDataManager;
 
@@ -21,6 +22,8 @@ public:
         MonsterBehaviorConfig behavior = {});
     /// 지정 수만큼 기본 비활성 투사체를 미리 생성해 전투 중 동적 할당을 줄입니다.
     void prewarmProjectiles(std::size_t count);
+    /// 화면 효과를 미리 생성해 비활성 슬롯으로 준비합니다.
+    void prewarmEffects(std::size_t count);
     void prewarmFromGameData(const GameDataManager& gameData,
         float reserveRatio = 0.10f);
 
@@ -40,6 +43,12 @@ public:
     void releaseProjectile(Projectile* projectile);
     /// 현재 활성 투사체를 순회합니다. 충돌 연산은 호출자 매니저가 수행합니다.
     void forEachActiveProjectile(const std::function<void(Projectile&)>& operation);
+    /// 비활성 효과 슬롯을 재사용하거나 새 슬롯을 생성합니다.
+    Effect* acquireEffect(const EffectSpawnRequest& request);
+    /// 효과를 삭제하지 않고 비활성 슬롯으로 반환합니다.
+    void releaseEffect(Effect* effect);
+    /// 활성 효과를 순회합니다. 이펙트 매니저가 갱신·렌더링·반환을 관제합니다.
+    void forEachActiveEffect(const std::function<void(Effect&)>& operation) const;
     /// 모든 활성 객체를 창에 렌더링합니다.
     void render(sf::RenderWindow& window) const;
 
@@ -50,6 +59,10 @@ private:
     };
     struct ProjectileSlot {
         std::unique_ptr<Projectile> object;
+        bool active = false;
+    };
+    struct EffectSlot {
+        std::unique_ptr<Effect> object;
         bool active = false;
     };
 
@@ -68,16 +81,23 @@ private:
     void enqueueInactiveMonster(std::size_t index);
     /// 슬롯을 비활성 우선순위 큐에 넣어 FIFO 재사용 순서를 부여합니다.
     void enqueueInactiveProjectile(std::size_t index);
+    /// 효과 슬롯을 비활성 우선순위 큐에 넣어 FIFO 대여 순서를 유지합니다.
+    void enqueueInactiveEffect(std::size_t index);
     /// 큐에서 가장 오래 비활성 상태였던 유효한 몬스터 슬롯을 꺼냅니다.
     MonsterSlot* dequeueInactiveMonster();
     /// 큐에서 가장 오래 비활성 상태였던 유효한 투사체 슬롯을 꺼냅니다.
     ProjectileSlot* dequeueInactiveProjectile();
+    /// 큐에서 가장 오래된 유효 비활성 효과 슬롯을 꺼냅니다.
+    EffectSlot* dequeueInactiveEffect();
 
     std::vector<MonsterSlot> m_monsters;
     std::vector<ProjectileSlot> m_projectiles;
+    std::vector<EffectSlot> m_effects;
     std::priority_queue<InactiveSlot, std::vector<InactiveSlot>, InactiveSlotCompare>
         m_inactiveMonsterSlots;
     std::priority_queue<InactiveSlot, std::vector<InactiveSlot>, InactiveSlotCompare>
         m_inactiveProjectileSlots;
+    std::priority_queue<InactiveSlot, std::vector<InactiveSlot>, InactiveSlotCompare>
+        m_inactiveEffectSlots;
     std::size_t m_nextAvailableOrder = 0;
 };
