@@ -32,31 +32,22 @@ public:
         const TileMap& tileMap, const sf::Vector2f& playerPosition);
     Room* getCurrentRoom() const { return m_currentRoom; }
     const TileMap* getCurrentTileMap() const { return m_currentTileMap; }
-
-    bool buildAllRoomsDebug(const std::string& tileAtlasKey,
-        const RoomTileSet& tileSet, sf::Vector2u viewportSize);
+    /// JSON 연결 생성 순서에 맞춘 방 목록을 반환합니다. 디버그 프리뷰 등 읽기 전용 소비자가 사용합니다.
+    std::vector<const Room*> getFloorRoomsInDataOrder() const;
     Room* getRoom(RoomType type) const;
     bool connectRooms(RoomType from, DoorPosition fromDoor,
         RoomType to, DoorPosition toDoor);
-    void renderAllRoomsDebug(sf::RenderWindow& window) const;
-    bool hasDebugPreview() const { return !m_rooms.empty(); }
 
 private:
     struct FloorManagedRoom {
         std::unique_ptr<Room> room;
         std::unique_ptr<TileMap> tileMap;
     };
-    struct ManagedRoom {
-        RoomType type;
-        std::unique_ptr<Room> room;
-        std::unique_ptr<TileMap> tileMap;
-    };
-
     const TileMap* findFloorTileMap(const Room* room) const;
 
     std::unique_ptr<Room> m_manualRoom;
     std::unordered_map<std::string, FloorManagedRoom> m_floorRooms;
     Room* m_currentRoom = nullptr;
     const TileMap* m_currentTileMap = nullptr;
-    std::vector<ManagedRoom> m_rooms;
+    std::vector<std::string> m_floorRoomOrder;
 };

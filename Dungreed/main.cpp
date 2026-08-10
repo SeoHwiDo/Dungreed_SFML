@@ -16,6 +16,7 @@
 #include "Room.h"
 #include "MapManager.h"
 #include "Camera.h"
+#include "DebugManager.h"
 #include "GameDataManager.h"
 
 /// 프로그램 진입점입니다. 공용 리소스와 테스트 방을 준비한 뒤 입력·AI·충돌·렌더링 루프를 실행합니다.
@@ -25,6 +26,8 @@ int main() {
     SetConsoleCP(CP_UTF8);
     // true로 바꾸면 실제 플레이 대신 모든 레퍼런스 방을 축소해 한 화면에서 확인합니다.
     constexpr bool kShowAllRoomsDebug = false;
+    // 실제 플레이 화면에서 피격·공격 판정 범위를 색상별로 표시합니다.
+    constexpr bool kShowCombatBoundsDebug = true;
     // 1. 윈도우 생성 (SFML 3.1.0 기준 sf::VideoMode 및 윈도우 생성자 형식 준수)
     sf::RenderWindow window(sf::VideoMode({ 1280, 720 }), "Dungreed Test");
     window.setFramerateLimit(60);
@@ -44,7 +47,7 @@ int main() {
         std::cerr << "장비 아틀라스 로드 실패\n";
     }
     if (!resMgr.loadAtlas("Projectile", std::string(kProjectileAtlasJsonPath), std::string(kProjectileAtlasPath))) {
-        std::cerr << "Projectile atlas load failed\n";
+        std::cerr << "프로젝타일 아틀라스 로드 실패\n";
     }
 
 
@@ -59,6 +62,7 @@ int main() {
     }
     // 3. 고정 레퍼런스 방 데이터를 TileMap으로 변환
     MapManager mapManager;
+    DebugManager debugManager;
     const FloorData* floorData = gameData.findFloor("floor_01");
     if (!floorData || !mapManager.createCurrentRoomFromData(
         *floorData, floorData->startRoomId)) {
@@ -105,8 +109,8 @@ int main() {
         std::cerr << "시작 방 타일맵을 찾을 수 없습니다.\n";
         return 1;
     }
-    if (kShowAllRoomsDebug && !mapManager.buildAllRoomsDebug(
-        "TileMap", roomTiles, window.getSize())) {
+    if (kShowAllRoomsDebug && !debugManager.buildRoomPreviews(
+        mapManager.getFloorRoomsInDataOrder(), "TileMap", roomTiles, window.getSize())) {
         std::cerr << "방 디버그 프리뷰 생성 실패\n";
     }
 
@@ -124,7 +128,8 @@ int main() {
     Camera camera(window.getSize(),
         sf::FloatRect({ 0.f, 0.f }, initialTileMap->getPixelSize()), 1.f);
     camera.update(player.getCenterPosition());
-    window.setView(camera.getView());
+    // 디버그 프리뷰는 월드 카메라가 아닌 창 좌표계를 사용해야 전체 배치가 잘리지 않습니다.
+    window.setView(kShowAllRoomsDebug ? window.getDefaultView() : camera.getView());
 
     ObjectPoolingManager objectPool;
     objectPool.prewarmFromGameData(gameData);
@@ -153,9 +158,17 @@ int main() {
 
         if (!isGameplayActive) {
             window.clear(sf::Color::Black);
-            window.draw(tileMap);
-            player.render(window);
-            objectPool.render(window);
+            if (kShowAllRoomsDebug) {
+                window.setView(window.getDefaultView());
+                debugManager.renderRoomPreviews(window);
+            } else {
+                window.draw(tileMap);
+                player.render(window);
+                objectPool.render(window);
+                if (kShowCombatBoundsDebug) {
+                    debugManager.renderCombatBounds(window, player, objectPool);
+                }
+            }
             window.display();
             isGameplayActive = true;
             clock.restart();
@@ -225,11 +238,15 @@ int main() {
         window.clear(sf::Color::Black);
 
         if (kShowAllRoomsDebug) {
-            mapManager.renderAllRoomsDebug(window);
+            window.setView(window.getDefaultView());
+            debugManager.renderRoomPreviews(window);
         } else {
             window.draw(*mapManager.getCurrentTileMap());
             player.render(window);
             objectPool.render(window);
+            if (kShowCombatBoundsDebug) {
+                debugManager.renderCombatBounds(window, player, objectPool);
+            }
         }
 
         window.display();

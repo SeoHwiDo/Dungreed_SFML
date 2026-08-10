@@ -53,6 +53,7 @@ bool selectConnectionDoors(const RoomInstanceData& fromData,
 Room& MapManager::createCurrentRoom(RoomType type, DoorPositions doorPositions,
     std::vector<RoomMonsterSpawn> monsterSpawns) {
     m_floorRooms.clear();
+    m_floorRoomOrder.clear();
     m_manualRoom = std::make_unique<Room>(type, doorPositions, std::move(monsterSpawns));
     m_currentRoom = m_manualRoom.get();
     m_currentTileMap = nullptr;
@@ -69,6 +70,7 @@ bool MapManager::createCurrentRoomFromData(const FloorData& floor,
 
     m_manualRoom.reset();
     m_floorRooms.clear();
+    m_floorRoomOrder.clear();
     m_currentRoom = nullptr;
     m_currentTileMap = nullptr;
 
@@ -89,6 +91,23 @@ bool MapManager::createCurrentRoomFromData(const FloorData& floor,
         FloorManagedRoom managedRoom;
         managedRoom.room = std::make_unique<Room>();
         m_floorRooms.emplace(instanceId, std::move(managedRoom));
+    }
+
+    // JSON의 연결 생성 목록 순서를 디버그 미리보기의 표시 순서로 보관합니다.
+    std::unordered_set<std::string> orderedRoomIds;
+    const auto addPreviewRoom = [&](const std::string& instanceId) {
+        if (m_floorRooms.find(instanceId) != m_floorRooms.end() &&
+            orderedRoomIds.insert(instanceId).second) {
+            m_floorRoomOrder.push_back(instanceId);
+        }
+    };
+    addPreviewRoom(floor.startRoomId);
+    for (const std::string& instanceId : floor.shuffleRoomIds) {
+        addPreviewRoom(instanceId);
+    }
+    addPreviewRoom(floor.bossRoomId);
+    for (const auto& roomEntry : floor.rooms) {
+        addPreviewRoom(roomEntry.first);
     }
 
     std::vector<std::string> route;
@@ -150,7 +169,6 @@ bool MapManager::createCurrentRoomFromData(const FloorData& floor,
     m_currentRoom = m_floorRooms.at(roomId).room.get();
     return true;
 }
-
 bool MapManager::preloadFloorTileMaps(const std::string& tileAtlasKey,
     const RoomTileSet& tileSet) {
     if (!m_currentRoom || m_floorRooms.empty()) {
@@ -216,48 +234,24 @@ const TileMap* MapManager::findFloorTileMap(const Room* room) const {
     return nullptr;
 }
 
-bool MapManager::buildAllRoomsDebug(const std::string& tileAtlasKey,
-    const RoomTileSet& tileSet, sf::Vector2u viewportSize) {
-    constexpr std::array<RoomType, 9> roomTypes{
-        RoomType::Start, RoomType::Monster, RoomType::Monster2,
-        RoomType::Monster3, RoomType::Monster4, RoomType::Monster5,
-        RoomType::Trial, RoomType::Hut, RoomType::Boss
-    };
-    constexpr float previewScale = 0.45f;
-    constexpr float margin = 28.f;
-
-    m_rooms.clear();
-    float cursorX = margin;
-    float cursorY = margin;
-    float rowHeight = 0.f;
-    for (const RoomType type : roomTypes) {
-        auto room = std::make_unique<Room>(type);
-        auto preview = std::make_unique<TileMap>();
-        if (!room->buildTileMap(*preview, tileAtlasKey, tileSet)) {
-            m_rooms.clear();
-            return false;
+std::vector<const Room*> MapManager::getFloorRoomsInDataOrder() const {
+    std::vector<const Room*> rooms;
+    rooms.reserve(m_floorRoomOrder.size());
+    for (const std::string& instanceId : m_floorRoomOrder) {
+        const auto roomIt = m_floorRooms.find(instanceId);
+        if (roomIt != m_floorRooms.end() && roomIt->second.room) {
+            rooms.push_back(roomIt->second.room.get());
         }
-        const sf::Vector2f unscaledSize = preview->getPixelSize();
-        const float previewWidth = unscaledSize.x * previewScale;
-        const float previewHeight = unscaledSize.y * previewScale;
-        if (cursorX + previewWidth > static_cast<float>(viewportSize.x) - margin && cursorX > margin) {
-            cursorX = margin;
-            cursorY += rowHeight + margin;
-            rowHeight = 0.f;
-        }
-        preview->setPosition({ cursorX, cursorY });
-        preview->setScale({ previewScale, previewScale });
-        cursorX += previewWidth + margin;
-        rowHeight = std::max(rowHeight, previewHeight);
-        m_rooms.push_back({ type, std::move(room), std::move(preview) });
     }
-    return true;
+    return rooms;
 }
 
 Room* MapManager::getRoom(RoomType type) const {
-    for (const ManagedRoom& managedRoom : m_rooms) {
-        if (managedRoom.type == type) {
-            return managedRoom.room.get();
+    for (const std::string& instanceId : m_floorRoomOrder) {
+        const auto roomIt = m_floorRooms.find(instanceId);
+        if (roomIt != m_floorRooms.end() && roomIt->second.room &&
+            roomIt->second.room->getInfo().type == type) {
+            return roomIt->second.room.get();
         }
     }
     return nullptr;
@@ -273,10 +267,4 @@ bool MapManager::connectRooms(RoomType from, DoorPosition fromDoor,
     fromRoom->setDoorNext(fromDoor, toRoom);
     toRoom->setDoorNext(toDoor, fromRoom);
     return true;
-}
-
-void MapManager::renderAllRoomsDebug(sf::RenderWindow& window) const {
-    for (const ManagedRoom& room : m_rooms) {
-        window.draw(*room.tileMap);
-    }
 }

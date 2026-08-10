@@ -80,6 +80,8 @@ public:
     bool isChargeImpactActive() const;
     bool requiresBodyContactAttack() const { return m_type == "SkelDog"; }
     float getChargeStunDuration() const { return m_behavior.stunDuration; }
+    /// 현재 공격 판정에서 목표와의 거리를 검사할 때 사용하는 반지름을 반환합니다.
+    float getAttackRange() const { return fsm.attackRange; }
     float getFacingDirection() const { return fsm.facingDirection; }
     MonsterAttackPattern getAttackPattern() const { return m_behavior.attackPattern; }
     const std::string& getType() const { return m_type; }

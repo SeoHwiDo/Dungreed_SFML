@@ -145,6 +145,7 @@
     <ClCompile Include="ObjectPoolingManager.cpp" />
     <ClCompile Include="MonsterManager.cpp" />
     <ClCompile Include="CombatManager.cpp" />
+    <ClCompile Include="DebugManager.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="MapManager.cpp" />
     <ClCompile Include="main.cpp" />
@@ -165,6 +166,7 @@
     <ClInclude Include="ObjectPoolingManager.h" />
     <ClInclude Include="MonsterManager.h" />
     <ClInclude Include="CombatManager.h" />
+    <ClInclude Include="DebugManager.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="MapManager.h" />
     <ClInclude Include="Player.h" />
