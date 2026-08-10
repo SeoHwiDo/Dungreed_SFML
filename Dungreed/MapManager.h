@@ -18,6 +18,13 @@ class EffectManager;
 
 class MapManager {
 public:
+    static MapManager& getInstance() {
+        static MapManager instance;
+        return instance;
+    }
+
+    MapManager(const MapManager&) = delete;
+    MapManager& operator=(const MapManager&) = delete;
     Room& createCurrentRoom(RoomType type, DoorPositions doorPositions,
         std::vector<RoomMonsterSpawn> monsterSpawns = {});
     bool createCurrentRoomFromData(const FloorData& floor,
@@ -41,6 +48,8 @@ public:
         RoomType to, DoorPosition toDoor);
 
 private:
+    MapManager() = default;
+    ~MapManager() = default;
     struct FloorManagedRoom {
         std::unique_ptr<Room> room;
         std::unique_ptr<TileMap> tileMap;
