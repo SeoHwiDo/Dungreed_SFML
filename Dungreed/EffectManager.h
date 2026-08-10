@@ -11,6 +11,13 @@ class ObjectPoolingManager;
 /// 객체의 생성·소유·재사용은 ObjectPoolingManager에만 맡깁니다.
 class EffectManager {
 public:
+    static EffectManager& getInstance() {
+        static EffectManager instance;
+        return instance;
+    }
+
+    EffectManager(const EffectManager&) = delete;
+    EffectManager& operator=(const EffectManager&) = delete;
     /// 플레이어 근접 공격을 표현하고 실제 타격 범위를 제공하는 SwingFX를 대여합니다.
     void spawnPlayerSwing(ObjectPoolingManager& objectPool,
         const sf::Vector2f& playerPosition, float aimRadian, float damage);
@@ -33,4 +40,7 @@ public:
     void render(sf::RenderWindow& window, const ObjectPoolingManager& objectPool) const;
     /// 방 전환 때 남아 있는 이펙트를 즉시 풀로 돌려보냅니다.
     void clear(ObjectPoolingManager& objectPool);
+private:
+    EffectManager() = default;
+    ~EffectManager() = default;
 };

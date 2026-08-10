@@ -67,6 +67,13 @@ struct PoolPrewarmPlan {
 
 class GameDataManager {
 public:
+    static GameDataManager& getInstance() {
+        static GameDataManager instance;
+        return instance;
+    }
+
+    GameDataManager(const GameDataManager&) = delete;
+    GameDataManager& operator=(const GameDataManager&) = delete;
     bool loadWeapons(const std::string& path);
     bool loadMonsters(const std::string& path);
     bool loadRoomData(const std::string& path);
@@ -79,6 +86,8 @@ public:
     std::shared_ptr<Equip> createEquip(const std::string& weaponId) const;
 
 private:
+    GameDataManager() = default;
+    ~GameDataManager() = default;
     std::unordered_map<std::string, WeaponData> m_weapons;
     std::unordered_map<std::string, MonsterData> m_monsters;
     std::unordered_map<std::string, FloorData> m_floors;

@@ -15,6 +15,13 @@ class EffectManager;
 
 class MonsterManager {
 public:
+    static MonsterManager& getInstance() {
+        static MonsterManager instance;
+        return instance;
+    }
+
+    MonsterManager(const MonsterManager&) = delete;
+    MonsterManager& operator=(const MonsterManager&) = delete;
     void requestRoomMonsters(Room& room, const TileMap& tileMap,
         const GameDataManager& gameData, ObjectPoolingManager& objectPool,
         const sf::Vector2f& playerPosition, EffectManager& effectManager);
@@ -23,6 +30,8 @@ public:
     void clearActiveRoom(ObjectPoolingManager& objectPool);
 
 private:
+    MonsterManager() = default;
+    ~MonsterManager() = default;
     Room* m_activeRoom = nullptr;
     const GameDataManager* m_gameData = nullptr;
     const TileMap* m_activeTileMap = nullptr;

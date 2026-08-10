@@ -15,8 +15,13 @@ class TileMap;
 /// 전투 판정과 같은 개발용 시각화만 담당하는 디버그 렌더링 관리자입니다.
 class DebugManager {
 public:
-    DebugManager() = default;
-    ~DebugManager();
+    static DebugManager& getInstance() {
+        static DebugManager instance;
+        return instance;
+    }
+
+    DebugManager(const DebugManager&) = delete;
+    DebugManager& operator=(const DebugManager&) = delete;
     /// 현재 플레이어와 활성 몬스터의 피격·공격 판정을 월드 좌표에 맞춰 표시합니다.
     void renderCombatBounds(sf::RenderWindow& window, const Player& player,
         ObjectPoolingManager& objectPool) const;
@@ -30,5 +35,7 @@ public:
     bool hasRoomPreviews() const { return !m_roomPreviews.empty(); }
 
 private:
+    DebugManager() = default;
+    ~DebugManager();
     std::vector<std::unique_ptr<TileMap>> m_roomPreviews;
 };

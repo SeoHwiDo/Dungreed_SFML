@@ -11,6 +11,13 @@ class EffectManager;
 /// 몬스터·투사체의 생성과 소유는 ObjectPoolingManager에 위임하고, 이 클래스는 판정만 담당합니다.
 class CombatManager {
 public:
+    static CombatManager& getInstance() {
+        static CombatManager instance;
+        return instance;
+    }
+
+    CombatManager(const CombatManager&) = delete;
+    CombatManager& operator=(const CombatManager&) = delete;
     /// 플레이어의 근접 공격과 원거리 생성 요청을 처리하고, 이번 프레임에 맞은 몬스터 ID를 반환합니다.
     std::unordered_set<EntityId> resolvePlayerAttack(Player& player,
         ObjectPoolingManager& objectPool, EffectManager& effectManager) const;
@@ -23,4 +30,7 @@ public:
     /// 지정한 대상 그룹의 투사체만 한 번 갱신합니다. 벽 충돌을 가장 먼저 검사합니다.
     std::unordered_set<EntityId> updateProjectiles(float dt, Player& player,
         ObjectPoolingManager& objectPool, const TileMap& tileMap, ProjectileTarget target) const;
+private:
+    CombatManager() = default;
+    ~CombatManager() = default;
 };

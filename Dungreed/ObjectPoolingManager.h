@@ -15,6 +15,13 @@ class GameDataManager;
 /// 몬스터와 투사체의 생성·소유·재사용·반환만 담당하는 중앙 오브젝트 풀 관리자입니다.
 class ObjectPoolingManager {
 public:
+    static ObjectPoolingManager& getInstance() {
+        static ObjectPoolingManager instance;
+        return instance;
+    }
+
+    ObjectPoolingManager(const ObjectPoolingManager&) = delete;
+    ObjectPoolingManager& operator=(const ObjectPoolingManager&) = delete;
     /// 지정 수만큼 몬스터를 미리 생성해 비활성 슬롯으로 넣습니다. 이후 요청은 가장 먼저 비활성화된 슬롯부터 재사용합니다.
     void prewarmMonsters(std::size_t count, const std::string& type,
         Actor::Status status = { kDefaultMaxHp, kDefaultMaxHp, kDefaultPower, kDefaultDex },
@@ -53,6 +60,8 @@ public:
     void render(sf::RenderWindow& window) const;
 
 private:
+    ObjectPoolingManager() = default;
+    ~ObjectPoolingManager() = default;
     struct MonsterSlot {
         std::unique_ptr<Monster> object;
         bool active = false;

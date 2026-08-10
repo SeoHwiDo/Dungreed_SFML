@@ -16,6 +16,13 @@ class ObjectPoolingManager;
 /// 전투방 클리어 상자, F키 개방, room_data.json 기반 요정 보상을 관리합니다.
 class RewardChestManager {
 public:
+    static RewardChestManager& getInstance() {
+        static RewardChestManager instance;
+        return instance;
+    }
+
+    RewardChestManager(const RewardChestManager&) = delete;
+    RewardChestManager& operator=(const RewardChestManager&) = delete;
     /// 닫힌/열린 보물상자와 S·M·L·XL 요정 스프라이트를 준비합니다.
     bool init();
     /// 현재 방의 클리어 상태, 상자 상호작용, 요정 보상 충돌을 갱신합니다.
@@ -25,6 +32,8 @@ public:
     void render(sf::RenderWindow& window) const;
 
 private:
+    RewardChestManager() = default;
+    ~RewardChestManager() = default;
     enum class State {
         Hidden,
         Closed,
