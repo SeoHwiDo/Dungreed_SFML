@@ -38,7 +38,7 @@ int main() {
     }
 
     auto camera = std::make_unique<Camera>(window.getSize(),
-        sf::FloatRect({ 0.f, 0.f }, { 1.f, 1.f }), 3.5f);
+        sf::FloatRect({ 0.f, 0.f }, { 1.f, 1.f }), 1.0f);
     std::cout << "[main] Camera created\n";
     GameplayContext gameplay(*player, *camera);
     SceneManager scenes(window, gameplay);

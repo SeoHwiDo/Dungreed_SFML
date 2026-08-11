@@ -108,7 +108,10 @@ public:
     float getAimRadian() const { return m_lastAimRadian; }
 
     /// 원거리 공격 요청을 장비 설정에 맞춰 생성하고, 같은 공격 요청의 중복 생성을 막습니다.
-    std::vector<ProjectileSpawnRequest> consumeProjectileRequests();
+    /// requestCountOverride가 0이면 JSON의 projectile.count를 사용합니다.
+    /// 특수 패턴은 위치별 단일 투사체 요청이 필요할 때만 값을 지정합니다.
+    const std::vector<ProjectileSpawnRequest>& consumeProjectileRequests(
+        unsigned int requestCountOverride = 0);
 
 protected:
     std::string m_name;
@@ -123,6 +126,7 @@ protected:
     float m_attackTimer = 0.f;
     float m_attackDuration = 0.5f;
     bool m_projectileRequestPending = false;
+    std::vector<ProjectileSpawnRequest> m_projectileRequestBuffer;
     sf::Vector2f m_lastOwnerPosition;
     float m_lastAimRadian = 0.f;
 };

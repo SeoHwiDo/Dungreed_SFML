@@ -28,6 +28,7 @@
 namespace {
 constexpr float kGameplayCameraZoom = 3.5f;
 constexpr float kBossCinematicCameraZoom = 5.2f;
+constexpr std::size_t kBossProjectilePoolCapacity = 384;
 
 RoomTileSet createRoomTileSet() {
     return {
@@ -83,6 +84,7 @@ bool DungeonScene::enter(unsigned int floorNumber) {
     }
 
     objectPool.prewarmFromGameData(gameData);
+    objectPool.prewarmProjectiles(kBossProjectilePoolCapacity);
     if (!rewardChestManager.init() || !uiManager.init(m_window)) {
         return false;
     }
@@ -127,22 +129,26 @@ void DungeonScene::update(float dt) {
     }
 
     effectManager.update(dt, objectPool);
-    m_window.setView(camera->getView());
-    player->update(dt, m_window, tileMap);
-
-    if (!m_areMonstersActivated) {
-        Collision::resolveMapCollision(*player, tileMap, player->ignoresOneWayPlatforms());
+    const bool isFirstRoomActivation = !m_areMonstersActivated;
+    if (isFirstRoomActivation) {
         if (!isBossRoom) {
             mapManager.requestCurrentRoomMonsters(monsterManager, objectPool, gameData,
                 tileMap, player->getBodyCenterPosition(), effectManager);
         }
         m_areMonstersActivated = true;
-    } else if (!isBossRoom) {
-        monsterManager.update(dt, *player, objectPool, tileMap, effectManager);
-        Collision::resolveMapCollision(*player, tileMap, player->ignoresOneWayPlatforms());
-    } else {
-        Collision::resolveMapCollision(*player, tileMap, player->ignoresOneWayPlatforms());
     }
+
+    // 방에 들어온 프레임에 조우 상태를 먼저 확정해 닫힌 문 충돌체를 이동 전에 추가합니다.
+    currentRoom->setTraversalLocked(isBossRoom && m_activeBoss && !m_activeBoss->dead());
+    tileMap.setDoorsLocked(currentRoom->isTraversalLocked());
+
+    m_window.setView(camera->getView());
+    player->update(dt, m_window, tileMap);
+
+    if (!isFirstRoomActivation && !isBossRoom) {
+        monsterManager.update(dt, *player, objectPool, tileMap, effectManager);
+    }
+    Collision::resolveMapCollision(*player, tileMap, player->ignoresOneWayPlatforms());
 
     if (m_activeBoss) {
         m_activeBoss->update(dt, *player, objectPool, effectManager, tileMap);

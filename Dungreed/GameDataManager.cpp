@@ -128,8 +128,14 @@ RoomLayout createStyledRoomLayout(const json& layoutJson) {
     const unsigned int width = layoutJson.at("width").get<unsigned int>();
     const unsigned int height = layoutJson.at("height").get<unsigned int>();
     const unsigned int outlineWidth = layoutJson.value("outlineWidth", 2u);
+    const json passageJson = layoutJson.value("passage", json::object());
+    const unsigned int topBottomPassageWidth =
+        passageJson.value("topBottomWidth", 3u);
+    const unsigned int sidePassageHeight = passageJson.value("sideHeight", 3u);
 
-    if (width <= outlineWidth * 2 || height <= outlineWidth * 2) {
+    if (outlineWidth == 0 || topBottomPassageWidth == 0 || sidePassageHeight == 0 ||
+        width < outlineWidth * 2 + topBottomPassageWidth ||
+        height < outlineWidth * 2 + sidePassageHeight + 1) {
         return {};
     }
 
@@ -138,6 +144,9 @@ RoomLayout createStyledRoomLayout(const json& layoutJson) {
         height,
         std::vector<RoomCell>(width * height, RoomCell::Empty)
     };
+    layout.outlineWidth = outlineWidth;
+    layout.topBottomPassageWidth = topBottomPassageWidth;
+    layout.sidePassageHeight = sidePassageHeight;
 
     const auto setCell = [&layout, width](unsigned int x, unsigned int y, RoomCell cell) {
         layout.cells[x + y * width] = cell;

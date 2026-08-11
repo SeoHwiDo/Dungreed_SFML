@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <unordered_set>
+#include <vector>
 
 #include "Effect.h"
 
@@ -41,6 +42,11 @@ public:
     /// 방 전환 때 남아 있는 이펙트를 즉시 풀로 돌려보냅니다.
     void clear(ObjectPoolingManager& objectPool);
 private:
-    EffectManager() = default;
+    EffectManager() {
+        m_expiredEffects.reserve(40);
+        m_activeEffects.reserve(40);
+    }
     ~EffectManager() = default;
+    std::vector<Effect*> m_expiredEffects;
+    std::vector<Effect*> m_activeEffects;
 };

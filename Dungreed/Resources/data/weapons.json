@@ -108,7 +108,7 @@
         "spreadRadian": 0.0,
         "lifetime": 8.0,
         "rotateToDirection": true,
-        "rotationOffsetRadian": -1.57079633
+          "rotationOffsetRadian": 1.57079633
       }
     }
   ]

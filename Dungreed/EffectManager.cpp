@@ -83,7 +83,8 @@ void EffectManager::spawnRewardChestMagicCircle(ObjectPoolingManager& objectPool
 }
 
 void EffectManager::update(float dt, ObjectPoolingManager& objectPool) {
-    std::vector<Effect*> expiredEffects;
+    std::vector<Effect*>& expiredEffects = m_expiredEffects;
+    expiredEffects.clear();
     objectPool.forEachActiveEffect([&](Effect& effect) {
         effect.update(dt);
         if (effect.isFinished()) {
@@ -93,6 +94,7 @@ void EffectManager::update(float dt, ObjectPoolingManager& objectPool) {
     for (Effect* effect : expiredEffects) {
         objectPool.releaseEffect(effect);
     }
+    expiredEffects.clear();
 }
 
 void EffectManager::forEachActiveAttackEffect(const ObjectPoolingManager& objectPool,
@@ -112,11 +114,13 @@ void EffectManager::render(sf::RenderWindow& window,
 }
 
 void EffectManager::clear(ObjectPoolingManager& objectPool) {
-    std::vector<Effect*> activeEffects;
+    std::vector<Effect*>& activeEffects = m_activeEffects;
+    activeEffects.clear();
     objectPool.forEachActiveEffect([&](Effect& effect) {
         activeEffects.push_back(&effect);
     });
     for (Effect* effect : activeEffects) {
         objectPool.releaseEffect(effect);
     }
+    activeEffects.clear();
 }

@@ -57,8 +57,10 @@ public:
 
 private:
     struct DashAfterimage {
+        explicit DashAfterimage(const sf::Sprite& source) : sprite(source) {}
         sf::Sprite sprite;
         float remainingTime = 0.f;
+        bool active = false;
     };
 
     Controller controller;
@@ -83,4 +85,5 @@ private:
     void updateDashRecharge(float dt);
     void updateAfterimages(float dt);
     void spawnDashAfterimage();
+    void prewarmDashAfterimages();
 };

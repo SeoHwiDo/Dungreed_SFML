@@ -30,12 +30,15 @@ public:
     void clearActiveRoom(ObjectPoolingManager& objectPool);
 
 private:
-    MonsterManager() = default;
+    MonsterManager() {
+        m_finishedMonsters.reserve(32);
+    }
     ~MonsterManager() = default;
     Room* m_activeRoom = nullptr;
     const GameDataManager* m_gameData = nullptr;
     const TileMap* m_activeTileMap = nullptr;
     std::vector<Monster*> m_activeRoomMonsters;
+    std::vector<Monster*> m_finishedMonsters;
     /// 겹쳐 진행되는 페이즈에서 각 몬스터가 어느 페이즈 소속인지 보관합니다.
     std::unordered_map<Monster*, int> m_monsterPhaseIndices;
     int m_totalPhaseCount = 0;

@@ -5,7 +5,11 @@
 #include <iostream>
 
 Equip::Equip(const std::string& name, EquipStat stat)
-    : m_name(name), m_stat(stat) {}
+    : m_name(name), m_stat(stat) {
+    if (m_stat.projectile) {
+        m_projectileRequestBuffer.reserve(std::max(1u, m_stat.projectile->count));
+    }
+}
 
 void Equip::init(const std::string& atlasKey, const std::string& frameName) {
     auto& resMgr = ResourceManager::getInstance();
@@ -57,20 +61,24 @@ bool Equip::consumeMeleeSwingStarted() {
     return true;
 }
 
-std::vector<ProjectileSpawnRequest> Equip::consumeProjectileRequests() {
-    std::vector<ProjectileSpawnRequest> requests;
+const std::vector<ProjectileSpawnRequest>& Equip::consumeProjectileRequests(
+    unsigned int requestCountOverride) {
+    m_projectileRequestBuffer.clear();
     if (!m_projectileRequestPending || !m_stat.projectile) {
-        return requests;
+        return m_projectileRequestBuffer;
     }
 
     m_projectileRequestPending = false;
     const ProjectileConfig& config = *m_stat.projectile;
-    const unsigned int count = std::max(1u, config.count);
+    const unsigned int configuredCount = requestCountOverride == 0
+        ? config.count
+        : requestCountOverride;
+    const unsigned int count = std::max(1u, configuredCount);
     for (unsigned int index = 0; index < count; ++index) {
         const float center = (static_cast<float>(count) - 1.f) * 0.5f;
         const float angle = m_lastAimRadian +
             (static_cast<float>(index) - center) * config.spreadRadian;
-        requests.push_back({
+        m_projectileRequestBuffer.push_back({
             config.type,
             m_stat.type == WeaponType::Ranged,
             config.animationKey,
@@ -81,12 +89,12 @@ std::vector<ProjectileSpawnRequest> Equip::consumeProjectileRequests() {
             config.damage,
             config.lifetime
         });
-        ProjectileSpawnRequest& request = requests.back();
+        ProjectileSpawnRequest& request = m_projectileRequestBuffer.back();
         request.returnAnimationKey = config.returnAnimationKey;
         request.rotateToDirection = config.rotateToDirection;
         request.rotationOffsetRadian = config.rotationOffsetRadian;
     }
-    return requests;
+    return m_projectileRequestBuffer;
 }
 
 void Equip::update(float dt, const sf::Vector2f& ownerPos, float aimRadian) {

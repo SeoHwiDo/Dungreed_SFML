@@ -2,6 +2,7 @@
 
 #include "ObjectPoolingManager.h"
 #include <unordered_set>
+#include <vector>
 
 class Player;
 class Boss;
@@ -34,6 +35,9 @@ public:
         ObjectPoolingManager& objectPool, const TileMap& tileMap,
         ProjectileTarget target, Boss* boss = nullptr) const;
 private:
-    CombatManager() = default;
+    CombatManager() {
+        m_projectilesToRelease.reserve(384);
+    }
     ~CombatManager() = default;
+    mutable std::vector<Projectile*> m_projectilesToRelease;
 };

@@ -140,7 +140,6 @@
     <ClCompile Include="Boss.cpp" />
     <ClCompile Include="Collision.cpp" />
     <ClCompile Include="Controller.cpp" />
-    <ClCompile Include="DeadScene.cpp" />
     <ClCompile Include="Equip.cpp" />
     <ClCompile Include="GameDataManager.cpp" />
     <ClCompile Include="GameplayContext.cpp" />
@@ -175,7 +174,6 @@
     <ClInclude Include="Boss.h" />
     <ClInclude Include="Collision.h" />
     <ClInclude Include="Controller.h" />
-    <ClInclude Include="DeadScene.h" />
     <ClInclude Include="Equip.h" />
     <ClInclude Include="GameDataManager.h" />
     <ClInclude Include="GameplayContext.h" />

@@ -196,7 +196,8 @@ void MonsterManager::update(float dt, Player& player,
         spawnNextPhase(player.getBodyCenterPosition(), objectPool, effectManager);
     }
 
-    std::vector<Monster*> finished;
+    std::vector<Monster*>& finished = m_finishedMonsters;
+    finished.clear();
     objectPool.forEachActiveMonster([&](Monster& monster) {
         monster.update(dt, player);
         if (monster.ignoresWalls()) {
@@ -236,6 +237,7 @@ void MonsterManager::update(float dt, Player& player,
                 m_activeRoomMonsters.end(), monster),
             m_activeRoomMonsters.end());
     }
+    finished.clear();
 
     if (!m_activeRoom) {
         return;
