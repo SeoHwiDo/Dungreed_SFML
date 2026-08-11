@@ -17,6 +17,8 @@ constexpr std::string_view kEquipAtlasPath = "resources/images/equip_atlas.png";
 constexpr std::string_view kProjectileAtlasPath = "resources/images/projectile_atlas.png";
 constexpr std::string_view kEffectAtlasPath = "resources/images/effect_atlas.png";
 constexpr std::string_view kUiAtlasPath = "resources/images/ui_atlas.png";
+constexpr std::string_view kDefaultFontPath = "resources/Font/french.ttf";
+constexpr std::string_view kDefaultFontKey = "Default";
 
 constexpr std::string_view kPlayerAtlasJsonPath = "resources/images/player_atlas.json";
 constexpr std::string_view kMonsterAtlasJsonPath = "resources/images/monster_atlas.json";
@@ -26,7 +28,7 @@ constexpr std::string_view kEquipAtlasJsonPath = "resources/images/equip_atlas.j
 constexpr std::string_view kProjectileAtlasJsonPath = "resources/images/projectile_atlas.json";
 constexpr std::string_view kEffectAtlasJsonPath = "resources/images/effect_atlas.json";
 constexpr std::string_view kUiAtlasJsonPath = "resources/images/ui_atlas.json";
-constexpr std::string_view kBackgroundPath = "resources/images/Backgrounds/";
+constexpr std::string_view kBackgroundPath = "resources/images/Background/";
 
 struct AtlasData {
     sf::Texture texture;
@@ -51,8 +53,16 @@ public:
         const std::string& imagePath);
     bool loadStandaloneSprite(const std::string& atlasKey, const std::string& imagePath,
         const std::string& frameName);
+    bool loadFont(const std::string& fontKey, const std::string& fontPath);
+    bool loadDefaultFont(const std::string& fontPath);
+    /// 장면 단위 리소스 묶음입니다. main은 개별 파일 경로를 알 필요가 없습니다.
+    bool loadTitleResources();
+    bool loadTrainingVillageResources();
+    bool loadDungeonResources();
     /// JSON 아틀라스가 없는 단일 PNG를 프레임 하나짜리 아틀라스로 등록합니다.
     const sf::Texture* getAtlasTexture(const std::string& atlasKey) const;
+    const sf::Font* getFont(const std::string& fontKey) const;
+    const sf::Font* getDefaultFont() const;
     const sf::IntRect* getFrameRect(const std::string& atlasKey,
         const std::string& frameName) const;
     std::optional<sf::Vector2f> getFramePivot(const std::string& atlasKey,
@@ -73,4 +83,5 @@ private:
     std::string extractAnimationName(const std::string& frameName) const;
 
     std::unordered_map<std::string, std::unique_ptr<AtlasData>> m_atlases;
+    std::unordered_map<std::string, std::unique_ptr<sf::Font>> m_fonts;
 };

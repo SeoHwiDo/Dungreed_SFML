@@ -87,6 +87,42 @@ bool ResourceManager::loadAtlas(const std::string& atlasKey, const std::string& 
     return true;
 }
 
+bool ResourceManager::loadFont(const std::string& fontKey, const std::string& fontPath) {
+    auto font = std::make_unique<sf::Font>();
+    if (!font->openFromFile(fontPath)) {
+        std::cerr << "[ResourceManager] 폰트 로드 실패: " << fontPath << '\n';
+        return false;
+    }
+    m_fonts[fontKey] = std::move(font);
+    return true;
+}
+
+bool ResourceManager::loadDefaultFont(const std::string& fontPath) {
+    return loadFont(std::string(kDefaultFontKey), fontPath);
+}
+
+bool ResourceManager::loadTitleResources() {
+    return loadDefaultFont(std::string(kDefaultFontPath));
+}
+
+bool ResourceManager::loadTrainingVillageResources() {
+    const std::string backgroundPath(kBackgroundPath);
+    return loadAtlas("Player", std::string(kPlayerAtlasJsonPath), std::string(kPlayerAtlasPath)) &&
+        loadAtlas("TileMap", std::string(kTileMapAtlasJsonPath), std::string(kTileMapAtlasPath)) &&
+        loadAtlas("Equip", std::string(kEquipAtlasJsonPath), std::string(kEquipAtlasPath)) &&
+        loadStandaloneSprite("TownSky", backgroundPath + "TownSky.png", "Sky") &&
+        loadStandaloneSprite("TownBG", backgroundPath + "TownBG_Day.png", "BG") &&
+        loadStandaloneSprite("TownLayer", backgroundPath + "TownLayer_Day.png", "Layer");
+}
+
+bool ResourceManager::loadDungeonResources() {
+    return loadAtlas("Monster", std::string(kMonsterAtlasJsonPath), std::string(kMonsterAtlasPath)) &&
+        loadAtlas("Boss", std::string(kBossAtlasJsonPath), std::string(kBossAtlasPath)) &&
+        loadAtlas("Projectile", std::string(kProjectileAtlasJsonPath), std::string(kProjectileAtlasPath)) &&
+        loadAtlas("Effect", std::string(kEffectAtlasJsonPath), std::string(kEffectAtlasPath)) &&
+        loadAtlas("UI", std::string(kUiAtlasJsonPath), std::string(kUiAtlasPath));
+}
+
 const sf::Texture* ResourceManager::getAtlasTexture(const std::string& atlasKey) const {
     const auto atlasIt = m_atlases.find(atlasKey);
     if (atlasIt == m_atlases.end()) {
@@ -160,6 +196,15 @@ std::vector<std::string> ResourceManager::getAnimationNames(const std::string& a
         names.push_back(name);
     }
     return names;
+}
+
+const sf::Font* ResourceManager::getFont(const std::string& fontKey) const {
+    const auto fontIt = m_fonts.find(fontKey);
+    return fontIt == m_fonts.end() ? nullptr : fontIt->second.get();
+}
+
+const sf::Font* ResourceManager::getDefaultFont() const {
+    return getFont(std::string(kDefaultFontKey));
 }
 
 bool ResourceManager::loadStandaloneSprite(const std::string& atlasKey,

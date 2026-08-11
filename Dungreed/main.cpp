@@ -1,295 +1,342 @@
 #include <SFML/Graphics.hpp>
 #include <Windows.h>
-#include <iostream>
-#include <vector>
-#include <unordered_set>
+
+#include <algorithm>
 #include <filesystem>
-#include "ResourceManager.h"
-#include "Player.h"
-#include "Monster.h"
-#include "Equip.h"
-#include "ObjectPoolingManager.h"
-#include "MonsterManager.h"
+#include <iostream>
+#include <memory>
+#include <unordered_set>
+#include <vector>
+
+#include "Camera.h"
+#include "Collision.h"
 #include "CombatManager.h"
 #include "EffectManager.h"
-#include "RewardChestManager.h"
-#include "TileMap.h"
-#include "Collision.h"
-#include "Room.h"
-#include "MapManager.h"
-#include "Camera.h"
-#include "DebugManager.h"
 #include "GameDataManager.h"
+#include "MapManager.h"
+#include "MonsterManager.h"
+#include "ObjectPoolingManager.h"
+#include "Player.h"
+#include "ResourceManager.h"
+#include "RewardChestManager.h"
+#include "SceneTransition.h"
+#include "SkelBoss.h"
 #include "UIManager.h"
 
-/// 프로그램 진입점입니다. 공용 리소스와 테스트 방을 준비한 뒤 입력·AI·충돌·렌더링 루프를 실행합니다.
+namespace {
+constexpr float kGameplayCameraZoom = 3.5f;
+
+RoomTileSet createRoomTileSet() {
+    return {
+        "Wall_Outter.png", "Wall_Top.png", "Wall_Ground.png", "Wall_Left.png",
+        "Wall_Right.png", "Wall_H0.png", "Wall_H2.png", "Wall_H6.png", "Wall_H8.png",
+        "Wall_TopLCorner.png", "Wall_TopRCorner.png", "Wall_BotLCorner.png",
+        "Wall_BotRCorner.png", "Back_Inner.png", "Back_Top.png", "Back_Ground.png",
+        "Back_Left.png", "Back_Right.png", "Back_TopLcorner.png", "Back_TopRCorner.png",
+        "BackBotLCorner.png", "Back_BotRCorner.png", "Back_DoorTopL.png",
+        "Back_DoorTopR.png", "Back_DoorBotL.png", "Back_DoorBotR.png", "Platform.png"
+    };
+}
+
+void drawCentered(sf::RenderWindow& window, sf::Text& text, const sf::Vector2f& position) {
+    const sf::FloatRect bounds = text.getLocalBounds();
+    text.setOrigin(bounds.getCenter());
+    text.setPosition(position);
+    window.draw(text);
+}
+}
+
+/// 프로그램 진입점입니다. 타이틀, 조작 마을, 던전을 별도 장면으로 관리합니다.
 int main() {
-    // 소스는 UTF-8(/utf-8)로 컴파일되므로 콘솔도 UTF-8로 맞춥니다.
     SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
-    // true로 바꾸면 실제 플레이 대신 모든 레퍼런스 방을 축소해 한 화면에서 확인합니다.
-    constexpr bool kShowAllRoomsDebug = false;
-    // 실제 플레이 화면에서 피격·공격 판정 범위를 색상별로 표시합니다.
-    constexpr bool kShowCombatBoundsDebug = true;
-    // 1. 윈도우 생성 (SFML 3.1.0 기준 sf::VideoMode 및 윈도우 생성자 형식 준수)
-    sf::RenderWindow window(sf::VideoMode({ 1280, 720 }), "Dungreed Test");
+
+    sf::RenderWindow window(sf::VideoMode({ 1280, 720 }), "Dungreed");
     window.setFramerateLimit(60);
 
-    // 2. 리소스 로드
-    auto& resMgr = ResourceManager::getInstance();
-    if (!resMgr.loadAtlas("Player", std::string(kPlayerAtlasJsonPath), std::string(kPlayerAtlasPath))) {
-        std::cerr << "플레이어 아틀라스 로드 실패\n";
+    auto& resources = ResourceManager::getInstance();
+    if (!resources.loadTitleResources()) {
+        std::cerr << "기본 게임 폰트 로드 실패\n";
+        return 1;
     }
-    if (!resMgr.loadAtlas("Monster", std::string(kMonsterAtlasJsonPath), std::string(kMonsterAtlasPath))) {
-        std::cerr << "몬스터 아틀라스 로드 실패\n";
+    const sf::Font* font = resources.getDefaultFont();
+    if (!font) {
+        return 1;
     }
-    if (!resMgr.loadAtlas("TileMap", std::string(kTileMapAtlasJsonPath), std::string(kTileMapAtlasPath))) {
-        std::cerr << "타일맵 아틀라스 로드 실패\n";
+
+    SceneTransition transition;
+    if (!transition.init(*font, window.getSize())) {
+        return 1;
     }
-    if (!resMgr.loadAtlas("Equip", std::string(kEquipAtlasJsonPath), std::string(kEquipAtlasPath))) {
-        std::cerr << "장비 아틀라스 로드 실패\n";
-    }
-    if (!resMgr.loadAtlas("Projectile", std::string(kProjectileAtlasJsonPath), std::string(kProjectileAtlasPath))) {
-        std::cerr << "프로젝타일 아틀라스 로드 실패\n";
-    }
-    if (!resMgr.loadAtlas("Effect", std::string(kEffectAtlasJsonPath), std::string(kEffectAtlasPath))) {
-        std::cerr << "이펙트 아틀라스 로드 실패\n";
-    }
-    auto& gameData = GameDataManager::getInstance();
+
+    sf::Text titleText(*font, "DUNGREED", 74);
+    titleText.setFillColor(sf::Color(244, 234, 255));
+    titleText.setOutlineColor(sf::Color(40, 24, 66));
+    titleText.setOutlineThickness(3.f);
+    sf::Text titleHint(*font, "Press Enter to start", 26);
+    titleHint.setFillColor(sf::Color(213, 194, 243));
+    sf::Text villageTitle(*font, "TRAINING VILLAGE", 28);
+    villageTitle.setFillColor(sf::Color::White);
+    villageTitle.setOutlineColor(sf::Color(25, 18, 40));
+    villageTitle.setOutlineThickness(2.f);
+    sf::Text villageHelp(*font,
+        "A / D or Arrow Keys: Move    Space: Jump    Shift: Dash    Mouse: Attack\n\n"
+        "Practice freely. Press Enter when you are ready for the dungeon.", 19);
+    villageHelp.setFillColor(sf::Color(235, 229, 255));
+    villageHelp.setOutlineColor(sf::Color(25, 18, 40));
+    villageHelp.setOutlineThickness(1.5f);
+
+    const RoomTileSet roomTiles = createRoomTileSet();
     const std::filesystem::path dataDirectory =
         std::filesystem::path(__FILE__).parent_path() / "Resources" / "data";
-    if (!gameData.loadWeapons((dataDirectory / "weapons.json").string()) ||
-        !gameData.loadMonsters((dataDirectory / "monsters.json").string()) ||
-        !gameData.loadRoomData((dataDirectory / "room_data.json").string())) {
-        std::cerr << "게임 데이터 JSON 로드 실패\n";
-        return 1;
-    }
-    // 3. 고정 레퍼런스 방 데이터를 TileMap으로 변환
+    auto& gameData = GameDataManager::getInstance();
     auto& mapManager = MapManager::getInstance();
-    auto& debugManager = DebugManager::getInstance();
-    const FloorData* floorData = gameData.findFloor("floor_01");
-    if (!floorData || !mapManager.createCurrentRoomFromData(
-        *floorData, floorData->startRoomId)) {
-        std::cerr << "시작 방 JSON 데이터 생성 실패\n";
-        return 1;
-    }
-    Room* room = mapManager.getCurrentRoom();
-    const RoomTileSet roomTiles{
-        "Wall_Outter.png",
-        "Wall_Top.png",
-        "Wall_Ground.png",
-        "Wall_Left.png",
-        "Wall_Right.png",
-        "Wall_H0.png",
-        "Wall_H2.png",
-        "Wall_H6.png",
-        "Wall_H8.png",
-        "Wall_TopLCorner.png",
-        "Wall_TopRCorner.png",
-        "Wall_BotLCorner.png",
-        "Wall_BotRCorner.png",
-        "Back_Inner.png",
-        "Back_Top.png",
-        "Back_Ground.png",
-        "Back_Left.png",
-        "Back_Right.png",
-        "Back_TopLcorner.png",
-        "Back_TopRCorner.png",
-        "BackBotLCorner.png",
-        "Back_BotRCorner.png",
-        "Back_DoorTopL.png",
-        "Back_DoorTopR.png",
-        "Back_DoorBotL.png",
-        "Back_DoorBotR.png",
-        "Platform.png"
-    };
-    if (!mapManager.preloadFloorTileMaps("TileMap", roomTiles)) {
-        std::cerr << "층 타일맵 사전 생성 실패\n";
-        return 1;
-    }
-    const TileMap* initialTileMap = mapManager.getCurrentTileMap();
-    if (!initialTileMap) {
-        std::cerr << "시작 방 타일맵을 찾을 수 없습니다.\n";
-        return 1;
-    }
-    if (kShowAllRoomsDebug && !debugManager.buildRoomPreviews(
-        mapManager.getFloorRoomsInDataOrder(), "TileMap", roomTiles, window.getSize())) {
-        std::cerr << "방 디버그 프리뷰 생성 실패\n";
-    }
-
-    // 4. 플레이어 및 몬스터 생성
-    Player player;
-    player.init("Player");
-    if (const auto playerWeapon = gameData.createEquip("ShortSword")) {
-        player.setEquipment(playerWeapon);
-    }
-    if (const auto playerSpawn = room->getPlayerSpawnPosition(*initialTileMap)) {
-        player.move(playerSpawn->x, playerSpawn->y);
-    }
-
-    // 맵의 최하단에서는 뷰 하단이 맵 바닥과 정확히 맞춰집니다.
-    Camera camera(window.getSize(),
-        sf::FloatRect({ 0.f, 0.f }, initialTileMap->getPixelSize()), 3.5f);
-    camera.update(player.getPosition());
-    // 디버그 프리뷰는 월드 카메라가 아닌 창 좌표계를 사용해야 전체 배치가 잘리지 않습니다.
-    window.setView(kShowAllRoomsDebug ? window.getDefaultView() : camera.getView());
-
     auto& objectPool = ObjectPoolingManager::getInstance();
-    objectPool.prewarmFromGameData(gameData);
     auto& monsterManager = MonsterManager::getInstance();
     auto& combatManager = CombatManager::getInstance();
     auto& effectManager = EffectManager::getInstance();
     auto& rewardChestManager = RewardChestManager::getInstance();
     auto& uiManager = UIManager::getInstance();
-    if (!uiManager.init(window)) {
-        return 1;
-    }
 
-    if (!rewardChestManager.init()) {
-        return 1;
-    }
-
+    GameScene activeScene = GameScene::Title;
+    TileMap* villageTileMap = nullptr;
+    std::unique_ptr<Player> player;
+    std::unique_ptr<Camera> camera;
+    std::unique_ptr<SkelBoss> activeBoss;
     bool areMonstersActivated = false;
-    sf::Clock clock;
-    bool isGameplayActive = false;
 
-    // 5. 메인 게임 루프
+    const auto prepareVillage = [&]() -> bool {
+        const FloorData* floor = gameData.findFloor("0Floor");
+        if (!floor || !mapManager.createCurrentRoomFromData(*floor, floor->startRoomId) ||
+            !mapManager.preloadFloorTileMaps("TileMap", roomTiles)) {
+            return false;
+        }
+        Room* room = mapManager.getCurrentRoom();
+        TileMap* tileMap = mapManager.getCurrentTileMap();
+        if (!room || !tileMap) {
+            return false;
+        }
+
+        auto newPlayer = std::make_unique<Player>();
+        if (const auto weapon = gameData.createEquip("ShortSword")) {
+            newPlayer->setEquipment(weapon);
+        }
+        if (const auto spawn = room->getPlayerSpawnPosition(*tileMap)) {
+            newPlayer->setPosition(*spawn);
+        }
+
+        camera = std::make_unique<Camera>(window.getSize(),
+            sf::FloatRect({ 0.f, 0.f }, tileMap->getPixelSize()), kGameplayCameraZoom);
+        camera->update(newPlayer->getPosition());
+        player = std::move(newPlayer);
+        villageTileMap = tileMap;
+        return true;
+    };
+
+    const auto prepareDungeon = [&]() -> bool {
+        // 0Floor의 TileMap 포인터는 새 층을 생성하면 무효화되므로 먼저 비웁니다.
+        villageTileMap = nullptr;
+        const FloorData* floor = gameData.findFloor("floor_01");
+        if (!floor || !mapManager.createCurrentRoomFromData(*floor, floor->startRoomId) ||
+            !mapManager.preloadFloorTileMaps("TileMap", roomTiles)) {
+            return false;
+        }
+
+        Room* startRoom = mapManager.getCurrentRoom();
+        const TileMap* startMap = mapManager.getCurrentTileMap();
+        if (!startRoom || !startMap) {
+            return false;
+        }
+
+        auto newPlayer = std::make_unique<Player>();
+        if (const auto weapon = gameData.createEquip("ShortSword")) {
+            newPlayer->setEquipment(weapon);
+        }
+        if (const auto spawn = startRoom->getPlayerSpawnPosition(*startMap)) {
+            newPlayer->setPosition(*spawn);
+        }
+
+        objectPool.prewarmFromGameData(gameData);
+        if (!rewardChestManager.init() || !uiManager.init(window)) {
+            return false;
+        }
+
+        camera = std::make_unique<Camera>(window.getSize(),
+            sf::FloatRect({ 0.f, 0.f }, startMap->getPixelSize()), kGameplayCameraZoom);
+        camera->update(newPlayer->getPosition());
+        player = std::move(newPlayer);
+        activeBoss.reset();
+        areMonstersActivated = false;
+        return true;
+    };
+
+    const auto beginVillageTransition = [&]() {
+        transition.begin(GameScene::TrainingVillage, "TRAINING VILLAGE", {
+            [&]() { return resources.loadTrainingVillageResources(); },
+            [&]() { return gameData.loadWeapons((dataDirectory / "weapons.json").string()); },
+            [&]() { return gameData.loadRoomData((dataDirectory / "room_data.json").string()); },
+            prepareVillage
+        }, [&]() { activeScene = GameScene::TrainingVillage; });
+    };
+
+    const auto beginDungeonTransition = [&]() {
+        transition.begin(GameScene::Dungeon, "DUNGEON", {
+            [&]() { return resources.loadDungeonResources(); },
+            [&]() { return gameData.loadMonsters((dataDirectory / "monsters.json").string()); },
+            prepareDungeon
+        }, [&]() { activeScene = GameScene::Dungeon; });
+    };
+
+    sf::Clock clock;
     while (window.isOpen()) {
-        // SFML 3.1.0 이벤트 폴링 방식
+        bool enterPressed = false;
         while (const std::optional<sf::Event> event = window.pollEvent()) {
             if (event->is<sf::Event::Closed>()) {
                 window.close();
             }
+            if (const auto* key = event->getIf<sf::Event::KeyPressed>();
+                key && key->code == sf::Keyboard::Key::Enter) {
+                enterPressed = true;
+            }
         }
 
-        const TileMap* activeTileMap = mapManager.getCurrentTileMap();
-        if (!activeTileMap) {
-            std::cerr << "활성 방 타일맵을 찾을 수 없습니다.\n";
-            return 1;
+        const float dt = std::min(clock.restart().asSeconds(), 0.1f);
+        if (enterPressed && !transition.isActive()) {
+            if (activeScene == GameScene::Title) {
+                beginVillageTransition();
+            } else if (activeScene == GameScene::TrainingVillage) {
+                beginDungeonTransition();
+            }
         }
-        const TileMap& tileMap = *activeTileMap;
+        transition.update(dt);
 
-        if (!isGameplayActive) {
-            window.clear(sf::Color::Black);
-            if (kShowAllRoomsDebug) {
-                window.setView(window.getDefaultView());
-                debugManager.renderRoomPreviews(window);
+        if (!transition.isActive() && activeScene == GameScene::TrainingVillage &&
+            player && villageTileMap && camera) {
+            villageTileMap->update(dt);
+            player->update(dt, window, *villageTileMap);
+            Collision::resolveMapCollision(*player, *villageTileMap,
+                player->ignoresOneWayPlatforms());
+            camera->update(player->getPosition());
+        }
+
+        if (!transition.isActive() && activeScene == GameScene::Dungeon && player && camera) {
+            TileMap* activeTileMap = mapManager.getCurrentTileMap();
+            Room* currentRoom = mapManager.getCurrentRoom();
+            if (!activeTileMap || !currentRoom) {
+                std::cerr << "활성 던전 방을 찾을 수 없습니다.\n";
+                return 1;
+            }
+            TileMap& tileMap = *activeTileMap;
+            const bool isBossRoom = currentRoom->getInfo().type == RoomType::Boss;
+            if (isBossRoom && !currentRoom->getInfo().isClear && !activeBoss) {
+                activeBoss = std::make_unique<SkelBoss>();
+                activeBoss->placeAtMapCenter(tileMap);
+            } else if (!isBossRoom) {
+                activeBoss.reset();
+            }
+
+            effectManager.update(dt, objectPool);
+            window.setView(camera->getView());
+            player->update(dt, window, tileMap);
+
+            if (!areMonstersActivated) {
+                Collision::resolveMapCollision(*player, tileMap, player->ignoresOneWayPlatforms());
+                if (!isBossRoom) {
+                    mapManager.requestCurrentRoomMonsters(monsterManager, objectPool, gameData,
+                        tileMap, player->getBodyCenterPosition(), effectManager);
+                }
+                areMonstersActivated = true;
+            } else if (!isBossRoom) {
+                monsterManager.update(dt, *player, objectPool, tileMap, effectManager);
+                Collision::resolveMapCollision(*player, tileMap, player->ignoresOneWayPlatforms());
             } else {
-                window.draw(tileMap);
-                player.render(window);
-                objectPool.render(window);
-                effectManager.render(window, objectPool);
-                rewardChestManager.render(window);
-                if (kShowCombatBoundsDebug) {
-                    debugManager.renderCombatBounds(window, player, objectPool);
+                Collision::resolveMapCollision(*player, tileMap, player->ignoresOneWayPlatforms());
+            }
+
+            if (activeBoss) {
+                activeBoss->update(dt, *player, objectPool, effectManager, tileMap);
+                if (activeBoss->dead()) {
+                    currentRoom->setClear(true);
                 }
             }
-            window.setView(window.getDefaultView());
-            uiManager.update(player, 0.f, window);
-            uiManager.render(window);
-            window.display();
-            isGameplayActive = true;
-            clock.restart();
-            continue;
-        }
-        float dt = clock.restart().asSeconds();
 
-        // 장식 타일은 렌더링 전용이므로 물리·전투 처리와 독립적으로 프레임만 갱신합니다.
-        tileMap.update(dt);
-        effectManager.update(dt, objectPool);
+            currentRoom->setTraversalLocked(isBossRoom && activeBoss && !activeBoss->dead());
+            tileMap.setDoorsLocked(currentRoom->isTraversalLocked());
+            tileMap.update(dt);
 
-        if (!kShowAllRoomsDebug) {
-            window.setView(camera.getView());
-        }
+            bool didChangeRoom = false;
+            if (const auto enteredDoor = currentRoom->getEnteredDoor(player->getGlobalBounds(),
+                player->getPreviousGlobalBounds(), tileMap);
+                enteredDoor && mapManager.moveCurrentRoom(*enteredDoor)) {
+                monsterManager.clearActiveRoom(objectPool);
+                effectManager.clear(objectPool);
+                player->cancelDash();
 
-        // 업데이트 처리
-        player.update(dt, window, tileMap);
-
-        // 1순위: 각 몬스터의 이동 후 벽 충돌을 해결합니다.
-        if (!areMonstersActivated) {
-            Collision::resolveMapCollision(player, tileMap, player.ignoresOneWayPlatforms());
-            mapManager.requestCurrentRoomMonsters(monsterManager, objectPool, gameData,
-                tileMap, player.getBodyCenterPosition(), effectManager);
-            areMonstersActivated = true;
-        } else {
-            monsterManager.update(dt, player, objectPool, tileMap, effectManager);
-            Collision::resolveMapCollision(player, tileMap, player.ignoresOneWayPlatforms());
-        }
-
-        bool didChangeRoom = false;
-        if (!kShowAllRoomsDebug) {
-            if (Room* currentRoom = mapManager.getCurrentRoom()) {
-                const auto enteredDoor = currentRoom->getEnteredDoor(
-                    player.getGlobalBounds(),
-                    player.getPreviousGlobalBounds(), tileMap);
-                if (enteredDoor && mapManager.moveCurrentRoom(*enteredDoor)) {
-                    monsterManager.clearActiveRoom(objectPool);
-                    effectManager.clear(objectPool);
-                    player.cancelDash();
-
-                    const TileMap& nextTileMap = *mapManager.getCurrentTileMap();
-                    if (Room* nextRoom = mapManager.getCurrentRoom()) {
-                        if (const auto spawnPosition = nextRoom->getPlayerSpawnPosition(nextTileMap)) {
-                            player.setPosition(*spawnPosition);
-                        }
+                const TileMap* nextMap = mapManager.getCurrentTileMap();
+                if (Room* nextRoom = mapManager.getCurrentRoom(); nextMap && nextRoom) {
+                    if (const auto spawn = nextRoom->getPlayerSpawnPosition(*nextMap)) {
+                        player->setPosition(*spawn);
                     }
-
-                    camera.setMapBounds(sf::FloatRect(
-                        { 0.f, 0.f }, nextTileMap.getPixelSize()));
-                    camera.update(player.getPosition());
-                    areMonstersActivated = false;
-                    didChangeRoom = true;
+                    camera->setMapBounds(sf::FloatRect({ 0.f, 0.f }, nextMap->getPixelSize()));
+                    camera->update(player->getPosition());
                 }
+                activeBoss.reset();
+                areMonstersActivated = false;
+                didChangeRoom = true;
             }
-        }
 
-        if (!didChangeRoom) {
-            // 2순위: 플레이어의 공격을 먼저 처리합니다.
-            std::unordered_set<EntityId> playerHitMonsters =
-                combatManager.resolvePlayerAttack(player, objectPool, effectManager);
-            const auto projectileHits = combatManager.updateProjectiles(
-                dt, player, objectPool, tileMap, ProjectileTarget::Monster);
-            playerHitMonsters.insert(projectileHits.begin(), projectileHits.end());
-
-            // 3순위: 플레이어가 이번 프레임에 실제로 맞힌 몬스터의 공격만 무효화합니다.
-            combatManager.resolveMonsterAttacks(dt, player, objectPool, tileMap,
-                playerHitMonsters);
-            combatManager.updateProjectiles(dt, player, objectPool, tileMap, ProjectileTarget::Player);
-
-            // 전투방을 완전히 정리한 뒤에만 상자를 활성화하고, 개방 및 보상 충돌을 처리합니다.
-            if (Room* currentRoom = mapManager.getCurrentRoom()) {
-                rewardChestManager.update(dt, *currentRoom, tileMap, player,
+            if (!didChangeRoom) {
+                std::unordered_set<EntityId> playerHitMonsters =
+                    combatManager.resolvePlayerAttack(*player, objectPool, effectManager,
+                        activeBoss.get());
+                const auto projectileHits = combatManager.updateProjectiles(dt, *player,
+                    objectPool, tileMap, ProjectileTarget::Monster, activeBoss.get());
+                playerHitMonsters.insert(projectileHits.begin(), projectileHits.end());
+                combatManager.resolveMonsterAttacks(dt, *player, objectPool, tileMap,
+                    playerHitMonsters);
+                combatManager.updateProjectiles(dt, *player, objectPool, tileMap,
+                    ProjectileTarget::Player, activeBoss.get());
+                rewardChestManager.update(dt, *currentRoom, tileMap, *player,
                     effectManager, objectPool);
             }
+
+            const bool isBossCinematic = activeBoss && activeBoss->isSummoning();
+            camera->setZoom(isBossCinematic ? 5.2f : kGameplayCameraZoom);
+            camera->update(isBossCinematic ? activeBoss->getBodyCenterPosition() : player->getPosition());
         }
 
-        // 충돌 보정까지 끝난 실제 플레이어 위치를 즉시 카메라에 반영합니다.
-        camera.update(player.getPosition());
-        if (!kShowAllRoomsDebug) {
-            window.setView(camera.getView());
-        }
-
-        // 렌더링
-        window.clear(sf::Color::Black);
-
-        if (kShowAllRoomsDebug) {
+        window.clear(sf::Color(11, 8, 20));
+        if (activeScene == GameScene::Title) {
             window.setView(window.getDefaultView());
-            debugManager.renderRoomPreviews(window);
-        } else {
-            window.draw(*mapManager.getCurrentTileMap());
-            player.render(window);
+            drawCentered(window, titleText, { window.getSize().x * 0.5f, 260.f });
+            drawCentered(window, titleHint, { window.getSize().x * 0.5f, 410.f });
+        } else if (activeScene == GameScene::TrainingVillage && player && villageTileMap && camera) {
+            window.setView(camera->getView());
+            window.draw(*villageTileMap);
+            player->render(window);
+            window.setView(window.getDefaultView());
+            drawCentered(window, villageTitle, { window.getSize().x * 0.5f, 42.f });
+            drawCentered(window, villageHelp, { window.getSize().x * 0.5f, 630.f });
+        } else if (activeScene == GameScene::Dungeon && player && camera) {
+            window.setView(camera->getView());
+            objectPool.renderBehindTiles(window);
+            if (const TileMap* tileMap = mapManager.getCurrentTileMap()) {
+                window.draw(*tileMap);
+            }
+            if (activeBoss) {
+                activeBoss->render(window);
+            }
+            player->render(window);
             objectPool.render(window);
             effectManager.render(window, objectPool);
             rewardChestManager.render(window);
-            if (kShowCombatBoundsDebug) {
-                debugManager.renderCombatBounds(window, player, objectPool);
-            }
+            window.setView(window.getDefaultView());
+            uiManager.update(*player, dt, window);
+            uiManager.render(window);
         }
 
         window.setView(window.getDefaultView());
-        uiManager.update(player, dt, window);
-        uiManager.render(window);
-
+        transition.render(window);
         window.display();
     }
 
