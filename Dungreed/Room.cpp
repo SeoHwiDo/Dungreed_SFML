@@ -587,6 +587,9 @@ bool Room::buildTileMap(TileMap& tileMap, const std::string& tileAtlasKey,
             config = makeBackTile(getBackFrame(x, y, info.layout.cells[index]));
             break;
         case RoomCell::SpawnPoint:
+            // 스폰 표시는 논리 정보만 추가할 뿐, 보이는 모습은 일반 백타일과 같습니다.
+            config = makeBackTile(getBackFrame(x, y, RoomCell::BackTile));
+            break;
         case RoomCell::OpenSpace:
             // 시작마을의 배경 위에서는 별도 타일을 렌더링하지 않습니다.
             break;
