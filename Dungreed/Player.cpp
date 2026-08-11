@@ -1,4 +1,4 @@
-#include "Player.h"
+﻿#include "Player.h"
 
 #include "Collision.h"
 #include "Equip.h"
@@ -37,6 +37,8 @@ void Player::init(const std::string& atlasKey) {
         animator.addAnimation(animationName, AnimationClip(frames, frameDuration, isLoop));
     }
     animator.play("Player_Idle");
+    // 첫 update 전에도 아틀라스 전체가 보이지 않도록 Idle의 첫 프레임을 즉시 적용합니다.
+    updateAnimation(0.f);
 }
 
 void Player::changeState(PlayerState newState) {

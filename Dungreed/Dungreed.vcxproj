@@ -142,17 +142,20 @@
     <ClCompile Include="Controller.cpp" />
     <ClCompile Include="Equip.cpp" />
     <ClCompile Include="GameDataManager.cpp" />
+    <ClCompile Include="GameplayContext.cpp" />
     <ClCompile Include="Projectile.cpp" />
     <ClCompile Include="ObjectPoolingManager.cpp" />
     <ClCompile Include="MonsterManager.cpp" />
     <ClCompile Include="CombatManager.cpp" />
     <ClCompile Include="DebugManager.cpp" />
+    <ClCompile Include="DungeonScene.cpp" />
     <ClCompile Include="Effect.cpp" />
     <ClCompile Include="EffectManager.cpp" />
     <ClCompile Include="RewardChestManager.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="MapManager.cpp" />
     <ClCompile Include="SceneTransition.cpp" />
+    <ClCompile Include="SceneManager.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Monster.cpp" />
     <ClCompile Include="Player.cpp" />
@@ -160,7 +163,9 @@
     <ClCompile Include="Room.cpp" />
     <ClCompile Include="SkelBoss.cpp" />
     <ClCompile Include="TileMap.cpp" />
+    <ClCompile Include="TitleScene.cpp" />
     <ClCompile Include="UIManager.cpp" />
+    <ClCompile Include="VillageScene.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Actor.h" />
@@ -170,24 +175,29 @@
     <ClInclude Include="Controller.h" />
     <ClInclude Include="Equip.h" />
     <ClInclude Include="GameDataManager.h" />
+    <ClInclude Include="GameplayContext.h" />
     <ClInclude Include="Projectile.h" />
     <ClInclude Include="ObjectPoolingManager.h" />
     <ClInclude Include="MonsterManager.h" />
     <ClInclude Include="CombatManager.h" />
     <ClInclude Include="DebugManager.h" />
+    <ClInclude Include="DungeonScene.h" />
     <ClInclude Include="Effect.h" />
     <ClInclude Include="EffectManager.h" />
     <ClInclude Include="RewardChestManager.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="MapManager.h" />
     <ClInclude Include="SceneTransition.h" />
+    <ClInclude Include="SceneManager.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="ResourceManager.h" />
     <ClInclude Include="Monster.h" />
     <ClInclude Include="Room.h" />
     <ClInclude Include="SkelBoss.h" />
     <ClInclude Include="TileMap.h" />
+    <ClInclude Include="TitleScene.h" />
     <ClInclude Include="UIManager.h" />
+    <ClInclude Include="VillageScene.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md" />

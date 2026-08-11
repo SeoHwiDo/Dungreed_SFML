@@ -1,11 +1,14 @@
 #include "DebugManager.h"
 
 #include <algorithm>
+#include <iostream>
 
 #include <SFML/Graphics/CircleShape.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
 
 #include "Monster.h"
+#include "GameDataManager.h"
+#include "MapManager.h"
 #include "ObjectPoolingManager.h"
 #include "Player.h"
 #include "Projectile.h"
@@ -40,6 +43,62 @@ void drawCircularRange(sf::RenderWindow& window, const sf::Vector2f& center,
 }
 
 DebugManager::~DebugManager() = default;
+
+DebugCommand DebugManager::readConsoleCommand() const {
+    while (true) {
+        std::cout << "\n========== DEBUG MENU ==========\n"
+            << "1. Spawn room\n"
+            << "2. Toggle combat bounds\n"
+            << "0. Cancel\n"
+            << "Select: " << std::flush;
+
+        std::string selection;
+        if (!std::getline(std::cin, selection)) {
+            std::cin.clear();
+            return {};
+        }
+
+        if (selection == "0") {
+            return {};
+        }
+        if (selection == "2") {
+            return { DebugCommandType::ToggleCombatBounds };
+        }
+        if (selection == "1") {
+            DebugCommand command;
+            command.type = DebugCommandType::SpawnRoom;
+            std::cout << "Floor ID: " << std::flush;
+            if (!std::getline(std::cin, command.floorId)) {
+                std::cin.clear();
+                return {};
+            }
+            std::cout << "Room ID: " << std::flush;
+            if (!std::getline(std::cin, command.roomId)) {
+                std::cin.clear();
+                return {};
+            }
+            if (!command.floorId.empty() && !command.roomId.empty()) {
+                return command;
+            }
+            std::cout << "Floor ID and Room ID are required.\n";
+            continue;
+        }
+
+        std::cout << "Invalid selection.\n";
+    }
+}
+
+bool DebugManager::spawnRoom(const std::string& floorId, const std::string& roomId,
+    const GameDataManager& gameData, MapManager& mapManager,
+    const std::string& tileAtlasKey, const RoomTileSet& tileSet) const {
+    const FloorData* floor = gameData.findFloor(floorId);
+    if (!floor || floor->rooms.find(roomId) == floor->rooms.end()) {
+        return false;
+    }
+
+    return mapManager.createCurrentRoomFromData(*floor, roomId) &&
+        mapManager.preloadFloorTileMaps(tileAtlasKey, tileSet);
+}
 
 void DebugManager::renderCombatBounds(sf::RenderWindow& window,
     const Player& player, ObjectPoolingManager& objectPool) const {

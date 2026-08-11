@@ -28,7 +28,7 @@ constexpr std::string_view kEquipAtlasJsonPath = "resources/images/equip_atlas.j
 constexpr std::string_view kProjectileAtlasJsonPath = "resources/images/projectile_atlas.json";
 constexpr std::string_view kEffectAtlasJsonPath = "resources/images/effect_atlas.json";
 constexpr std::string_view kUiAtlasJsonPath = "resources/images/ui_atlas.json";
-constexpr std::string_view kBackgroundPath = "resources/images/Background/";
+constexpr std::string_view kBackgroundPath = "resources/images/Backgrounds/";
 
 struct AtlasData {
     sf::Texture texture;
@@ -56,6 +56,7 @@ public:
     bool loadFont(const std::string& fontKey, const std::string& fontPath);
     bool loadDefaultFont(const std::string& fontPath);
     /// 장면 단위 리소스 묶음입니다. main은 개별 파일 경로를 알 필요가 없습니다.
+    bool loadSharedGameplayResources();
     bool loadTitleResources();
     bool loadTrainingVillageResources();
     bool loadDungeonResources();

@@ -1,4 +1,4 @@
-#include "ResourceManager.h"
+﻿#include "ResourceManager.h"
 
 #include <fstream>
 #include <iostream>
@@ -101,16 +101,26 @@ bool ResourceManager::loadDefaultFont(const std::string& fontPath) {
     return loadFont(std::string(kDefaultFontKey), fontPath);
 }
 
+bool ResourceManager::loadSharedGameplayResources() {
+    return loadAtlas("Player", std::string(kPlayerAtlasJsonPath), std::string(kPlayerAtlasPath)) &&
+        loadAtlas("TileMap", std::string(kTileMapAtlasJsonPath), std::string(kTileMapAtlasPath)) &&
+        loadAtlas("Equip", std::string(kEquipAtlasJsonPath), std::string(kEquipAtlasPath));
+}
+
 bool ResourceManager::loadTitleResources() {
-    return loadDefaultFont(std::string(kDefaultFontPath));
+    const std::string backgroundPath(kBackgroundPath);
+    return loadDefaultFont(std::string(kDefaultFontPath)) &&
+        loadStandaloneSprite("TitleLogo", backgroundPath + "Title/MainLogo.png", "Logo") &&
+        loadStandaloneSprite("TitleSky", backgroundPath + "Title/Sky_Day.png", "Sky") &&
+        loadStandaloneSprite("TitleBackCloud", backgroundPath + "Title/BackCloud.png", "Cloud") &&
+        loadStandaloneSprite("TitleMidCloud0", backgroundPath + "Title/MidCloud0.png", "Cloud") &&
+        loadStandaloneSprite("TitleMidCloud1", backgroundPath + "Title/MidCloud1.png", "Cloud") &&
+        loadStandaloneSprite("TitleFrontCloud", backgroundPath + "Title/FrontCloud.png", "Cloud");
 }
 
 bool ResourceManager::loadTrainingVillageResources() {
     const std::string backgroundPath(kBackgroundPath);
-    return loadAtlas("Player", std::string(kPlayerAtlasJsonPath), std::string(kPlayerAtlasPath)) &&
-        loadAtlas("TileMap", std::string(kTileMapAtlasJsonPath), std::string(kTileMapAtlasPath)) &&
-        loadAtlas("Equip", std::string(kEquipAtlasJsonPath), std::string(kEquipAtlasPath)) &&
-        loadStandaloneSprite("TownSky", backgroundPath + "TownSky.png", "Sky") &&
+    return loadStandaloneSprite("TownSky", backgroundPath + "TownSky.png", "Sky") &&
         loadStandaloneSprite("TownBG", backgroundPath + "TownBG_Day.png", "BG") &&
         loadStandaloneSprite("TownLayer", backgroundPath + "TownLayer_Day.png", "Layer");
 }

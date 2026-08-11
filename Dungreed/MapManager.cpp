@@ -37,8 +37,7 @@ bool selectConnectionDoors(const RoomInstanceData& fromData,
         const bool isToAvailable = std::find(toData.availableDoorPositions.begin(),
             toData.availableDoorPositions.end(), candidateToDoor) !=
             toData.availableDoorPositions.end();
-        if (!fromDoors[fromIndex] && !toDoors[toIndex] &&
-            isFromAvailable && isToAvailable) {
+        if (!fromDoors[fromIndex] && !toDoors[toIndex] && isFromAvailable && isToAvailable){
             fromDoor = candidateFromDoor;
             toDoor = candidateToDoor;
             fromDoors[fromIndex] = true;
@@ -143,6 +142,12 @@ bool MapManager::createCurrentRoomFromData(const FloorData& floor,
         ? monsterRoomCandidates.size()
         : std::min(floor.randomMonsterRoomCount, monsterRoomCandidates.size());
     monsterRoomCandidates.resize(monsterRoomCount);
+    if (referenceData.at(roomId)->type == RoomType::Monster &&
+        std::find(monsterRoomCandidates.begin(), monsterRoomCandidates.end(), roomId) ==
+            monsterRoomCandidates.end()) {
+        // 디버그가 지정한 몬스터방은 무작위 편성 수와 관계없이 반드시 생성합니다.
+        monsterRoomCandidates.push_back(roomId);
+    }
 
     std::vector<std::string> intermediateRoomIds = monsterRoomCandidates;
     intermediateRoomIds.insert(intermediateRoomIds.end(),
