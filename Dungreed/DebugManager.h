@@ -39,7 +39,7 @@ public:
     DebugManager& operator=(const DebugManager&) = delete;
     /// F6 메뉴를 콘솔에 출력하고 선택한 디버그 명령을 반환합니다.
     /// 입력을 기다리는 동안 게임 루프는 일시 정지됩니다.
-    DebugCommand readConsoleCommand() const;
+    DebugCommand readConsoleCommand(const GameDataManager& gameData) const;
     /// 현재 플레이어와 활성 몬스터의 피격·공격 판정을 월드 좌표에 맞춰 표시합니다.
     void renderCombatBounds(sf::RenderWindow& window, const Player& player,
         ObjectPoolingManager& objectPool) const;

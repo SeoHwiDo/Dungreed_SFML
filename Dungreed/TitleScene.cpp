@@ -1,12 +1,17 @@
-#include "TitleScene.h"
+﻿#include "TitleScene.h"
 
 #include "ResourceManager.h"
 
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <string_view>
 
 namespace {
+sf::String toSfUtf8String(std::string_view utf8Text) {
+    return sf::String::fromUtf8(utf8Text.begin(), utf8Text.end());
+}
+
 void drawTitleSky(sf::RenderWindow& window, const sf::Texture& texture) {
     const sf::Vector2u textureSize = texture.getSize();
     const sf::Vector2u windowSize = window.getSize();
@@ -71,7 +76,7 @@ bool TitleScene::enter() {
         return false;
     }
 
-    m_startText.emplace(*font, "PRESS ENTER TO START", 26);
+    m_startText.emplace(*font, toSfUtf8String(u8"Enter 키를 눌러 게임 시작"), 26);
     m_startText->setFillColor(sf::Color(32, 68, 102));
     m_startText->setOutlineColor(sf::Color(238, 248, 255));
     m_startText->setOutlineThickness(1.f);
@@ -81,19 +86,6 @@ bool TitleScene::enter() {
 
 void TitleScene::update(float dt) {
     m_elapsed += std::max(0.f, dt);
-}
-
-bool TitleScene::handleEvent(const sf::Event& event) {
-    const auto* mouseButton = event.getIf<sf::Event::MouseButtonPressed>();
-    if (!m_startText || !mouseButton || mouseButton->button != sf::Mouse::Button::Left) {
-        return false;
-    }
-
-    placeStartText();
-    return m_startText->getGlobalBounds().contains({
-        static_cast<float>(mouseButton->position.x),
-        static_cast<float>(mouseButton->position.y)
-    });
 }
 
 void TitleScene::render() {

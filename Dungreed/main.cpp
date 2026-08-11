@@ -1,4 +1,4 @@
-#include <SFML/Graphics.hpp>
+﻿#include <SFML/Graphics.hpp>
 #include <Windows.h>
 
 #include <algorithm>
@@ -24,8 +24,7 @@ int main() {
 
     auto& resources = ResourceManager::getInstance();
     auto& gameData = GameDataManager::getInstance();
-    const std::filesystem::path dataDirectory =
-        std::filesystem::path(__FILE__).parent_path() / "Resources" / "data";
+    const std::filesystem::path dataDirectory = std::filesystem::path(__FILE__).parent_path() / "Resources" / "data";
     if (!resources.loadSharedGameplayResources() ||
         !gameData.loadWeapons((dataDirectory / "weapons.json").string())) {
         return 1;

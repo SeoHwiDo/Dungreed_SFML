@@ -44,7 +44,7 @@ void drawCircularRange(sf::RenderWindow& window, const sf::Vector2f& center,
 
 DebugManager::~DebugManager() = default;
 
-DebugCommand DebugManager::readConsoleCommand() const {
+DebugCommand DebugManager::readConsoleCommand(const GameDataManager& gameData) const {
     while (true) {
         std::cout << "\n========== DEBUG MENU ==========\n"
             << "1. Spawn room\n"
@@ -65,23 +65,31 @@ DebugCommand DebugManager::readConsoleCommand() const {
             return { DebugCommandType::ToggleCombatBounds };
         }
         if (selection == "1") {
-            DebugCommand command;
-            command.type = DebugCommandType::SpawnRoom;
-            std::cout << "Floor ID: " << std::flush;
-            if (!std::getline(std::cin, command.floorId)) {
-                std::cin.clear();
-                return {};
-            }
-            std::cout << "Room ID: " << std::flush;
-            if (!std::getline(std::cin, command.roomId)) {
-                std::cin.clear();
-                return {};
-            }
-            if (!command.floorId.empty() && !command.roomId.empty()) {
+            while (true) {
+                DebugCommand command;
+                command.type = DebugCommandType::SpawnRoom;
+                std::cout << "Floor ID: " << std::flush;
+                if (!std::getline(std::cin, command.floorId)) {
+                    std::cin.clear();
+                    return {};
+                }
+                std::cout << "Room ID: " << std::flush;
+                if (!std::getline(std::cin, command.roomId)) {
+                    std::cin.clear();
+                    return {};
+                }
+
+                const FloorData* floor = gameData.findFloor(command.floorId);
+                if (!floor) {
+                    std::cout << "Unknown Floor ID. Try again.\n";
+                    continue;
+                }
+                if (floor->rooms.find(command.roomId) == floor->rooms.end()) {
+                    std::cout << "Unknown Room ID for this floor. Try again.\n";
+                    continue;
+                }
                 return command;
             }
-            std::cout << "Floor ID and Room ID are required.\n";
-            continue;
         }
 
         std::cout << "Invalid selection.\n";

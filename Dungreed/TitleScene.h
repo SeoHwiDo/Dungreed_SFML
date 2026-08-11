@@ -11,7 +11,6 @@ public:
 
     bool enter();
     void update(float dt);
-    bool handleEvent(const sf::Event& event);
     void render();
 
 private:

@@ -1,9 +1,16 @@
-#include "SceneTransition.h"
+﻿#include "SceneTransition.h"
 
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
+#include <string_view>
 #include <utility>
+
+namespace {
+sf::String toSfUtf8String(std::string_view utf8Text) {
+    return sf::String::fromUtf8(utf8Text.begin(), utf8Text.end());
+}
+}
 
 bool SceneTransition::init(const sf::Font& font, const sf::Vector2u& size) {
     createCoverImage(size);
@@ -50,7 +57,7 @@ void SceneTransition::update(float dt) {
         if (m_nextTask < m_loadTasks.size()) {
             if (!m_loadTasks[m_nextTask]()) {
                 m_failed = true;
-                m_errorMessage = "Unable to load " + m_destinationName + ".";
+                m_errorMessage = m_destinationName + u8"을(를) 불러오지 못했습니다.";
                 return;
             }
             ++m_nextTask;
@@ -90,7 +97,10 @@ void SceneTransition::render(sf::RenderWindow& window) const {
     }
 
     sf::Text label = *m_loadingText;
-    label.setString(m_failed ? "LOADING FAILED" : "LOADING " + m_destinationName + "...");
+    const std::string message = m_failed
+        ? u8"불러오기에 실패했습니다"
+        : m_destinationName + u8" 불러오는 중...";
+    label.setString(toSfUtf8String(message));
     label.setFillColor(m_failed
         ? sf::Color(255, 188, 188, alpha)
         : sf::Color(255, 255, 255, alpha));

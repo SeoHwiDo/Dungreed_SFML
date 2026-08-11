@@ -8,6 +8,13 @@
 #include <cmath>
 #include <cstdint>
 #include <iostream>
+#include <string_view>
+
+namespace {
+sf::String toSfUtf8String(std::string_view utf8Text) {
+    return sf::String::fromUtf8(utf8Text.begin(), utf8Text.end());
+}
+}
 
 bool UIManager::init(sf::RenderWindow& window) {
     auto& resourceManager = ResourceManager::getInstance();
@@ -172,7 +179,7 @@ void UIManager::updateBossHud(const sf::RenderWindow& window) {
     });
 
     if (m_bossNameText) {
-        m_bossNameText->setString(boss->getDisplayName());
+        m_bossNameText->setString(toSfUtf8String(boss->getDisplayName()));
         const sf::FloatRect bounds = m_bossNameText->getLocalBounds();
         m_bossNameText->setOrigin(bounds.getCenter());
         m_bossNameText->setPosition({ centerX, 38.f });
