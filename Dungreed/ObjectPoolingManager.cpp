@@ -1,4 +1,4 @@
-#include "ObjectPoolingManager.h"
+﻿#include "ObjectPoolingManager.h"
 
 #include "GameDataManager.h"
 
@@ -14,7 +14,11 @@ void ObjectPoolingManager::prewarmMonsters(std::size_t count,
 }
 
 void ObjectPoolingManager::prewarmProjectiles(std::size_t count) {
-    for (std::size_t i = 0; i < count; ++i) {
+    if (m_projectiles.size() >= count) {
+        return;
+    }
+    m_projectiles.reserve(count);
+    for (std::size_t i = m_projectiles.size(); i < count; ++i) {
         ProjectileSlot slot;
         slot.object = std::make_unique<Projectile>();
         slot.active = false;
@@ -24,7 +28,11 @@ void ObjectPoolingManager::prewarmProjectiles(std::size_t count) {
 }
 
 void ObjectPoolingManager::prewarmEffects(std::size_t count) {
-    for (std::size_t index = 0; index < count; ++index) {
+    if (m_effects.size() >= count) {
+        return;
+    }
+    m_effects.reserve(count);
+    for (std::size_t index = m_effects.size(); index < count; ++index) {
         EffectSlot slot;
         slot.object = std::make_unique<Effect>();
         slot.active = false;
@@ -35,13 +43,17 @@ void ObjectPoolingManager::prewarmEffects(std::size_t count) {
 void ObjectPoolingManager::prewarmFromGameData(const GameDataManager& gameData,
     float reserveRatio) {
     const PoolPrewarmPlan plan = gameData.createPoolPrewarmPlan(reserveRatio);
+    std::size_t requiredMonsterSlots = 0;
     for (const MonsterPrewarmData& monster : plan.monsters) {
-        prewarmMonsters(monster.count, monster.monsterId, monster.status,
-            monster.atlasKey, monster.behavior);
+        requiredMonsterSlots += monster.count;
+        if (m_monsters.size() < requiredMonsterSlots) {
+            prewarmMonsters(requiredMonsterSlots - m_monsters.size(),
+                monster.monsterId, monster.status, monster.atlasKey, monster.behavior);
+        }
     }
     prewarmProjectiles(plan.projectileCount);
     // 플레이어 스윙과 다수 적중 시의 SlashFX를 위해 기본 효과 풀을 준비합니다.
-    prewarmEffects(16);
+    prewarmEffects(40);
 }
 
 Monster* ObjectPoolingManager::acquireMonster(const std::string& type,

@@ -37,6 +37,7 @@ void Player::init(const std::string& atlasKey) {
         animator.addAnimation(animationName, AnimationClip(frames, frameDuration, isLoop));
     }
     animator.play("Player_Idle");
+    prewarmDashAfterimages();
     // 첫 update 전에도 아틀라스 전체가 보이지 않도록 Idle의 첫 프레임을 즉시 적용합니다.
     updateAnimation(0.f);
 }
@@ -99,6 +100,7 @@ void Player::restoreDashCharges(int amount) {
     if (m_dashCharges >= m_dashConfig.maxCharges) {
         m_dashRechargeTimer = 0.f;
     }
+    prewarmDashAfterimages();
 }
 
 void Player::restoreForVillage() {
@@ -111,7 +113,10 @@ void Player::restoreForVillage() {
     m_dashElapsed = 0.f;
     m_afterimageTimer = 0.f;
     m_stunTimer = 0.f;
-    m_dashAfterimages.clear();
+    for (DashAfterimage& afterimage : m_dashAfterimages) {
+        afterimage.active = false;
+        afterimage.remainingTime = 0.f;
+    }
     changeState(PlayerState::Idle);
 }
 
@@ -217,24 +222,52 @@ void Player::spawnDashAfterimage() {
         return;
     }
 
-    DashAfterimage afterimage{ *sprite, m_dashConfig.afterimageLifetime };
+    const auto inactiveIt = std::find_if(m_dashAfterimages.begin(),
+        m_dashAfterimages.end(), [](const DashAfterimage& afterimage) {
+            return !afterimage.active;
+        });
+    if (inactiveIt == m_dashAfterimages.end()) {
+        return;
+    }
+
+    DashAfterimage& afterimage = *inactiveIt;
+    afterimage.sprite = *sprite;
+    afterimage.remainingTime = m_dashConfig.afterimageLifetime;
+    afterimage.active = true;
     afterimage.sprite.setColor(sf::Color(190, 220, 255, 140));
-    m_dashAfterimages.push_back(std::move(afterimage));
 }
 
 void Player::updateAfterimages(float dt) {
     for (DashAfterimage& afterimage : m_dashAfterimages) {
+        if (!afterimage.active) {
+            continue;
+        }
         afterimage.remainingTime -= dt;
         const float alphaRatio = std::clamp(
             afterimage.remainingTime / m_dashConfig.afterimageLifetime, 0.f, 1.f);
         sf::Color color = afterimage.sprite.getColor();
         color.a = static_cast<std::uint8_t>(140.f * alphaRatio);
         afterimage.sprite.setColor(color);
+        if (afterimage.remainingTime <= 0.f) {
+            afterimage.active = false;
+        }
     }
+}
 
-    m_dashAfterimages.erase(std::remove_if(m_dashAfterimages.begin(), m_dashAfterimages.end(),
-        [](const DashAfterimage& afterimage) { return afterimage.remainingTime <= 0.f; }),
-        m_dashAfterimages.end());
+void Player::prewarmDashAfterimages() {
+    if (!sprite) {
+        return;
+    }
+    const float requiredLifetime = std::max(m_dashConfig.duration,
+        m_dashConfig.afterimageLifetime);
+    const std::size_t requiredCount = static_cast<std::size_t>(std::ceil(
+        requiredLifetime / m_dashConfig.afterimageInterval)) + 1;
+    if (m_dashAfterimages.size() < requiredCount) {
+        m_dashAfterimages.reserve(requiredCount);
+        while (m_dashAfterimages.size() < requiredCount) {
+            m_dashAfterimages.emplace_back(*sprite);
+        }
+    }
 }
 
 void Player::applyStun(float duration) {
@@ -379,7 +412,9 @@ void Player::update(float dt, const sf::RenderWindow& window,
 
 void Player::render(sf::RenderWindow& window) {
     for (const DashAfterimage& afterimage : m_dashAfterimages) {
-        window.draw(afterimage.sprite);
+        if (afterimage.active) {
+            window.draw(afterimage.sprite);
+        }
     }
     Actor::render(window);
 }

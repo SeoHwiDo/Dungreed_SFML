@@ -155,7 +155,8 @@ std::unordered_set<EntityId> CombatManager::updateProjectiles(
     float dt, Player& player, ObjectPoolingManager& objectPool,
     const TileMap& tileMap, ProjectileTarget target, Boss* boss) const {
     std::unordered_set<EntityId> hitMonsters;
-    std::vector<Projectile*> toRelease;
+    std::vector<Projectile*>& toRelease = m_projectilesToRelease;
+    toRelease.clear();
 
     objectPool.forEachActiveProjectile([&](Projectile& projectile) {
         if (!projectile.isActive() || projectile.getTarget() != target) {
@@ -232,5 +233,6 @@ std::unordered_set<EntityId> CombatManager::updateProjectiles(
     for (Projectile* projectile : toRelease) {
         objectPool.releaseProjectile(projectile);
     }
+    toRelease.clear();
     return hitMonsters;
 }
