@@ -74,6 +74,10 @@ struct RoomLayout {
     std::vector<RoomCell> cells;
     // 타일 종류와 독립적인 플레이어 시작 위치입니다.
     std::optional<sf::Vector2u> playerSpawnCell;
+    // room_data.json의 layout 설정을 보관해 통로 생성·감지·문 배치에서 같은 기준을 사용합니다.
+    unsigned int outlineWidth = 2;
+    unsigned int topBottomPassageWidth = 3;
+    unsigned int sidePassageHeight = 3;
 };
 
 struct RoomMonsterSpawn {

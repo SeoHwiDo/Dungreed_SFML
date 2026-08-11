@@ -12,10 +12,6 @@ struct PlatformSpec {
     unsigned int length;
 };
 
-constexpr unsigned int kOutlineWidth = 2;
-constexpr unsigned int kDoorHeight = 3;
-constexpr unsigned int kCenterDoorWidth = 3;
-
 /// DoorPosition 열거형을 DoorPositions 배열의 인덱스로 변환해 해당 방향의 문 활성 여부를 읽습니다.
 bool hasDoor(const DoorPositions& positions, DoorPosition position) {
     return positions[static_cast<std::size_t>(position)];
@@ -26,25 +22,29 @@ bool hasDoor(const DoorPositions& positions, DoorPosition position) {
 void applyDoorways(RoomLayout& layout, const DoorPositions& positions) {
     const unsigned int width = layout.width;
     const unsigned int height = layout.height;
-    if (width < 2 * kOutlineWidth + kCenterDoorWidth ||
-        height < 2 * kOutlineWidth + kDoorHeight + 1) {
+    const unsigned int outlineWidth = layout.outlineWidth;
+    const unsigned int topBottomPassageWidth = layout.topBottomPassageWidth;
+    const unsigned int sidePassageHeight = layout.sidePassageHeight;
+    if (outlineWidth == 0 || topBottomPassageWidth == 0 || sidePassageHeight == 0 ||
+        width < 2 * outlineWidth + topBottomPassageWidth ||
+        height < 2 * outlineWidth + sidePassageHeight + 1) {
         return;  
     }
 
     const auto setCell = [&](unsigned int x, unsigned int y, RoomCell cell) {
         layout.cells[x + y * width] = cell;
     };
-    const unsigned int centerStart = (width - kCenterDoorWidth) / 2;
-    const unsigned int topWallY = kOutlineWidth;
-    const unsigned int groundY = height - kOutlineWidth - 1;
-    const unsigned int sideDoorTop = groundY - kDoorHeight;
+    const unsigned int centerStart = (width - topBottomPassageWidth) / 2;
+    const unsigned int topWallY = outlineWidth;
+    const unsigned int groundY = height - outlineWidth - 1;
+    const unsigned int sideDoorTop = groundY - sidePassageHeight;
 
     if (hasDoor(positions, DoorPosition::Up)) {
         const unsigned int leftEdge = centerStart - 1;
-        const unsigned int rightEdge = centerStart + kCenterDoorWidth;
+        const unsigned int rightEdge = centerStart + topBottomPassageWidth;
         setCell(leftEdge, 0, RoomCell::TopLeftCorner);
         for (unsigned int x = centerStart;
-            x < centerStart + kCenterDoorWidth; ++x) {
+            x < centerStart + topBottomPassageWidth; ++x) {
             setCell(x, 0, RoomCell::Ceiling);
             setCell(x, topWallY - 1, RoomCell::Door);
         }
@@ -54,21 +54,21 @@ void applyDoorways(RoomLayout& layout, const DoorPositions& positions) {
         setCell(leftEdge, topWallY, RoomCell::DoorUpLeftCorner);
         setCell(rightEdge, topWallY, RoomCell::DoorUpRightCorner);
         setCell(centerStart, topWallY + 1, RoomCell::BackDoorTopLeft);
-        setCell(centerStart + kCenterDoorWidth - 1, topWallY + 1,
+        setCell(centerStart + topBottomPassageWidth - 1, topWallY + 1,
             RoomCell::BackDoorTopRight);
 
         for (unsigned int x = centerStart;
-            x < centerStart + kCenterDoorWidth; ++x) {
+            x < centerStart + topBottomPassageWidth; ++x) {
             setCell(x, topWallY, RoomCell::Door);
         }
     }
 
     if (hasDoor(positions, DoorPosition::Down)) {
         const unsigned int leftEdge = centerStart - 1;
-        const unsigned int rightEdge = centerStart + kCenterDoorWidth;
+        const unsigned int rightEdge = centerStart + topBottomPassageWidth;
         setCell(leftEdge, height - 1, RoomCell::BottomLeftCorner);
         for (unsigned int x = centerStart;
-            x < centerStart + kCenterDoorWidth; ++x) {
+            x < centerStart + topBottomPassageWidth; ++x) {
             setCell(x, groundY, RoomCell::Door);
             setCell(x, groundY + 1, RoomCell::Door);
             setCell(x, height - 1, RoomCell::Ground);
@@ -79,34 +79,34 @@ void applyDoorways(RoomLayout& layout, const DoorPositions& positions) {
         setCell(leftEdge, groundY, RoomCell::DoorDownLeftCorner);
         setCell(rightEdge, groundY, RoomCell::DoorDownRightCorner);
         setCell(centerStart, groundY - 1, RoomCell::BackDoorBottomLeft);
-        setCell(centerStart + kCenterDoorWidth - 1, groundY - 1,
+        setCell(centerStart + topBottomPassageWidth - 1, groundY - 1,
             RoomCell::BackDoorBottomRight);
     }
 
     if (hasDoor(positions, DoorPosition::Left)) {
         setCell(0, sideDoorTop - 1, RoomCell::TopLeftCorner);
         setCell(1, sideDoorTop - 1, RoomCell::Ceiling);
-        setCell(kOutlineWidth, sideDoorTop - 1, RoomCell::DoorLeftCorner);
+        setCell(outlineWidth, sideDoorTop - 1, RoomCell::DoorLeftCorner);
 
         for (unsigned int y = sideDoorTop; y < groundY; ++y) {
-            for (unsigned int x = 0; x <= kOutlineWidth; ++x) {
+            for (unsigned int x = 0; x <= outlineWidth; ++x) {
                 setCell(x, y, RoomCell::Door);
             }
         }
         setCell(0, groundY, RoomCell::BottomLeftCorner);
-        for (unsigned int x = 1; x <= kOutlineWidth; ++x) {
+        for (unsigned int x = 1; x <= outlineWidth; ++x) {
             setCell(x, groundY, RoomCell::Ground);
         }
-        setCell(kOutlineWidth + 1, sideDoorTop,
+        setCell(outlineWidth + 1, sideDoorTop,
             RoomCell::BackDoorTopLeft);
 
-        for (unsigned int y = groundY - kDoorHeight; y < groundY; ++y) {
+        for (unsigned int y = groundY - sidePassageHeight; y < groundY; ++y) {
             setCell(0, y, RoomCell::LeftWall);
         }
     }
 
     if (hasDoor(positions, DoorPosition::Right)) {
-        const unsigned int rightWallX = width - kOutlineWidth - 1;
+        const unsigned int rightWallX = width - outlineWidth - 1;
         setCell(rightWallX, sideDoorTop - 1, RoomCell::DoorRightCorner);
         setCell(width - 2, sideDoorTop - 1, RoomCell::Ceiling);
         setCell(width - 1, sideDoorTop - 1, RoomCell::TopRightCorner);
@@ -122,7 +122,7 @@ void applyDoorways(RoomLayout& layout, const DoorPositions& positions) {
         setCell(width - 1, groundY, RoomCell::BottomRightCorner);
         setCell(rightWallX - 1, sideDoorTop,
             RoomCell::BackDoorTopRight);
-        for (unsigned int y = groundY - kDoorHeight; y < groundY; ++y) {
+        for (unsigned int y = groundY - sidePassageHeight; y < groundY; ++y) {
             setCell(width-1, y, RoomCell::RightWall);
         }
     }
@@ -136,18 +136,19 @@ RoomLayout makeStyledRoom(unsigned int width, unsigned int height,
     layout.width = width;
     layout.height = height;
     layout.cells.assign(width * height, RoomCell::Empty);
+    const unsigned int outlineWidth = layout.outlineWidth;
 
-    if (width < 2 * kOutlineWidth + 1 || height < 2 * kOutlineWidth + 1) {
+    if (width < 2 * outlineWidth + 1 || height < 2 * outlineWidth + 1) {
         return layout;
     }
 
     const auto setCell = [&](unsigned int x, unsigned int y, RoomCell cell) {
         layout.cells[x + y * width] = cell;
     };
-    const unsigned int leftWallX = kOutlineWidth;
-    const unsigned int rightWallX = width - kOutlineWidth - 1;
-    const unsigned int topWallY = kOutlineWidth;
-    const unsigned int groundY = height - kOutlineWidth - 1;
+    const unsigned int leftWallX = outlineWidth;
+    const unsigned int rightWallX = width - outlineWidth - 1;
+    const unsigned int topWallY = outlineWidth;
+    const unsigned int groundY = height - outlineWidth - 1;
 
     for (unsigned int x = leftWallX; x <= rightWallX; ++x) {
         setCell(x, topWallY, RoomCell::Ceiling);
@@ -156,7 +157,7 @@ RoomLayout makeStyledRoom(unsigned int width, unsigned int height,
     setCell(rightWallX, topWallY, RoomCell::TopRightCorner);
 
     // 좌우 문 확장 공간 아래까지 바닥을 이어서, 문 바깥으로 플레이어가 떨어지지 않게 합니다.
-    for (unsigned int x = kOutlineWidth; x < width; ++x) {
+    for (unsigned int x = outlineWidth; x < width; ++x) {
         setCell(x, groundY, RoomCell::Ground);
     }
     setCell(leftWallX, groundY, RoomCell::BottomLeftCorner);
@@ -277,19 +278,23 @@ std::optional<DoorPosition> Room::getEnteredDoor(
     const sf::FloatRect& previousActorBounds,
     const TileMap& tileMap) const {
     const sf::Vector2f tileSize = tileMap.getTileSize();
+    const unsigned int outlineWidth = info.layout.outlineWidth;
+    const unsigned int topBottomPassageWidth = info.layout.topBottomPassageWidth;
+    const unsigned int sidePassageHeight = info.layout.sidePassageHeight;
     if (tileSize.x <= 0.f || tileSize.y <= 0.f ||
-        info.layout.width < 2 * kOutlineWidth + kCenterDoorWidth ||
-        info.layout.height < 2 * kOutlineWidth + kDoorHeight + 1) {
+        outlineWidth == 0 || topBottomPassageWidth == 0 || sidePassageHeight == 0 ||
+        info.layout.width < 2 * outlineWidth + topBottomPassageWidth ||
+        info.layout.height < 2 * outlineWidth + sidePassageHeight + 1) {
         return std::nullopt;
     }
 
     const unsigned int centerStart =
-        (info.layout.width - kCenterDoorWidth) / 2;
+        (info.layout.width - topBottomPassageWidth) / 2;
     const unsigned int groundY =
-        info.layout.height - kOutlineWidth - 1;
-    const unsigned int sideDoorTop = groundY - kDoorHeight;
+        info.layout.height - outlineWidth - 1;
+    const unsigned int sideDoorTop = groundY - sidePassageHeight;
     const unsigned int rightWallX =
-        info.layout.width - kOutlineWidth - 1;
+        info.layout.width - outlineWidth - 1;
 
     const auto makeBounds = [&tileSize](unsigned int x, unsigned int y,
         unsigned int width, unsigned int height) {
@@ -301,16 +306,16 @@ std::optional<DoorPosition> Room::getEnteredDoor(
     };
     const std::array<std::pair<DoorPosition, sf::FloatRect>, 4> triggers{
         std::pair{ DoorPosition::Up,
-            makeBounds(centerStart, kOutlineWidth - 1,
-                kCenterDoorWidth, 2) },
+            makeBounds(centerStart, outlineWidth - 1,
+                topBottomPassageWidth, 2) },
         std::pair{ DoorPosition::Down,
-            makeBounds(centerStart, groundY, kCenterDoorWidth, 2) },
+            makeBounds(centerStart, groundY, topBottomPassageWidth, 2) },
         std::pair{ DoorPosition::Left,
-            makeBounds(0, sideDoorTop, kOutlineWidth + 1,
-                kDoorHeight) },
+            makeBounds(0, sideDoorTop, outlineWidth + 1,
+                sidePassageHeight) },
         std::pair{ DoorPosition::Right,
             makeBounds(rightWallX, sideDoorTop,
-                info.layout.width - rightWallX, kDoorHeight) }
+                info.layout.width - rightWallX, sidePassageHeight) }
     };
 
     const auto intersectsMovement =
@@ -425,11 +430,15 @@ bool Room::buildTileMap(TileMap& tileMap, const std::string& tileAtlasKey,
     const auto getBackFrame = [&](unsigned int x, unsigned int y, RoomCell cell)
         -> const std::string&
     {
-        const unsigned int topWallY = kOutlineWidth;
-        const unsigned int groundY = info.layout.height - kOutlineWidth - 1;
-        const unsigned int sideDoorTop = groundY - kDoorHeight;
-        const unsigned int centerStart = (info.layout.width - kCenterDoorWidth) / 2;
-        const unsigned int centerEnd = centerStart + kCenterDoorWidth - 1;
+        const unsigned int outlineWidth = info.layout.outlineWidth;
+        const unsigned int topBottomPassageWidth = info.layout.topBottomPassageWidth;
+        const unsigned int sidePassageHeight = info.layout.sidePassageHeight;
+        const unsigned int topWallY = outlineWidth;
+        const unsigned int groundY = info.layout.height - outlineWidth - 1;
+        const unsigned int sideDoorTop = groundY - sidePassageHeight;
+        const unsigned int centerStart =
+            (info.layout.width - topBottomPassageWidth) / 2;
+        const unsigned int centerEnd = centerStart + topBottomPassageWidth - 1;
 
         if (cell == RoomCell::Door) {
             const auto isWall = [](RoomCell neighbor) {
@@ -483,14 +492,14 @@ bool Room::buildTileMap(TileMap& tileMap, const std::string& tileAtlasKey,
             if (x == centerEnd) return tileSet.backDoorBottomRightFrameName;
             if (x > centerStart && x < centerEnd) return tileSet.backInnerFrameName;
         }
-        if (hasDoor(info.doorPositions, DoorPosition::Left) && x == kOutlineWidth + 1) {
+        if (hasDoor(info.doorPositions, DoorPosition::Left) && x == outlineWidth + 1) {
             // 입구 위쪽의 방 내부 경계는 좌측 벽과 연결되는 일반 백타일입니다.
             if (y == sideDoorTop - 1) return tileSet.backLeftFrameName;
             if (y == sideDoorTop) return tileSet.backDoorTopLeftFrameName;
             if (y == groundY - 1) return tileSet.backGroundFrameName;
             if (y > sideDoorTop && y < groundY - 1) return tileSet.backInnerFrameName;
         }
-        const unsigned int rightInnerX = info.layout.width - kOutlineWidth - 2;
+        const unsigned int rightInnerX = info.layout.width - outlineWidth - 2;
         if (hasDoor(info.doorPositions, DoorPosition::Right) && x == rightInnerX) {
             // 입구 위쪽의 방 내부 경계는 우측 벽과 연결되는 일반 백타일입니다.
             if (y == sideDoorTop - 1) return tileSet.backRightFrameName;
@@ -616,39 +625,47 @@ bool Room::buildTileMap(TileMap& tileMap, const std::string& tileAtlasKey,
     }
 
     const sf::Vector2f tileSize = tileMap.getTileSize();
-    const unsigned int centerStart = (info.layout.width - kCenterDoorWidth) / 2;
-    const unsigned int groundY = info.layout.height - kOutlineWidth - 1;
-    const unsigned int sideDoorTop = groundY - kDoorHeight;
-    const unsigned int rightWallX = info.layout.width - kOutlineWidth - 1;
+    const unsigned int outlineWidth = info.layout.outlineWidth;
+    const unsigned int topBottomPassageWidth = info.layout.topBottomPassageWidth;
+    const unsigned int sidePassageHeight = info.layout.sidePassageHeight;
+    const unsigned int centerStart =
+        (info.layout.width - topBottomPassageWidth) / 2;
+    const unsigned int groundY = info.layout.height - outlineWidth - 1;
+    const unsigned int sideDoorTop = groundY - sidePassageHeight;
+    const unsigned int rightWallX = info.layout.width - outlineWidth - 1;
+    const float topPassageInnerY = (outlineWidth + 1.f) * tileSize.y;
+    const float bottomPassageInnerY = groundY * tileSize.y;
+    const float leftPassageInnerX = (outlineWidth + 1.f) * tileSize.x;
+    const float rightPassageInnerX = rightWallX * tileSize.x;
     std::vector<DoorAnimationPlacement> doorPlacements;
     doorPlacements.reserve(4);
 
     // 각 문 스프라이트의 위쪽이 항상 방 안쪽을 향하도록 회전합니다.
     if (hasDoor(info.doorPositions, DoorPosition::Up)) {
         doorPlacements.push_back({
-            { (centerStart + kCenterDoorWidth * 0.5f) * tileSize.x,
-                kOutlineWidth * tileSize.y },
+            { (centerStart + topBottomPassageWidth * 0.5f) * tileSize.x,
+                topPassageInnerY },
             180.f
         });
     }
     if (hasDoor(info.doorPositions, DoorPosition::Down)) {
         doorPlacements.push_back({
-            { (centerStart + kCenterDoorWidth * 0.5f) * tileSize.x,
-                groundY * tileSize.y },
+            { (centerStart + topBottomPassageWidth * 0.5f) * tileSize.x,
+                bottomPassageInnerY },
             0.f
         });
     }
     if (hasDoor(info.doorPositions, DoorPosition::Left)) {
         doorPlacements.push_back({
-            { kOutlineWidth * tileSize.x,
-                (sideDoorTop + kDoorHeight * 0.5f) * tileSize.y },
+            { leftPassageInnerX,
+                (sideDoorTop + sidePassageHeight * 0.5f) * tileSize.y },
             90.f
         });
     }
     if (hasDoor(info.doorPositions, DoorPosition::Right)) {
         doorPlacements.push_back({
-            { rightWallX * tileSize.x,
-                (sideDoorTop + kDoorHeight * 0.5f) * tileSize.y },
+            { rightPassageInnerX,
+                (sideDoorTop + sidePassageHeight * 0.5f) * tileSize.y },
             -90.f
         });
     }
