@@ -101,6 +101,20 @@ void Player::restoreDashCharges(int amount) {
     }
 }
 
+void Player::restoreForVillage() {
+    resetForReuse({ kDefaultMaxHp, kDefaultMaxHp, kDefaultPower, kDefaultDex });
+    m_dashCharges = m_dashConfig.maxCharges;
+    m_dashRechargeTimer = 0.f;
+    m_isDashing = false;
+    m_ignoreOneWayPlatforms = false;
+    m_dropThroughTimer = 0.f;
+    m_dashElapsed = 0.f;
+    m_afterimageTimer = 0.f;
+    m_stunTimer = 0.f;
+    m_dashAfterimages.clear();
+    changeState(PlayerState::Idle);
+}
+
 bool Player::tryStartDash(const sf::Vector2f& cursorPosition) {
     if (m_isDashing || m_dashCharges <= 0 || !sprite) {
         return false;

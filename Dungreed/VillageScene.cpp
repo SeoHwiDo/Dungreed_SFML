@@ -1,4 +1,4 @@
-#include "VillageScene.h"
+﻿#include "VillageScene.h"
 
 #include "Camera.h"
 #include "Collision.h"
@@ -12,9 +12,14 @@
 
 #include <filesystem>
 #include <memory>
+#include <string_view>
 
 namespace {
 constexpr float kGameplayCameraZoom = 3.5f;
+
+sf::String toSfUtf8String(std::string_view utf8Text) {
+    return sf::String::fromUtf8(utf8Text.begin(), utf8Text.end());
+}
 
 RoomTileSet createRoomTileSet() {
     return {
@@ -53,7 +58,7 @@ bool VillageScene::enter() {
         return false;
     }
 
-    const FloorData* floor = gameData.findFloor("0Floor");
+    const FloorData* floor = gameData.findFloor("floor_00");
     const RoomTileSet roomTiles = createRoomTileSet();
     if (!floor || !mapManager.createCurrentRoomFromData(*floor, floor->startRoomId) ||
         !mapManager.preloadFloorTileMaps("TileMap", roomTiles)) {
@@ -67,18 +72,23 @@ bool VillageScene::enter() {
         return false;
     }
 
+    Player* player = m_gameplay.getPlayer();
+    if (!player) {
+        return false;
+    }
+    player->restoreForVillage();
     if (!m_gameplay.placePlayerAtRoomSpawn(*room, *tileMap, kGameplayCameraZoom)) {
         return false;
     }
     m_tileMap = tileMap;
 
-    m_titleText.emplace(*font, "TRAINING VILLAGE", 28);
+    m_titleText.emplace(*font, toSfUtf8String(u8"시작 마을"), 28);
     m_titleText->setFillColor(sf::Color::White);
     m_titleText->setOutlineColor(sf::Color(25, 18, 40));
     m_titleText->setOutlineThickness(2.f);
-    m_helpText.emplace(*font,
-        "A / D or Arrow Keys: Move    Space: Jump    Shift: Dash    Mouse: Attack\n\n"
-        "Practice freely. Press Enter when you are ready for the dungeon.", 19);
+    m_helpText.emplace(*font, toSfUtf8String(
+        u8"A / D 또는 방향키: 이동    Space: 점프    Shift: 대시    마우스: 공격\n\n"
+        u8"자유롭게 조작을 연습하세요. 준비되면 Enter 키를 눌러 던전으로 이동합니다."), 19);
     m_helpText->setFillColor(sf::Color(235, 229, 255));
     m_helpText->setOutlineColor(sf::Color(25, 18, 40));
     m_helpText->setOutlineThickness(1.5f);
@@ -93,6 +103,9 @@ void VillageScene::update(float dt) {
     Player* player = m_gameplay.getPlayer();
     Camera* camera = m_gameplay.getCamera();
     m_tileMap->update(dt);
+    // 마우스 화면 좌표를 월드 좌표로 변환하기 전에 현재 카메라 뷰를 적용합니다.
+    // 기본 뷰를 사용하면 플레이어 중심과 마우스 좌표의 기준 공간이 달라집니다.
+    m_window.setView(camera->getView());
     player->update(dt, m_window, *m_tileMap);
     Collision::resolveMapCollision(*player, *m_tileMap,
         player->ignoresOneWayPlatforms());

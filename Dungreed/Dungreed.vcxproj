@@ -140,6 +140,7 @@
     <ClCompile Include="Boss.cpp" />
     <ClCompile Include="Collision.cpp" />
     <ClCompile Include="Controller.cpp" />
+    <ClCompile Include="DeadScene.cpp" />
     <ClCompile Include="Equip.cpp" />
     <ClCompile Include="GameDataManager.cpp" />
     <ClCompile Include="GameplayContext.cpp" />
@@ -148,6 +149,7 @@
     <ClCompile Include="MonsterManager.cpp" />
     <ClCompile Include="CombatManager.cpp" />
     <ClCompile Include="DebugManager.cpp" />
+    <ClCompile Include="DeathScene.cpp" />
     <ClCompile Include="DungeonScene.cpp" />
     <ClCompile Include="Effect.cpp" />
     <ClCompile Include="EffectManager.cpp" />
@@ -173,6 +175,7 @@
     <ClInclude Include="Boss.h" />
     <ClInclude Include="Collision.h" />
     <ClInclude Include="Controller.h" />
+    <ClInclude Include="DeadScene.h" />
     <ClInclude Include="Equip.h" />
     <ClInclude Include="GameDataManager.h" />
     <ClInclude Include="GameplayContext.h" />
@@ -181,6 +184,7 @@
     <ClInclude Include="MonsterManager.h" />
     <ClInclude Include="CombatManager.h" />
     <ClInclude Include="DebugManager.h" />
+    <ClInclude Include="DeathScene.h" />
     <ClInclude Include="DungeonScene.h" />
     <ClInclude Include="Effect.h" />
     <ClInclude Include="EffectManager.h" />

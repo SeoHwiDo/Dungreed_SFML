@@ -2,6 +2,7 @@
 
 #include <SFML/Graphics.hpp>
 
+#include "DeathScene.h"
 #include "DungeonScene.h"
 #include "SceneTransition.h"
 #include "TitleScene.h"
@@ -25,11 +26,14 @@ public:
 
 private:
     void handleDebugCommand();
+    void renderActiveScene();
 
     sf::RenderWindow& m_window;
+    GameplayContext& m_gameplay;
     TitleScene m_titleScene;
     VillageScene m_villageScene;
     DungeonScene m_dungeonScene;
+    DeathScene m_deathScene;
     SceneTransition m_transition;
     GameScene m_activeScene = GameScene::Title;
 };

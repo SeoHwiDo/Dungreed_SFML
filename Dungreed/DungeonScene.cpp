@@ -89,6 +89,7 @@ bool DungeonScene::enter(unsigned int floorNumber) {
 
     m_activeBoss.reset();
     m_areMonstersActivated = false;
+    m_bossDefeated = false;
     m_floorNumber = floorNumber;
     return true;
 }
@@ -147,6 +148,7 @@ void DungeonScene::update(float dt) {
         m_activeBoss->update(dt, *player, objectPool, effectManager, tileMap);
         if (m_activeBoss->dead()) {
             currentRoom->setClear(true);
+            m_bossDefeated = true;
         }
     }
 
@@ -248,6 +250,12 @@ void DungeonScene::toggleCombatBounds() {
 
 bool DungeonScene::isReady() const {
     return m_gameplay.isReady();
+}
+
+bool DungeonScene::consumeBossDefeat() {
+    const bool wasDefeated = m_bossDefeated;
+    m_bossDefeated = false;
+    return wasDefeated;
 }
 
 bool DungeonScene::placePlayerAtCurrentRoom() {

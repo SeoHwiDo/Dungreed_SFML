@@ -23,6 +23,7 @@ public:
     void toggleCombatBounds();
     bool isReady() const;
     unsigned int getFloorNumber() const { return m_floorNumber; }
+    bool consumeBossDefeat();
 
 private:
     bool placePlayerAtCurrentRoom();
@@ -33,4 +34,5 @@ private:
     unsigned int m_floorNumber = 0;
     bool m_areMonstersActivated = false;
     bool m_showCombatBounds = false;
+    bool m_bossDefeated = false;
 };

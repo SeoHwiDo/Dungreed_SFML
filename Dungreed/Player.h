@@ -52,6 +52,8 @@ public:
         return m_isDashing || m_ignoreOneWayPlatforms || m_dropThroughTimer > 0.f;
     }
     void restoreDashCharges(int amount);
+    /// 마을 복귀 시 던전에서 누적된 생존·능력치 상태를 기본값으로 되돌립니다.
+    void restoreForVillage();
 
 private:
     struct DashAfterimage {
