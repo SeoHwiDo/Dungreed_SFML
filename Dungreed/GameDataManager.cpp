@@ -26,6 +26,12 @@ ProjectileType parseProjectileType(const std::string& value) {
     if (value == "BansheeBullet") {
         return ProjectileType::BansheeBullet;
     }
+    if (value == "BossBullet") {
+        return ProjectileType::BossBullet;
+    }
+    if (value == "BossSword") {
+        return ProjectileType::BossSword;
+    }
     return ProjectileType::Arrow;
 }
 
@@ -177,6 +183,38 @@ RoomLayout createStyledRoomLayout(const json& layoutJson) {
 
     return layout;
 }
+
+// 시작마을은 타일 벽을 그리지 않습니다. 바깥 한 줄의 투명 충돌체만 남겨
+// 플레이어가 배경 이미지 바깥으로 나가지 않도록 합니다.
+RoomLayout createOpenVillageLayout(const json& layoutJson) {
+    const unsigned int width = layoutJson.at("width").get<unsigned int>();
+    const unsigned int height = layoutJson.at("height").get<unsigned int>();
+    if (width < 3 || height < 3) {
+        return {};
+    }
+
+    RoomLayout layout{ width, height,
+        std::vector<RoomCell>(width * height, RoomCell::OpenSpace) };
+    const auto setCell = [&layout, width](unsigned int x, unsigned int y, RoomCell cell) {
+        layout.cells[x + y * width] = cell;
+    };
+    for (unsigned int x = 0; x < width; ++x) {
+        setCell(x, 0, RoomCell::InvisibleWall);
+        setCell(x, height - 1, RoomCell::Ground);
+    }
+    for (unsigned int y = 1; y + 1 < height; ++y) {
+        setCell(0, y, RoomCell::InvisibleWall);
+        setCell(width - 1, y, RoomCell::InvisibleWall);
+    }
+
+    const std::vector<unsigned int> spawn = layoutJson.value(
+        "spawn", std::vector<unsigned int>{ width / 2, height - 2 });
+    if (spawn.size() == 2 && spawn[0] > 0 && spawn[0] + 1 < width &&
+        spawn[1] > 0 && spawn[1] + 1 < height) {
+        setCell(spawn[0], spawn[1], RoomCell::SpawnPoint);
+    }
+    return layout;
+}
 }
 
 bool GameDataManager::loadWeapons(const std::string& path) {
@@ -210,6 +248,9 @@ bool GameDataManager::loadWeapons(const std::string& path) {
             config.count = projectile.value("count", 1u);
             config.spreadRadian = projectile.value("spreadRadian", 0.f);
             config.lifetime = projectile.value("lifetime", 3.f);
+            config.returnAnimationKey = projectile.value("returnAnimationKey", "");
+            config.rotateToDirection = projectile.value("rotateToDirection", false);
+            config.rotationOffsetRadian = projectile.value("rotationOffsetRadian", 0.f);
             data.stat.projectile = config;
         }
 
@@ -305,15 +346,27 @@ bool GameDataManager::loadRoomData(const std::string& path) {
             RoomReferenceData reference;
             reference.id = referenceJson.at("id").get<std::string>();
             reference.type = parseRoomType(referenceJson.value("roomType", "Start"));
-            reference.layout = createStyledRoomLayout(referenceJson.at("layout"));
+            const json& layoutJson = referenceJson.at("layout");
+            const std::string generator = layoutJson.value("generator", "StyledRoom");
+            reference.layout = generator == "OpenVillage"
+                ? createOpenVillageLayout(layoutJson)
+                : createStyledRoomLayout(layoutJson);
             // 장식은 레퍼런스 최상위와 layout 내부 형식을 모두 허용합니다.
             // 레이아웃과 함께 관리하기 쉬운 layout.decorations를 우선 사용합니다.
-            const json& layoutJson = referenceJson.at("layout");
             if (layoutJson.contains("decorations")) {
                 reference.decorations = parseDecorations(layoutJson.at("decorations"));
             } else {
                 reference.decorations = parseDecorations(
                     referenceJson.value("decorations", json::array()));
+            }
+            for (const auto& backgroundJson : referenceJson.value("backgrounds", json::array())) {
+                BackgroundLayerConfig background;
+                background.atlasKey = backgroundJson.value("atlasKey", "");
+                background.frameName = backgroundJson.value("frame", "");
+                background.fitToMap = backgroundJson.value("fitToMap", true);
+                if (!background.atlasKey.empty() && !background.frameName.empty()) {
+                    reference.backgroundLayers.push_back(std::move(background));
+                }
             }
             if (reference.layout.cells.empty()) {
                 return false;
@@ -381,7 +434,8 @@ bool GameDataManager::loadRoomData(const std::string& path) {
 
         const auto& connection = floorJson.at("connectionGeneration");
         floor.startRoomId = connection.at("startRoomId").get<std::string>();
-        floor.bossRoomId = connection.at("bossRoomId").get<std::string>();
+        floor.bossRoomId = connection.value("bossRoomId", "");
+        floor.randomMonsterRoomCount = connection.value("randomMonsterRoomCount", 0u);
         for (const auto& roomId : connection.value("shuffleRoomIds", json::array())) {
             floor.shuffleRoomIds.push_back(roomId.get<std::string>());
         }

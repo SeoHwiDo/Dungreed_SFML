@@ -58,6 +58,8 @@ public:
     void forEachActiveEffect(const std::function<void(Effect&)>& operation) const;
     /// 모든 활성 객체를 창에 렌더링합니다.
     void render(sf::RenderWindow& window) const;
+    /// 타일맵 뒤로 들어가야 하는 매립형 투사체 조각을 먼저 렌더링합니다.
+    void renderBehindTiles(sf::RenderWindow& window) const;
 
 private:
     ObjectPoolingManager() = default;

@@ -69,6 +69,48 @@
         "spreadRadian": 0.0,
         "lifetime": 4.0
       }
+    },
+    {
+      "id": "SkelBossHandLaser",
+      "type": "Melee",
+      "damage": 18.0,
+      "attackSpeed": 1.0,
+      "range": 0.0
+    },
+    {
+      "id": "SkelBossRotatingBullet",
+      "type": "Ranged",
+      "damage": 9.9,
+      "attackSpeed": 0.16,
+      "range": 0.0,
+      "projectile": {
+        "type": "BossBullet",
+        "target": "Player",
+        "speed": 220.0,
+        "damage": 9.9,
+        "count": 4,
+        "spreadRadian": 1.57079633,
+        "lifetime": 6.0,
+        "returnAnimationKey": "BossBulletFX"
+      }
+    },
+    {
+      "id": "SkelBossSword",
+      "type": "Ranged",
+      "damage": 14.4,
+      "attackSpeed": 1.0,
+      "range": 0.0,
+      "projectile": {
+        "type": "BossSword",
+        "target": "Player",
+        "speed": 340.0,
+        "damage": 14.4,
+        "count": 1,
+        "spreadRadian": 0.0,
+        "lifetime": 8.0,
+        "rotateToDirection": true,
+        "rotationOffsetRadian": -1.57079633
+      }
     }
   ]
 }

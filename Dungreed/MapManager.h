@@ -40,7 +40,7 @@ public:
         const TileMap& tileMap, const sf::Vector2f& playerPosition,
         EffectManager& effectManager);
     Room* getCurrentRoom() const { return m_currentRoom; }
-    const TileMap* getCurrentTileMap() const { return m_currentTileMap; }
+    TileMap* getCurrentTileMap() const { return m_currentTileMap; }
     /// JSON 연결 생성 순서에 맞춘 방 목록을 반환합니다. 디버그 프리뷰 등 읽기 전용 소비자가 사용합니다.
     std::vector<const Room*> getFloorRoomsInDataOrder() const;
     Room* getRoom(RoomType type) const;
@@ -54,11 +54,11 @@ private:
         std::unique_ptr<Room> room;
         std::unique_ptr<TileMap> tileMap;
     };
-    const TileMap* findFloorTileMap(const Room* room) const;
+    TileMap* findFloorTileMap(const Room* room) const;
 
     std::unique_ptr<Room> m_manualRoom;
     std::unordered_map<std::string, FloorManagedRoom> m_floorRooms;
     Room* m_currentRoom = nullptr;
-    const TileMap* m_currentTileMap = nullptr;
+    TileMap* m_currentTileMap = nullptr;
     std::vector<std::string> m_floorRoomOrder;
 };

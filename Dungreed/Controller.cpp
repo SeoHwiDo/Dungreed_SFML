@@ -14,11 +14,18 @@ InputData Controller::getInput(const sf::RenderWindow& window, const sf::Vector2
         data.moveDirX += 1.f;
     }
 
-    data.isJumping = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space);
-    const bool dashPressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LShift) ||
-        sf::Mouse::isButtonPressed(sf::Mouse::Button::Right);
-    data.isDashing = dashPressed && !m_prevDashPressed;
-    m_prevDashPressed = dashPressed;
+    data.isJumping = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space) ||
+        sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W);
+    data.isDroppingThrough = data.isJumping &&
+        sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S);
+    const bool keyboardDashPressed =
+        sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LShift) ||
+        sf::Keyboard::isKeyPressed(sf::Keyboard::Key::RShift);
+    const bool mouseDashPressed = sf::Mouse::isButtonPressed(sf::Mouse::Button::Right);
+    data.isDashing = (keyboardDashPressed && !m_prevKeyboardDashPressed) ||
+        (mouseDashPressed && !m_prevMouseDashPressed);
+    m_prevKeyboardDashPressed = keyboardDashPressed;
+    m_prevMouseDashPressed = mouseDashPressed;
 
     const bool mouseLeftPressed = sf::Mouse::isButtonPressed(sf::Mouse::Button::Left);
     data.isAttacking = !mouseLeftPressed && m_prevMouseLeftPressed;

@@ -19,6 +19,8 @@ struct TileConfig {
     TileType type = TileType::None;
     bool isBackground = false; // true면 렌더링만 하고 충돌을 만들지 않음
     int rotationQuarterTurns = 0; // 시계 방향 90도 단위 텍스처 회전
+    // 프레임은 타일 크기 계산에만 쓰고, 화면에는 그리지 않습니다. 투명 경계에 사용합니다.
+    bool isVisible = true;
 };
 
 // 격자 한 칸에 맞추지 않고, 충돌 없이 맵을 꾸미는 스프라이트 설정입니다.
@@ -36,10 +38,23 @@ struct DecorativeTileConfig {
     bool drawAboveTiles = false;
 };
 
+// 타일보다 먼저 전체 맵에 겹쳐 그릴 배경 이미지 한 장의 설정입니다.
+struct BackgroundLayerConfig {
+    std::string atlasKey;
+    std::string frameName;
+    bool fitToMap = true;
+};
+
 // 게임 내 실제 물리 충돌에 쓰일 데이터
 struct TileData {
     sf::FloatRect bounds;
     TileType type;
+};
+
+/// 방 출입구 중앙 위치와 회전값입니다. 회전 후에도 스프라이트의 위쪽이 방 내부를 향해야 합니다.
+struct DoorAnimationPlacement {
+    sf::Vector2f position{};
+    float rotationDegrees = 0.f;
 };
 
 class TileMap : public sf::Drawable, public sf::Transformable {
@@ -59,8 +74,14 @@ public:
     /// 장식 스프라이트의 애니메이션 프레임만 갱신합니다. 충돌 타일에는 영향을 주지 않습니다.
     void update(float dt) const;
 
-    /// 타일맵 뒤에 그릴 단일 배경 스프라이트를 설정합니다. 프레임을 못 찾으면 배경을 비웁니다.
-    void setBackground(const std::string& bgAtlasKey, const std::string& bgFrameName);
+    /// 문 애니메이션 스프라이트를 출입구 위치에 배치합니다. 기본 상태는 열린 상태입니다.
+    bool configureDoorAnimations(const std::string& atlasKey,
+        const std::vector<DoorAnimationPlacement>& placements);
+    /// 잠기면 CloseDoor → IdleDoor, 해제되면 OpenDoor를 재생합니다.
+    void setDoorsLocked(bool locked);
+
+    /// 타일맵 뒤에 그릴 배경을 전달한 순서대로 설정합니다.
+    void setBackgroundLayers(const std::vector<BackgroundLayerConfig>& layers);
 
     /// Solid/OneWay 셀에서 생성한 충돌 영역 목록을 반환합니다.
     inline const std::vector<TileData>& getCollisionTiles() const { return m_collisionTiles; }
@@ -82,19 +103,42 @@ private:
         bool isAnimated = false;
     };
 
+    enum class DoorAnimationState {
+        Open,
+        Closing,
+        Closed,
+        Opening
+    };
+
+    struct AnimatedDoor {
+        sf::Sprite sprite;
+        Animator animator;
+        sf::FloatRect collisionBounds;
+        const std::vector<sf::IntRect>* closeFrames = nullptr;
+        const std::vector<sf::IntRect>* idleFrames = nullptr;
+        const std::vector<sf::IntRect>* openFrames = nullptr;
+        DoorAnimationState state = DoorAnimationState::Open;
+        bool visible = false;
+    };
+
     /// JSON 장식 설정을 독립 스프라이트로 만들고, 렌더링 순서별 목록에 넣습니다.
     bool createDecorations(const std::string& defaultAtlasKey,
         const std::vector<DecorativeTileConfig>& decorations);
+    static void playDoorAnimation(AnimatedDoor& door, const std::string& animationName,
+        const std::vector<sf::IntRect>& frames);
 
     sf::VertexArray m_backgroundVertices;
     sf::VertexArray m_vertices;
     const sf::Texture* m_tileset = nullptr;
     std::vector<TileData> m_collisionTiles;
+    std::size_t m_staticCollisionTileCount = 0;
     sf::Vector2f m_tileSize{ 0.f, 0.f };
     unsigned int m_width = 0;
     unsigned int m_height = 0;
 
-    std::optional<sf::Sprite> m_background;
+    std::vector<sf::Sprite> m_backgroundLayers;
     mutable std::vector<AnimatedDecoration> m_backDecorations;
     mutable std::vector<AnimatedDecoration> m_frontDecorations;
+    mutable std::vector<AnimatedDoor> m_doors;
+    bool m_doorsLocked = false;
 };

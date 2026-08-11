@@ -19,7 +19,9 @@ enum class ProjectileType {
     Fireball,
     Bullet,
     BabyBatBullet,
-    BansheeBullet
+    BansheeBullet,
+    BossBullet,
+    BossSword
 };
 
 enum class ProjectileTarget {
@@ -38,6 +40,9 @@ struct ProjectileConfig {
     unsigned int count = 1;
     float spreadRadian = 0.f;
     float lifetime = 3.f;
+    std::string returnAnimationKey;
+    bool rotateToDirection = false;
+    float rotationOffsetRadian = 0.f;
 };
 
 /// 장비가 풀 매니저에 전달하는 투사체 생성 요청입니다. 실제 Projectile 객체는 장비가 만들지 않습니다.
@@ -52,6 +57,11 @@ struct ProjectileSpawnRequest {
     float speed = 400.f;
     float damage = 10.f;
     float lifetime = 3.f;
+    /// 비어 있으면 animationKey + "_Trail"을 사용합니다.
+    std::string returnAnimationKey;
+    bool rotateToDirection = false;
+    float rotationOffsetRadian = 0.f;
+    bool damageActiveOnSpawn = true;
 };
 
 struct EquipStat {

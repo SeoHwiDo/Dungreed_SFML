@@ -2,6 +2,45 @@
   "version": 1,
   "floors": [
     {
+      "id": "0Floor",
+      "name": "Start Village",
+      "roomReferences": [
+        {
+          "id": "start_village_ref",
+          "roomType": "Start",
+          "backgrounds": [
+            { "atlasKey": "TownSky", "frame": "Sky", "fitToMap": true },
+            { "atlasKey": "TownBG", "frame": "BG", "fitToMap": true },
+            { "atlasKey": "TownLayer", "frame": "Layer", "fitToMap": true }
+          ],
+          "layout": {
+            "generator": "OpenVillage",
+            "width": 96,
+            "height": 64,
+            "spawn": [ 48, 62 ]
+          }
+        }
+      ],
+      "rooms": [
+        {
+          "id": "start_village",
+          "roomReferenceId": "start_village_ref",
+          "role": "StartVillage",
+          "availableDoorPositions": [],
+          "minDoorCount": 0,
+          "maxDoorCount": 0,
+          "monsters": []
+        }
+      ],
+      "connectionGeneration": {
+        "strategy": "Standalone",
+        "startRoomId": "start_village",
+        "shuffleRoomIds": [],
+        "randomMonsterRoomCount": 0,
+        "resolvedConnections": []
+      }
+    },
+    {
       "id": "floor_01",
       "name": "Floor 01",
       "roomReferences": [
@@ -27,7 +66,7 @@
                 "position": [ 5.5, 11.5 ],
                 "offset": [ 0, 0 ],
                 "scale": [ 0.7, 0.7 ],
-                "frameDuration": 0.3,
+                "frameDuration": 0.1,
                 "isLoop": false,
                 "drawAboveTiles": false
               }
@@ -609,6 +648,7 @@
         "strategy": "RandomPath",
         "startRoomId": "floor01_start_01",
         "bossRoomId": "floor01_boss_01",
+        "randomMonsterRoomCount": 3,
         "shuffleRoomIds": [
           "floor01_monster_01",
           "floor01_monster_02",

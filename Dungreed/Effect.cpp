@@ -61,6 +61,19 @@ void Effect::render(sf::RenderWindow& window) const {
     }
 }
 
+void Effect::setPosition(const sf::Vector2f& position) {
+    if (m_sprite) {
+        m_sprite->setPosition(position);
+    }
+}
+
+void Effect::setRotationRadian(float rotationRadian) {
+    m_rotationRadian = rotationRadian;
+    if (m_sprite) {
+        m_sprite->setRotation(sf::radians(rotationRadian));
+    }
+}
+
 bool Effect::consumeHit(EntityId targetId) {
     if (m_finished || !m_isAttackEffect ||
         m_hitTargets.find(targetId) != m_hitTargets.end()) {

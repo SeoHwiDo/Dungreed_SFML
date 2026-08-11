@@ -199,7 +199,8 @@ void Room::loadReference(RoomType type, DoorPositions doorPositions) {
 }
 
 void Room::loadLayout(RoomType type, RoomLayout layout, DoorPositions doorPositions,
-    std::vector<DecorativeTileConfig> decorations) {
+    std::vector<DecorativeTileConfig> decorations,
+    std::vector<BackgroundLayerConfig> backgroundLayers) {
     info.type = type;
     info.isClear = false;
     info.encounterMonsters.clear();
@@ -210,6 +211,7 @@ void Room::loadLayout(RoomType type, RoomLayout layout, DoorPositions doorPositi
     info.doorPositions = doorPositions;
     info.layout = std::move(layout);
     info.decorations = std::move(decorations);
+    info.backgroundLayers = std::move(backgroundLayers);
     applyDoorways(info.layout, doorPositions);
     info.doors.resize(4);
     for (std::size_t index = 0; index < info.doors.size(); ++index) {
@@ -239,6 +241,7 @@ void Room::setMonsterPhaseConfig(RoomMonsterPhaseConfig config) {
     info.encounterPhaseCount = 0;
     info.isEncounterInitialized = false;
     info.isClear = false;
+    info.traversalLockOverride = false;
 }
 
 void Room::setClearRewardConfig(RoomClearRewardConfig config) {
@@ -259,8 +262,13 @@ void Room::setClear(bool isClear) {
     info.isClear = isClear;
 }
 
+void Room::setTraversalLocked(bool locked) {
+    info.traversalLockOverride = locked;
+}
+
 bool Room::isTraversalLocked() const {
-    return info.isEncounterInitialized && !info.isClear;
+    return info.traversalLockOverride ||
+        (info.isEncounterInitialized && !info.isClear);
 }
 
 std::optional<DoorPosition> Room::getEnteredDoor(
@@ -576,8 +584,14 @@ bool Room::buildTileMap(TileMap& tileMap, const std::string& tileAtlasKey,
             config = { tileSet.platformFrameName, TileType::OneWay };
             break;
         case RoomCell::BackTile:
-        case RoomCell::SpawnPoint:
             config = makeBackTile(getBackFrame(x, y, info.layout.cells[index]));
+            break;
+        case RoomCell::SpawnPoint:
+        case RoomCell::OpenSpace:
+            // 시작마을의 배경 위에서는 별도 타일을 렌더링하지 않습니다.
+            break;
+        case RoomCell::InvisibleWall:
+            config = { tileSet.backInnerFrameName, TileType::Solid, false, 0, false };
             break;
         case RoomCell::Door:
             // 문은 걸을 수 있지만 시각적으로는 방 내부이므로 백타일로 렌더링합니다.
@@ -590,8 +604,52 @@ bool Room::buildTileMap(TileMap& tileMap, const std::string& tileAtlasKey,
         }
 
     }
-    return tileMap.load(tileAtlasKey, grid, info.layout.width, info.layout.height,
-        info.decorations);
+    if (!tileMap.load(tileAtlasKey, grid, info.layout.width, info.layout.height,
+        info.decorations)) {
+        return false;
+    }
+    if (!info.backgroundLayers.empty()) {
+        tileMap.setBackgroundLayers(info.backgroundLayers);
+    }
+
+    const sf::Vector2f tileSize = tileMap.getTileSize();
+    const unsigned int centerStart = (info.layout.width - kCenterDoorWidth) / 2;
+    const unsigned int groundY = info.layout.height - kOutlineWidth - 1;
+    const unsigned int sideDoorTop = groundY - kDoorHeight;
+    const unsigned int rightWallX = info.layout.width - kOutlineWidth - 1;
+    std::vector<DoorAnimationPlacement> doorPlacements;
+    doorPlacements.reserve(4);
+
+    // 각 문 스프라이트의 위쪽이 항상 방 안쪽을 향하도록 회전합니다.
+    if (hasDoor(info.doorPositions, DoorPosition::Up)) {
+        doorPlacements.push_back({
+            { (centerStart + kCenterDoorWidth * 0.5f) * tileSize.x,
+                kOutlineWidth * tileSize.y },
+            180.f
+        });
+    }
+    if (hasDoor(info.doorPositions, DoorPosition::Down)) {
+        doorPlacements.push_back({
+            { (centerStart + kCenterDoorWidth * 0.5f) * tileSize.x,
+                groundY * tileSize.y },
+            0.f
+        });
+    }
+    if (hasDoor(info.doorPositions, DoorPosition::Left)) {
+        doorPlacements.push_back({
+            { kOutlineWidth * tileSize.x,
+                (sideDoorTop + kDoorHeight * 0.5f) * tileSize.y },
+            90.f
+        });
+    }
+    if (hasDoor(info.doorPositions, DoorPosition::Right)) {
+        doorPlacements.push_back({
+            { rightWallX * tileSize.x,
+                (sideDoorTop + kDoorHeight * 0.5f) * tileSize.y },
+            -90.f
+        });
+    }
+    return tileMap.configureDoorAnimations(tileAtlasKey, doorPlacements);
 }
 
 /// 논리 스폰 셀의 발밑 중심을 반환해 Actor의 bottom-center 원점과 맞춥니다.

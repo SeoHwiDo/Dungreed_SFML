@@ -237,3 +237,11 @@ void ObjectPoolingManager::render(sf::RenderWindow& window) const {
         }
     }
 }
+
+void ObjectPoolingManager::renderBehindTiles(sf::RenderWindow& window) const {
+    for (const ProjectileSlot& slot : m_projectiles) {
+        if (slot.active && slot.object) {
+            slot.object->renderBehindTiles(window);
+        }
+    }
+}

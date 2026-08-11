@@ -33,6 +33,8 @@ public:
     void update(float dt);
     /// 현재 이펙트를 화면에 그립니다.
     void render(sf::RenderWindow& window) const;
+    void setPosition(const sf::Vector2f& position);
+    void setRotationRadian(float rotationRadian);
 
     /// 공격 이펙트가 현재 몬스터와 한 번도 충돌하지 않았다면 true를 반환합니다.
     bool consumeHit(EntityId targetId);

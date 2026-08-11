@@ -48,7 +48,9 @@ public:
     void cancelDash();
     void applyStun(float duration);
     bool isStunned() const { return m_stunTimer > 0.f; }
-    bool ignoresOneWayPlatforms() const { return m_isDashing || m_ignoreOneWayPlatforms; }
+    bool ignoresOneWayPlatforms() const {
+        return m_isDashing || m_ignoreOneWayPlatforms || m_dropThroughTimer > 0.f;
+    }
     void restoreDashCharges(int amount);
 
 private:
@@ -63,6 +65,7 @@ private:
     float m_dashRechargeTimer = 0.f;
     bool m_isDashing = false;
     bool m_ignoreOneWayPlatforms = false;
+    float m_dropThroughTimer = 0.f;
     float m_dashElapsed = 0.f;
     sf::Vector2f m_dashDelta;
     float m_afterimageTimer = 0.f;
@@ -71,7 +74,7 @@ private:
     std::vector<DashAfterimage> m_dashAfterimages;
 
     void changeState(PlayerState newState);
-    void handleState(float dt, const InputData& input);
+    void handleState(float dt, const InputData& input, const TileMap& tileMap);
     void updateFacingDirection(const sf::Vector2f& aimWorldPosition);
     bool tryStartDash(const sf::Vector2f& cursorPosition);
     void updateDash(float dt, const TileMap& tileMap);

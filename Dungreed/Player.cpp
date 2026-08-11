@@ -229,6 +229,7 @@ void Player::applyStun(float duration) {
     m_stunTimer = std::max(m_stunTimer, duration);
     m_isDashing = false;
     m_ignoreOneWayPlatforms = false;
+    m_dropThroughTimer = 0.f;
     movement.velocity.x = 0.f;
     setHorizontalInput(0.f);
 }
@@ -245,7 +246,7 @@ void Player::updateFacingDirection(const sf::Vector2f& aimWorldPosition) {
         sprite->setScale({ m_facingDirection, 1.f });
     }
 }
-void Player::handleState(float dt, const InputData& input) {
+void Player::handleState(float dt, const InputData& input, const TileMap& tileMap) {
     if (dead()) {
         changeState(PlayerState::Dead);
         return;
@@ -264,6 +265,27 @@ void Player::handleState(float dt, const InputData& input) {
             equipment->attack();
         }
         return;
+    }
+
+    if (input.isDroppingThrough && movement.isGrounded) {
+        const sf::FloatRect bounds = getGlobalBounds();
+        constexpr float groundEpsilon = 2.f;
+        const sf::FloatRect footCheck(
+            { bounds.position.x + 2.f, bounds.position.y + bounds.size.y },
+            { std::max(0.f, bounds.size.x - 4.f), groundEpsilon });
+
+        const bool standingOnOneWay = std::any_of(
+            tileMap.getCollisionTiles().begin(), tileMap.getCollisionTiles().end(),
+            [&footCheck](const TileData& tile) {
+                return tile.type == TileType::OneWay &&
+                    footCheck.findIntersection(tile.bounds).has_value();
+            });
+        if (standingOnOneWay) {
+            // 플랫폼 두께를 완전히 통과할 때까지 one-way 충돌을 잠시 무시합니다.
+            m_dropThroughTimer = 0.20f;
+            movement.isGrounded = false;
+            movement.velocity.y = std::max(movement.velocity.y, 180.f);
+        }
     }
 
     if (input.isJumping && movement.isGrounded) {
@@ -290,6 +312,7 @@ void Player::handleState(float dt, const InputData& input) {
 
 void Player::update(float dt, const sf::RenderWindow& window,
     const TileMap& tileMap) {
+    m_dropThroughTimer = std::max(0.f, m_dropThroughTimer - dt);
     if (!m_isDashing) {
         m_ignoreOneWayPlatforms = false;
     }
@@ -321,7 +344,7 @@ void Player::update(float dt, const sf::RenderWindow& window,
     updateFacingDirection(input.aimWorldPosition);
     updateDashRecharge(dt);
     updateAfterimages(dt);
-    handleState(dt, input);
+    handleState(dt, input, tileMap);
 
     if (m_isDashing) {
         updateDash(dt, tileMap);

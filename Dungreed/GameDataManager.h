@@ -29,6 +29,7 @@ struct RoomReferenceData {
     RoomType type = RoomType::Start;
     RoomLayout layout;
     std::vector<DecorativeTileConfig> decorations;
+    std::vector<BackgroundLayerConfig> backgroundLayers;
 };
 
 struct RoomInstanceData {
@@ -51,6 +52,8 @@ struct FloorData {
     std::string startRoomId;
     std::string bossRoomId;
     std::vector<std::string> shuffleRoomIds;
+    /// 0이면 모든 몬스터방을 사용하고, 양수면 그 수만큼 무작위로 선택합니다.
+    std::size_t randomMonsterRoomCount = 0;
 };
 struct MonsterPrewarmData {
     std::string monsterId;

@@ -7,6 +7,7 @@
 struct InputData {
     float moveDirX = 0.f;
     bool isJumping = false;
+    bool isDroppingThrough = false;
     bool isDashing = false;
     bool isAttacking = false;
     sf::Vector2f aimDir;
@@ -21,5 +22,6 @@ public:
 
 private:
     bool m_prevMouseLeftPressed = false;
-    bool m_prevDashPressed = false;
+    bool m_prevKeyboardDashPressed = false;
+    bool m_prevMouseDashPressed = false;
 };

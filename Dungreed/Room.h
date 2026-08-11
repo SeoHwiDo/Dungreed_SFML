@@ -46,6 +46,9 @@ enum class RoomCell : std::uint8_t {
     BackDoorTopRight = 20,
     BackDoorBottomLeft = 21,
     BackDoorBottomRight = 22,
+    // 시작마을의 보이지 않는 이동 경계와, 배경만 보이는 열린 공간입니다.
+    InvisibleWall = 23,
+    OpenSpace = 24,
 };
 
 enum class DoorPosition : std::size_t {
@@ -116,6 +119,7 @@ struct RoomInfo {
     DoorPositions doorPositions{ false, false, true, true };
     RoomType type = RoomType::Start;
     bool isClear = false;
+    bool traversalLockOverride = false;
     std::vector<RoomMonsterSpawn> monsterSpawns;
     RoomMonsterPhaseConfig monsterPhaseConfig;
     std::vector<RoomMonsterSpawn> encounterMonsters;
@@ -127,6 +131,7 @@ struct RoomInfo {
     RoomLayout layout;
     // 방 레퍼런스에 저장한 충돌 없는 비규격 장식 타일 목록입니다.
     std::vector<DecorativeTileConfig> decorations;
+    std::vector<BackgroundLayerConfig> backgroundLayers;
 };
 
 struct RoomTileSet {
@@ -172,7 +177,8 @@ public:
     /// 하드코딩된 레퍼런스 방을 다시 읽고 지정한 방향에만 문 확장 공간을 만듭니다.
     void loadReference(RoomType type, DoorPositions doorPositions = { false, false, true, true });
     void loadLayout(RoomType type, RoomLayout layout, DoorPositions doorPositions,
-        std::vector<DecorativeTileConfig> decorations = {});
+        std::vector<DecorativeTileConfig> decorations = {},
+        std::vector<BackgroundLayerConfig> backgroundLayers = {});
     void setMonsterSpawns(std::vector<RoomMonsterSpawn> monsterSpawns);
     void setMonsterPhaseConfig(RoomMonsterPhaseConfig config);
     /// 방 인스턴스 데이터가 지정한 클리어 보상 구성을 적용합니다.
@@ -180,6 +186,8 @@ public:
     /// 최초 활성화 때 확정한 몬스터 목록과 페이즈 수를 저장합니다. 빈 목록은 즉시 클리어됩니다.
     void prepareMonsterEncounter(std::vector<RoomMonsterSpawn> monsters, int phaseCount);
     void setClear(bool isClear);
+    /// 보스전처럼 몬스터 조우와 별개로 방 이동을 막아야 할 때 사용합니다.
+    void setTraversalLocked(bool locked);
     /// 몬스터가 하나라도 남아 있는, 이동을 막아야 하는 전투방인지 반환합니다.
     bool isTraversalLocked() const;
     /// 전투방 클리어 보상 상자의 개방·수령 상태를 보관합니다.

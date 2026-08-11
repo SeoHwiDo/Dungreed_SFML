@@ -81,6 +81,10 @@ std::vector<ProjectileSpawnRequest> Equip::consumeProjectileRequests() {
             config.damage,
             config.lifetime
         });
+        ProjectileSpawnRequest& request = requests.back();
+        request.returnAnimationKey = config.returnAnimationKey;
+        request.rotateToDirection = config.rotateToDirection;
+        request.rotationOffsetRadian = config.rotationOffsetRadian;
     }
     return requests;
 }
@@ -155,7 +159,7 @@ void Equip::render(sf::RenderWindow& window) {
 }
 
 std::optional<sf::FloatRect> Equip::getAttackHitbox() const {
-    if (!m_sprite) return std::nullopt;
+    if (!m_sprite || !m_isAttacking) return std::nullopt;
     // 회전과 스케일이 모두 반영된 최종 Bounding Box 반환
     return m_sprite->getGlobalBounds();
 }

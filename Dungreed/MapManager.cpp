@@ -48,6 +48,25 @@ bool selectConnectionDoors(const RoomInstanceData& fromData,
     }
     return false;
 }
+
+bool selectFixedConnectionDoors(const RoomInstanceData& fromData,
+    const RoomInstanceData& toData, DoorPositions& fromDoors,
+    DoorPositions& toDoors, DoorPosition fromDoor, DoorPosition toDoor) {
+    const std::size_t fromIndex = static_cast<std::size_t>(fromDoor);
+    const std::size_t toIndex = static_cast<std::size_t>(toDoor);
+    const bool isFromAvailable = std::find(fromData.availableDoorPositions.begin(),
+        fromData.availableDoorPositions.end(), fromDoor) !=
+        fromData.availableDoorPositions.end();
+    const bool isToAvailable = std::find(toData.availableDoorPositions.begin(),
+        toData.availableDoorPositions.end(), toDoor) !=
+        toData.availableDoorPositions.end();
+    if (fromDoors[fromIndex] || toDoors[toIndex] || !isFromAvailable || !isToAvailable) {
+        return false;
+    }
+    fromDoors[fromIndex] = true;
+    toDoors[toIndex] = true;
+    return true;
+}
 }
 
 Room& MapManager::createCurrentRoom(RoomType type, DoorPositions doorPositions,
@@ -62,9 +81,10 @@ Room& MapManager::createCurrentRoom(RoomType type, DoorPositions doorPositions,
 
 bool MapManager::createCurrentRoomFromData(const FloorData& floor,
     const std::string& roomId) {
+    const bool hasBossRoom = !floor.bossRoomId.empty();
     if (floor.rooms.find(roomId) == floor.rooms.end() ||
         floor.rooms.find(floor.startRoomId) == floor.rooms.end() ||
-        floor.rooms.find(floor.bossRoomId) == floor.rooms.end()) {
+        (hasBossRoom && floor.rooms.find(floor.bossRoomId) == floor.rooms.end())) {
         return false;
     }
 
@@ -87,49 +107,66 @@ bool MapManager::createCurrentRoomFromData(const FloorData& floor,
         instanceData.emplace(instanceId, &roomData);
         referenceData.emplace(instanceId, &referenceIt->second);
         doorPositions.emplace(instanceId, DoorPositions{ false, false, false, false });
-
-        FloorManagedRoom managedRoom;
-        managedRoom.room = std::make_unique<Room>();
-        m_floorRooms.emplace(instanceId, std::move(managedRoom));
-    }
-
-    // JSON의 연결 생성 목록 순서를 디버그 미리보기의 표시 순서로 보관합니다.
-    std::unordered_set<std::string> orderedRoomIds;
-    const auto addPreviewRoom = [&](const std::string& instanceId) {
-        if (m_floorRooms.find(instanceId) != m_floorRooms.end() &&
-            orderedRoomIds.insert(instanceId).second) {
-            m_floorRoomOrder.push_back(instanceId);
-        }
-    };
-    addPreviewRoom(floor.startRoomId);
-    for (const std::string& instanceId : floor.shuffleRoomIds) {
-        addPreviewRoom(instanceId);
-    }
-    addPreviewRoom(floor.bossRoomId);
-    for (const auto& roomEntry : floor.rooms) {
-        addPreviewRoom(roomEntry.first);
-    }
-
-    std::vector<std::string> route;
-    route.push_back(floor.startRoomId);
-    std::unordered_set<std::string> addedRoomIds{ floor.startRoomId, floor.bossRoomId };
-    std::vector<std::string> shuffledRoomIds;
-    for (const std::string& instanceId : floor.shuffleRoomIds) {
-        if (instanceData.find(instanceId) != instanceData.end() &&
-            addedRoomIds.insert(instanceId).second) {
-            shuffledRoomIds.push_back(instanceId);
-        }
-    }
-    for (const auto& [instanceId, roomData] : floor.rooms) {
-        if (addedRoomIds.insert(instanceId).second) {
-            shuffledRoomIds.push_back(instanceId);
-        }
     }
 
     std::mt19937 randomEngine(std::random_device{}());
-    std::shuffle(shuffledRoomIds.begin(), shuffledRoomIds.end(), randomEngine);
-    route.insert(route.end(), shuffledRoomIds.begin(), shuffledRoomIds.end());
-    route.push_back(floor.bossRoomId);
+    std::vector<std::string> monsterRoomCandidates;
+    std::vector<std::string> restRoomIds;
+    std::vector<std::string> requiredRoomIds;
+    std::unordered_set<std::string> classifiedRoomIds{ floor.startRoomId };
+    if (hasBossRoom) {
+        classifiedRoomIds.insert(floor.bossRoomId);
+    }
+    const auto classifyRoom = [&](const std::string& instanceId) {
+        const auto instanceIt = instanceData.find(instanceId);
+        if (instanceIt == instanceData.end() ||
+            !classifiedRoomIds.insert(instanceId).second) {
+            return;
+        }
+        if (referenceData.at(instanceId)->type == RoomType::Monster) {
+            monsterRoomCandidates.push_back(instanceId);
+        } else if (referenceData.at(instanceId)->type == RoomType::Hut) {
+            restRoomIds.push_back(instanceId);
+        } else {
+            requiredRoomIds.push_back(instanceId);
+        }
+    };
+    for (const std::string& instanceId : floor.shuffleRoomIds) {
+        classifyRoom(instanceId);
+    }
+    for (const auto& [instanceId, roomData] : floor.rooms) {
+        classifyRoom(instanceId);
+    }
+
+    std::shuffle(monsterRoomCandidates.begin(), monsterRoomCandidates.end(), randomEngine);
+    const std::size_t monsterRoomCount = floor.randomMonsterRoomCount == 0
+        ? monsterRoomCandidates.size()
+        : std::min(floor.randomMonsterRoomCount, monsterRoomCandidates.size());
+    monsterRoomCandidates.resize(monsterRoomCount);
+
+    std::vector<std::string> intermediateRoomIds = monsterRoomCandidates;
+    intermediateRoomIds.insert(intermediateRoomIds.end(),
+        requiredRoomIds.begin(), requiredRoomIds.end());
+
+    std::vector<std::string> route;
+    route.push_back(floor.startRoomId);
+    route.insert(route.end(), intermediateRoomIds.begin(), intermediateRoomIds.end());
+    if (hasBossRoom && floor.bossRoomId != floor.startRoomId) {
+        route.push_back(floor.bossRoomId);
+    }
+
+    for (const std::string& instanceId : route) {
+        FloorManagedRoom managedRoom;
+        managedRoom.room = std::make_unique<Room>();
+        m_floorRooms.emplace(instanceId, std::move(managedRoom));
+        m_floorRoomOrder.push_back(instanceId);
+    }
+    for (const std::string& instanceId : restRoomIds) {
+        FloorManagedRoom managedRoom;
+        managedRoom.room = std::make_unique<Room>();
+        m_floorRooms.emplace(instanceId, std::move(managedRoom));
+        m_floorRoomOrder.push_back(instanceId);
+    }
 
     std::vector<RoomConnection> connections;
     for (std::size_t index = 0; index + 1 < route.size(); ++index) {
@@ -146,10 +183,26 @@ bool MapManager::createCurrentRoomFromData(const FloorData& floor,
         connections.push_back({ fromId, fromDoor, toId, toDoor });
     }
 
+    // 휴식방은 메인 경로의 몬스터방 3개 중 가운데 방 하단에 가지로 연결합니다.
+    if (!restRoomIds.empty() && !monsterRoomCandidates.empty()) {
+        const std::string& middleMonsterId =
+            monsterRoomCandidates[monsterRoomCandidates.size() / 2];
+        const std::string& restRoomId = restRoomIds.front();
+        if (!selectFixedConnectionDoors(*instanceData.at(middleMonsterId),
+            *instanceData.at(restRoomId), doorPositions.at(middleMonsterId),
+            doorPositions.at(restRoomId), DoorPosition::Down, DoorPosition::Up)) {
+            m_floorRooms.clear();
+            return false;
+        }
+        connections.push_back({ middleMonsterId, DoorPosition::Down,
+            restRoomId, DoorPosition::Up });
+    }
+
     for (const auto& [instanceId, managedRoom] : m_floorRooms) {
         const RoomReferenceData& reference = *referenceData.at(instanceId);
         managedRoom.room->loadLayout(reference.type, reference.layout,
-            doorPositions.at(instanceId), reference.decorations);
+            doorPositions.at(instanceId), reference.decorations,
+            reference.backgroundLayers);
         managedRoom.room->setMonsterSpawns(instanceData.at(instanceId)->monsterSpawns);
         managedRoom.room->setMonsterPhaseConfig(
             instanceData.at(instanceId)->monsterPhaseConfig);
@@ -200,7 +253,7 @@ bool MapManager::moveCurrentRoom(DoorPosition doorPosition) {
     }
 
     Room* nextRoom = m_currentRoom->getDoorNext(doorPosition);
-    const TileMap* nextTileMap = findFloorTileMap(nextRoom);
+    TileMap* nextTileMap = findFloorTileMap(nextRoom);
     if (!nextRoom || nextRoom == m_currentRoom || !nextTileMap) {
         return false;
     }
@@ -226,7 +279,7 @@ void MapManager::requestCurrentRoomMonsters(MonsterManager& monsterManager,
         objectPool, playerPosition, effectManager);
 }
 
-const TileMap* MapManager::findFloorTileMap(const Room* room) const {
+TileMap* MapManager::findFloorTileMap(const Room* room) const {
     if (!room) {
         return nullptr;
     }
