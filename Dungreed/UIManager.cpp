@@ -101,14 +101,13 @@ bool UIManager::init(sf::RenderWindow& window) {
     const sf::IntRect* bossLifeBackFrame =
         resourceManager.getFrameRect("UI", "BossLifeBack.png");
     if (!bossLifeBackFrame ||
-        !setSpriteFrame(*m_bossLifeFill, "BossLifeBack.png") ||
+        !setSpriteFrame(*m_bossLifeFill, "LifeBar.png") ||
         !setSpriteFrame(*m_bossLifeBase, "BossLifeBase.png") ||
         !setSpriteFrame(*m_bossPortrait, "BossSkellPortrait.png")) {
         std::cerr << "[UIManager] 보스 HUD 프레임을 불러오지 못했습니다.\n";
         return false;
     }
     m_bossLifeBackFrame = *bossLifeBackFrame;
-    m_bossLifeFill->setScale({ kBossHudScale, kBossHudScale });
     m_bossLifeBase->setScale({ kBossHudScale, kBossHudScale });
     m_bossPortrait->setScale({ kBossHudScale, kBossHudScale });
 
@@ -150,6 +149,7 @@ void UIManager::updateBossHud(const sf::RenderWindow& window) {
 
     constexpr int kBossLifeFillStartX = 22;
     constexpr int kBossLifeFillWidth = 100;
+    constexpr int kBossLifeFillStartY = 3;
     const float centerX = static_cast<float>(window.getSize().x) * 0.5f;
     const sf::Vector2f barPosition{
         centerX - (m_bossLifeBackFrame.size.x * kBossHudScale) * 0.5f, 58.f
@@ -157,14 +157,14 @@ void UIManager::updateBossHud(const sf::RenderWindow& window) {
     const float healthRatio = boss->getMaxHp() > 0.f
         ? std::clamp(boss->getTmpHp() / boss->getMaxHp(), 0.f, 1.f)
         : 0.f;
-    const int fillWidth = static_cast<int>(std::round(kBossLifeFillWidth * healthRatio));
     m_bossLifeFill->setPosition(barPosition + sf::Vector2f{
-        kBossLifeFillStartX * kBossHudScale, 0.f
+        kBossLifeFillStartX * kBossHudScale,
+        kBossLifeFillStartY * kBossHudScale
     });
-    m_bossLifeFill->setTextureRect({
-        { m_bossLifeBackFrame.position.x + kBossLifeFillStartX,
-            m_bossLifeBackFrame.position.y },
-        { fillWidth, m_bossLifeBackFrame.size.y }
+    // LifeBar는 1픽셀 폭의 채움 프레임입니다. 체력 비율만큼 X축만 확장합니다.
+    m_bossLifeFill->setScale({
+        kBossLifeFillWidth * healthRatio * kBossHudScale,
+        kBossHudScale
     });
     m_bossLifeBase->setPosition(barPosition);
     m_bossPortrait->setPosition(barPosition + sf::Vector2f{
