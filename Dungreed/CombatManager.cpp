@@ -1,15 +1,18 @@
 #include "CombatManager.h"
 
 #include "Player.h"
+#include "Boss.h"
 #include "Monster.h"
 #include "TileMap.h"
 #include "Collision.h"
 #include "EffectManager.h"
+#include <algorithm>
 #include <cmath>
 #include <vector>
 
 std::unordered_set<EntityId> CombatManager::resolvePlayerAttack(
-    Player& player, ObjectPoolingManager& objectPool, EffectManager& effectManager) const {
+    Player& player, ObjectPoolingManager& objectPool, EffectManager& effectManager,
+    Boss* boss) const {
     std::unordered_set<EntityId> hitMonsters;
     const auto weapon = player.getEquipment();
     if (!weapon) {
@@ -22,16 +25,22 @@ std::unordered_set<EntityId> CombatManager::resolvePlayerAttack(
         effectManager.spawnPlayerSwing(objectPool, player.getBodyCenterPosition(),
             weapon->getAimRadian(), weapon->getStat().damage);
     }
-    // 무기 스프라이트가 아닌 활성 SwingFX의 현재 스프라이트 범위로만 적중을 판정합니다.
+    // SwingFX와 실제 무기 스프라이트 중 하나라도 닿으면 적중으로 처리합니다.
+    // 대상별 1회 타격 제한은 SwingFX가 관리합니다.
+    const auto weaponAttackBox = weapon->getAttackHitbox();
     effectManager.forEachActiveAttackEffect(objectPool, [&](Effect& effect) {
         const auto attackBox = effect.getAttackHitbox();
         if (!attackBox) {
             return;
         }
         objectPool.forEachActiveMonster([&](Monster& monster) {
-            const auto hitPosition = monster.dead()
-                ? std::nullopt
-                : monster.getCollision().checkHit(*attackBox);
+            std::optional<sf::Vector2f> hitPosition;
+            if (!monster.dead()) {
+                hitPosition = monster.getCollision().checkHit(*attackBox);
+                if (!hitPosition && weaponAttackBox) {
+                    hitPosition = monster.getCollision().checkHit(*weaponAttackBox);
+                }
+            }
             if (hitPosition && effect.consumeHit(monster.getId())) {
                 monster.takeDamage(effect.getDamage(), effect.getAttackerPosition());
                 hitMonsters.insert(monster.getId());
@@ -39,6 +48,17 @@ std::unordered_set<EntityId> CombatManager::resolvePlayerAttack(
                     effect.getRotationRadian());
             }
         });
+        if (boss && !boss->dead()) {
+            auto hitPosition = boss->getCollision().checkHit(*attackBox);
+            if (!hitPosition && weaponAttackBox) {
+                hitPosition = boss->getCollision().checkHit(*weaponAttackBox);
+            }
+            if (hitPosition && effect.consumeHit(boss->getId())) {
+                boss->takeDamage(effect.getDamage(), effect.getAttackerPosition(), 0.f);
+                effectManager.spawnHitSlash(objectPool, *hitPosition,
+                    effect.getRotationRadian());
+            }
+        }
     });
 
     // 원거리 무기는 장비의 설정을 요청으로 변환하고, 실제 객체 생성은 풀에 맡깁니다.
@@ -133,7 +153,7 @@ void CombatManager::resolveMonsterAttacks(float dt, Player& player,
 
 std::unordered_set<EntityId> CombatManager::updateProjectiles(
     float dt, Player& player, ObjectPoolingManager& objectPool,
-    const TileMap& tileMap, ProjectileTarget target) const {
+    const TileMap& tileMap, ProjectileTarget target, Boss* boss) const {
     std::unordered_set<EntityId> hitMonsters;
     std::vector<Projectile*> toRelease;
 
@@ -150,8 +170,30 @@ std::unordered_set<EntityId> CombatManager::updateProjectiles(
         if (projectile.isPlayingReturnTrail()) {
             return;
         }
+        if (projectile.isEmbedded()) {
+            return;
+        }
+        if (projectile.getType() == ProjectileType::BossSword &&
+            !projectile.isDamageActive()) {
+            return;
+        }
         if (Collision::resolveProjectileMapCollision(projectile, tileMap)) {
-            toRelease.push_back(&projectile);
+            if (projectile.getType() == ProjectileType::BossSword) {
+                const sf::FloatRect swordBounds = projectile.getGlobalBounds();
+                const float halfSwordLength =
+                    std::max(swordBounds.size.x, swordBounds.size.y) * 0.5f;
+                const sf::Vector2f impactPosition = projectile.getPosition() +
+                    projectile.getDirection() * halfSwordLength;
+                objectPool.acquireEffect({
+                    "Projectile", "BossSwordHitFX", impactPosition,
+                    projectile.getRotationRadian(), { 1.f, 1.f }, 0.06f,
+                    false, false, 0.f, impactPosition, sf::Color::White
+                });
+                // 칼 중심이 충돌면 안쪽 약 5px에 오도록 넣은 뒤, 타일 뒤에서 렌더링합니다.
+                projectile.embedInWall(1.25f, halfSwordLength + 5.f);
+            } else {
+                toRelease.push_back(&projectile);
+            }
             return;
         }
 
@@ -176,6 +218,12 @@ std::unordered_set<EntityId> CombatManager::updateProjectiles(
                 hit = true;
             }
         });
+        if (!hit && boss && !boss->dead() &&
+            projectile.checkHit(boss->getGlobalBounds())) {
+            boss->takeDamage(projectile.getDamage(), projectile.getPosition(), 0.f);
+            hitMonsters.insert(boss->getId());
+            hit = true;
+        }
         if (hit) {
             toRelease.push_back(&projectile);
         }

@@ -137,6 +137,7 @@
   <ItemGroup>
     <ClCompile Include="Actor.cpp" />
     <ClCompile Include="Animator.cpp" />
+    <ClCompile Include="Boss.cpp" />
     <ClCompile Include="Collision.cpp" />
     <ClCompile Include="Controller.cpp" />
     <ClCompile Include="Equip.cpp" />
@@ -151,17 +152,20 @@
     <ClCompile Include="RewardChestManager.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="MapManager.cpp" />
+    <ClCompile Include="SceneTransition.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Monster.cpp" />
     <ClCompile Include="Player.cpp" />
     <ClCompile Include="ResourceManager.cpp" />
     <ClCompile Include="Room.cpp" />
+    <ClCompile Include="SkelBoss.cpp" />
     <ClCompile Include="TileMap.cpp" />
     <ClCompile Include="UIManager.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Actor.h" />
     <ClInclude Include="Animator.h" />
+    <ClInclude Include="Boss.h" />
     <ClInclude Include="Collision.h" />
     <ClInclude Include="Controller.h" />
     <ClInclude Include="Equip.h" />
@@ -176,10 +180,12 @@
     <ClInclude Include="RewardChestManager.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="MapManager.h" />
+    <ClInclude Include="SceneTransition.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="ResourceManager.h" />
     <ClInclude Include="Monster.h" />
     <ClInclude Include="Room.h" />
+    <ClInclude Include="SkelBoss.h" />
     <ClInclude Include="TileMap.h" />
     <ClInclude Include="UIManager.h" />
   </ItemGroup>
@@ -190,16 +196,20 @@
     <None Include="Resources\data\weapons.json" />
     <None Include="Resources\images\equip_atlas.json" />
     <None Include="Resources\images\effect_atlas.json" />
+    <None Include="resources\images\boss_atlas.json" />
     <None Include="resources\images\monster_atlas.json" />
     <None Include="resources\images\player_atlas.json" />
+    <None Include="resources\images\projectile_atlas.json" />
     <None Include="resources\images\tilemap_atlas.json" />
     <None Include="Resources\images\ui_atlas.json" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="Resources\images\equip_atlas.png" />
     <Image Include="Resources\images\effect_atlas.png" />
+    <Image Include="resources\images\boss_atlas.png" />
     <Image Include="resources\images\monster_atlas.png" />
     <Image Include="resources\images\player_atlas.png" />
+    <Image Include="resources\images\projectile_atlas.png" />
     <Image Include="resources\images\tilemap_atlas.png" />
     <Image Include="Resources\images\ui_atlas.png" />
   </ItemGroup>

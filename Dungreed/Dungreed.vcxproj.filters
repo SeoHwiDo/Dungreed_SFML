@@ -24,6 +24,12 @@
     <ClCompile Include="Actor.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="Boss.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
+    <ClCompile Include="SkelBoss.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
     <ClCompile Include="Collision.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
@@ -81,6 +87,9 @@
     <ClCompile Include="Camera.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="SceneTransition.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
     <ClCompile Include="UIManager.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
@@ -96,6 +105,12 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="Actor.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="Boss.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="SkelBoss.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="Collision.h">
@@ -149,6 +164,9 @@
     <ClInclude Include="Camera.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
+    <ClInclude Include="SceneTransition.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
     <ClInclude Include="UIManager.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
@@ -166,6 +184,8 @@
     <None Include="resources\images\monster_atlas.json" />
     <None Include="Resources\images\equip_atlas.json" />
     <None Include="Resources\images\effect_atlas.json" />
+    <None Include="resources\images\boss_atlas.json" />
+    <None Include="resources\images\projectile_atlas.json" />
     <None Include="Resources\images\ui_atlas.json">
       <Filter>리소스 파일</Filter>
     </None>
@@ -184,6 +204,12 @@
       <Filter>리소스 파일</Filter>
     </Image>
     <Image Include="Resources\images\effect_atlas.png">
+      <Filter>리소스 파일</Filter>
+    </Image>
+    <Image Include="resources\images\boss_atlas.png">
+      <Filter>리소스 파일</Filter>
+    </Image>
+    <Image Include="resources\images\projectile_atlas.png">
       <Filter>리소스 파일</Filter>
     </Image>
     <Image Include="Resources\images\ui_atlas.png">
