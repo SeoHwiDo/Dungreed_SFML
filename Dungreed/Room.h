@@ -72,6 +72,8 @@ struct RoomLayout {
     unsigned int width = 0;
     unsigned int height = 0;
     std::vector<RoomCell> cells;
+    // 타일 종류와 독립적인 플레이어 시작 위치입니다.
+    std::optional<sf::Vector2u> playerSpawnCell;
 };
 
 struct RoomMonsterSpawn {

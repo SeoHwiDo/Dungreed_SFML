@@ -127,7 +127,7 @@ void applyDoorways(RoomLayout& layout, const DoorPositions& positions) {
         }
     }
 }
-/// 지정 크기의 기본 방을 만들고, 벽·백타일·스폰 지점 및 길이 3~5의 공중 플랫폼을 배치합니다.
+/// 지정 크기의 기본 방을 만들고, 벽·백타일·스폰 위치 및 길이 3~5의 공중 플랫폼을 배치합니다.
 /// 실제 문 확장 처리는 레이아웃 생성 후 applyDoorways가 담당합니다.
 RoomLayout makeStyledRoom(unsigned int width, unsigned int height,
     std::initializer_list<PlatformSpec> platforms)
@@ -170,8 +170,7 @@ RoomLayout makeStyledRoom(unsigned int width, unsigned int height,
         }
     }
 
-    // 스폰 표시는 백타일처럼 렌더링하며 충돌을 만들지 않습니다.
-    setCell(leftWallX + 4, groundY - 1, RoomCell::SpawnPoint);
+    layout.playerSpawnCell = sf::Vector2u{ leftWallX + 4, groundY - 1 };
 
     for (const PlatformSpec& platform : platforms) {
         for (unsigned int offset = 0; offset < platform.length; ++offset) {
@@ -218,10 +217,12 @@ void Room::loadLayout(RoomType type, RoomLayout layout, DoorPositions doorPositi
         info.doors[index].isOpen = doorPositions[index];
         info.doors[index].next = nullptr;
     }
-    info.playerSpawnCell.reset();
+    info.playerSpawnCell = info.layout.playerSpawnCell;
     for (unsigned int y = 0; y < info.layout.height; ++y) {
         for (unsigned int x = 0; x < info.layout.width; ++x) {
-            if (info.layout.cells[x + y * info.layout.width] == RoomCell::SpawnPoint) {
+            if (!info.playerSpawnCell &&
+                info.layout.cells[x + y * info.layout.width] == RoomCell::SpawnPoint) {
+                // 이전 레이아웃 데이터와의 호환을 위해서만 SpawnPoint 셀을 읽습니다.
                 info.playerSpawnCell = { x, y };
             }
         }
@@ -587,8 +588,7 @@ bool Room::buildTileMap(TileMap& tileMap, const std::string& tileAtlasKey,
             config = makeBackTile(getBackFrame(x, y, info.layout.cells[index]));
             break;
         case RoomCell::SpawnPoint:
-            // 스폰 표시는 논리 정보만 추가할 뿐, 보이는 모습은 일반 백타일과 같습니다.
-            config = makeBackTile(getBackFrame(x, y, RoomCell::BackTile));
+            // 스폰 표시는 논리 정보만 추가
             break;
         case RoomCell::OpenSpace:
             // 시작마을의 배경 위에서는 별도 타일을 렌더링하지 않습니다.

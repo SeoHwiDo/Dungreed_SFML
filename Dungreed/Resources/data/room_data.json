@@ -2,7 +2,7 @@
   "version": 1,
   "floors": [
     {
-      "id": "0Floor",
+      "id": "floor_00",
       "name": "Start Village",
       "roomReferences": [
         {
@@ -54,7 +54,7 @@
             "outlineWidth": 2,
             "platforms": [
               {
-                "x": 5,
+                "x": 10,
                 "y": 11,
                 "length": 4
               }
@@ -292,7 +292,7 @@
               {
                 "atlasKey": "TileMap",
                 "frame": "Hut.png",
-                "position": [ 13, 14 ],
+                "position": [ 10.5, 8.5 ],
                 "offset": [ 0, 0 ],
                 "drawAboveTiles": false
               }
@@ -304,41 +304,21 @@
           "roomType": "Boss",
           "layout": {
             "generator": "StyledRoom",
-            "width": 56,
-            "height": 40,
+            "width": 30,
+            "height": 20,
             "outlineWidth": 2,
-            "platforms": [
-              {
-                "x": 5,
-                "y": 35,
-                "length": 5
-              },
-              {
-                "x": 46,
-                "y": 35,
-                "length": 5
-              },
-              {
-                "x": 7,
-                "y": 12,
-                "length": 5
-              },
-              {
-                "x": 44,
-                "y": 12,
-                "length": 5
-              },
-              {
-                "x": 15,
-                "y": 30,
-                "length": 26
-              },
-              {
-                "x": 20,
-                "y": 16,
-                "length": 16
-              }
-            ]
+              "platforms": [
+                {
+                  "x": 8,
+                  "y": 15,
+                  "length": 14
+                },
+                {
+                  "x": 10,
+                  "y": 7,
+                  "length": 10
+                }
+              ]
           }
         }
       ],

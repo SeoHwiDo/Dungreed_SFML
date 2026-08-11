@@ -165,7 +165,7 @@ RoomLayout createStyledRoomLayout(const json& layoutJson) {
         }
     }
 
-    setCell(left + 4, ground - 1, RoomCell::SpawnPoint);
+    layout.playerSpawnCell = sf::Vector2u{ left + 4, ground - 1 };
 
     for (const auto& platform : layoutJson.value("platforms", json::array())) {
         const unsigned int platformX = platform.at("x").get<unsigned int>();
@@ -211,7 +211,7 @@ RoomLayout createOpenVillageLayout(const json& layoutJson) {
         "spawn", std::vector<unsigned int>{ width / 2, height - 2 });
     if (spawn.size() == 2 && spawn[0] > 0 && spawn[0] + 1 < width &&
         spawn[1] > 0 && spawn[1] + 1 < height) {
-        setCell(spawn[0], spawn[1], RoomCell::SpawnPoint);
+        layout.playerSpawnCell = sf::Vector2u{ spawn[0], spawn[1] };
     }
     return layout;
 }
