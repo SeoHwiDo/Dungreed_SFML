@@ -24,7 +24,10 @@ void Boss::init(const std::string& atlasKey) {
 
 void Boss::placeAtMapCenter(const TileMap& tileMap) {
     const sf::Vector2f mapSize = tileMap.getPixelSize();
-    setPosition({ mapSize.x * 0.5f, mapSize.y * 0.5f });
+    // Actor 스프라이트의 기준점은 하단 중앙입니다. 따라서 맵 중앙을 그대로
+    // 넣으면 발끝만 중앙에 놓이고 몸통은 위로 치우칩니다.
+    const float halfVisualHeight = getGlobalBounds().size.y * 0.5f;
+    setPosition({ mapSize.x * 0.5f, mapSize.y * 0.5f + halfVisualHeight });
 }
 
 void Boss::beginSummon(float duration) {

@@ -81,17 +81,16 @@
       "id": "SkelBossRotatingBullet",
       "type": "Ranged",
       "damage": 9.9,
-      "attackSpeed": 0.16,
+      "attackSpeed": 0.05,
       "range": 0.0,
       "projectile": {
         "type": "BossBullet",
         "target": "Player",
-        "speed": 220.0,
-        "damage": 9.9,
-        "count": 4,
-        "spreadRadian": 1.57079633,
-        "lifetime": 6.0,
-        "returnAnimationKey": "BossBulletFX"
+          "speed": 100.0,
+          "damage": 9.9,
+          "count": 4,
+          "spreadRadian": 1.57079633,
+          "lifetime": 6.0
       }
     },
     {
@@ -105,7 +104,7 @@
         "target": "Player",
         "speed": 340.0,
         "damage": 14.4,
-        "count": 1,
+        "count": 8,
         "spreadRadian": 0.0,
         "lifetime": 8.0,
         "rotateToDirection": true,

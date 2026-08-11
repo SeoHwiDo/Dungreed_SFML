@@ -1,7 +1,9 @@
-#pragma once
+﻿#pragma once
 
 #include "Boss.h"
 
+#include <array>
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <vector>
@@ -28,7 +30,7 @@ public:
     SkelBossPattern getCurrentPattern() const { return m_currentPattern; }
 
 private:
-    static constexpr const char* kUiDisplayName = "SKELL BOSS";
+    static constexpr const char* kUiDisplayName = u8"벨리알";
 
     enum class State {
         Summoning,
@@ -48,7 +50,8 @@ private:
 
     State m_state = State::Summoning;
     SkelBossPattern m_currentPattern = SkelBossPattern::None;
-    SkelBossPattern m_previousPattern = SkelBossPattern::None;
+    std::array<std::uint64_t, 3> m_patternLastUsed{};
+    std::uint64_t m_patternUseSequence = 0;
     float m_stateTimer = 0.f;
     float m_patternTimer = 0.f;
 
@@ -113,6 +116,8 @@ private:
     void stopSwordChargeEffects(ObjectPoolingManager& objectPool);
 
     sf::Vector2f getMouthPosition() const;
+    static std::size_t patternIndex(SkelBossPattern pattern);
+    void markPatternUsed(SkelBossPattern pattern);
     static sf::Vector2f normalized(const sf::Vector2f& vector);
     static float directionAngle(const sf::Vector2f& direction);
 };

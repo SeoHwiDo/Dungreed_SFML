@@ -1,4 +1,4 @@
-#include "SkelBoss.h"
+﻿#include "SkelBoss.h"
 
 #include "EffectManager.h"
 #include "GameDataManager.h"
@@ -11,6 +11,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <iostream>
 
 namespace {
 constexpr float kPi = 3.14159265358979323846f;
@@ -21,8 +22,9 @@ constexpr float kHandMoveSpeed = 520.f;
 constexpr float kLaserTelegraphDuration = 0.55f;
 constexpr float kLaserFireDuration = 0.35f;
 constexpr float kLaserWidth = 24.f;
-constexpr float kBulletPatternDuration = 2.1f;
-constexpr float kBulletInterval = 0.16f;
+constexpr float kBulletPatternDuration = 4.1f;
+constexpr float kBulletInterval = 0.12f;
+constexpr float kBulletRotationStep = 0.045f;
 constexpr int kSwordCount = 7;
 }
 
@@ -45,12 +47,21 @@ void SkelBoss::configurePatternWeapons() {
     m_handLaserWeapon = gameData.createEquip("SkelBossHandLaser");
     m_bulletWeapon = gameData.createEquip("SkelBossRotatingBullet");
     m_swordWeapon = gameData.createEquip("SkelBossSword");
+
+    if (!m_bulletWeapon) {
+        std::cerr << "[SkelBoss] Bullet weapon could not be created\n";
+    }
+    if (!m_swordWeapon) {
+        std::cerr << "[SkelBoss] Sword weapon could not be created\n";
+    }
 }
 
 void SkelBoss::configureAnimations() {
     auto& resources = ResourceManager::getInstance();
     const auto* idleFrames = resources.getAnimationFrames("Boss", "SkellBoss_Idle");
+    const auto* bossBackFrames = resources.getAnimationFrames("Boss", "SkellBoss_Back");
     const auto* attackFrames = resources.getAnimationFrames("Boss", "SkellBoss_Attack");
+    animator.addAnimation("SkellBoss_Back", AnimationClip(bossBackFrames, 0.12f, true));
     animator.addAnimation("SkellBoss_Idle", AnimationClip(idleFrames, 0.12f, true));
     animator.addAnimation("SkellBoss_Attack", AnimationClip(attackFrames, 0.09f, true));
     if (sprite && idleFrames && !idleFrames->empty()) {
@@ -59,6 +70,7 @@ void SkelBoss::configureAnimations() {
         sprite->setOrigin({ bounds.size.x * 0.5f, bounds.size.y });
         sprite->setScale({ kBossScale, kBossScale });
     }
+    animator.play("SkellBoss_Back");
     animator.play("SkellBoss_Idle");
 }
 
@@ -200,31 +212,26 @@ SkelBossPattern SkelBoss::choosePattern(const Player& player, const TileMap& til
     const sf::Vector2f playerCenter = player.getBodyCenterPosition();
     const float left = std::min(m_leftHandPosition.x, m_rightHandPosition.x);
     const float right = std::max(m_leftHandPosition.x, m_rightHandPosition.x);
-    SkelBossPattern preferred = SkelBossPattern::RotatingBullet;
-    if (playerCenter.x >= left && playerCenter.x <= right) {
-        preferred = SkelBossPattern::HandLaser;
-    } else if (playerCenter.y >= tileMap.getPixelSize().y * 0.65f) {
-        preferred = SkelBossPattern::SwordFan;
-    }
-    if (preferred != m_previousPattern) {
-        return preferred;
-    }
+    const bool isBetweenHands = playerCenter.x >= left && playerCenter.x <= right;
+    const bool isNearFloor = playerCenter.y >= tileMap.getPixelSize().y * 0.65f;
 
-    // 같은 패턴의 연속 사용을 피하면서 위치 기준과 가장 가까운 대체 패턴을 선택합니다.
-    const std::array<SkelBossPattern, 3> fallbackOrder = preferred == SkelBossPattern::HandLaser
-        ? std::array{ SkelBossPattern::RotatingBullet, SkelBossPattern::SwordFan,
-            SkelBossPattern::HandLaser }
-        : preferred == SkelBossPattern::SwordFan
-            ? std::array{ SkelBossPattern::HandLaser, SkelBossPattern::RotatingBullet,
-                SkelBossPattern::SwordFan }
-            : std::array{ SkelBossPattern::SwordFan, SkelBossPattern::HandLaser,
-                SkelBossPattern::RotatingBullet };
-    for (const SkelBossPattern pattern : fallbackOrder) {
-        if (pattern != m_previousPattern) {
-            return pattern;
-        }
+    std::array<SkelBossPattern, 3> availablePatterns{};
+    std::size_t availableCount = 0;
+    if (isBetweenHands) {
+        availablePatterns[availableCount++] = SkelBossPattern::HandLaser;
     }
-    return preferred;
+    if (isNearFloor) {
+        availablePatterns[availableCount++] = SkelBossPattern::SwordFan;
+    }
+    availablePatterns[availableCount++] = SkelBossPattern::RotatingBullet;
+
+    const auto oldestIt = std::min_element(
+        availablePatterns.begin(), availablePatterns.begin() + availableCount,
+        [this](SkelBossPattern leftPattern, SkelBossPattern rightPattern) {
+            return m_patternLastUsed[patternIndex(leftPattern)] <
+                m_patternLastUsed[patternIndex(rightPattern)];
+        });
+    return *oldestIt;
 }
 
 void SkelBoss::startPattern(SkelBossPattern pattern, const Player& player,
@@ -232,6 +239,7 @@ void SkelBoss::startPattern(SkelBossPattern pattern, const Player& player,
     m_state = State::Attacking;
     m_currentPattern = pattern;
     m_patternTimer = 0.f;
+    markPatternUsed(pattern);
     animator.play("SkellBoss_Attack");
 
     switch (pattern) {
@@ -244,6 +252,7 @@ void SkelBoss::startPattern(SkelBossPattern pattern, const Player& player,
         m_bulletRotation = 0.f;
         break;
     case SkelBossPattern::SwordFan:
+        std::cout << "[SkelBoss] SwordFan pattern started\n";
         summonSwordFan(objectPool);
         break;
     case SkelBossPattern::None:
@@ -253,7 +262,6 @@ void SkelBoss::startPattern(SkelBossPattern pattern, const Player& player,
 }
 
 void SkelBoss::finishPattern() {
-    m_previousPattern = m_currentPattern;
     m_currentPattern = SkelBossPattern::None;
     m_state = State::Idle;
     m_stateTimer = 0.f;
@@ -340,22 +348,82 @@ void SkelBoss::updateHandLaser(float dt, Player& player) {
 }
 
 sf::Vector2f SkelBoss::getMouthPosition() const {
-    return getBodyCenterPosition() + sf::Vector2f{ 0.f, -48.f };
+    // 보스 스프라이트의 중심이 아니라, 해골 머리의 입이 위치한 높이를
+    // 기준으로 발사점을 잡습니다. 프레임별 높이 변화에도 함께 보정됩니다.
+    const sf::FloatRect bounds = getGlobalBounds();
+    return {
+        bounds.position.x + bounds.size.x * 0.5f,
+        bounds.position.y + bounds.size.y * 0.66f
+    };
+}
+
+std::size_t SkelBoss::patternIndex(SkelBossPattern pattern) {
+    switch (pattern) {
+    case SkelBossPattern::HandLaser:
+        return 0;
+    case SkelBossPattern::SwordFan:
+        return 1;
+    case SkelBossPattern::RotatingBullet:
+        return 2;
+    case SkelBossPattern::None:
+        break;
+    }
+    return 0;
+}
+
+void SkelBoss::markPatternUsed(SkelBossPattern pattern) {
+    if (pattern != SkelBossPattern::None) {
+        m_patternLastUsed[patternIndex(pattern)] = ++m_patternUseSequence;
+    }
 }
 
 void SkelBoss::fireRotatingCross(ObjectPoolingManager& objectPool) {
     if (!m_bulletWeapon) {
+        std::cerr << "[SkelBoss] Bullet pattern skipped: bullet weapon is unavailable\n";
         return;
     }
-    const sf::Vector2f origin = getMouthPosition();
-    m_bulletWeapon->update(0.f, origin, m_bulletRotation);
-    m_bulletWeapon->attack();
-    for (const ProjectileSpawnRequest& request :
-        m_bulletWeapon->consumeProjectileRequests()) {
-        objectPool.acquireProjectile(request);
+
+    const EquipStat bulletStat = m_bulletWeapon->getStat();
+    if (!bulletStat.projectile) {
+        std::cerr << "[SkelBoss] Bullet pattern skipped: bullet projectile config is unavailable\n";
+        return;
     }
+
+    const ProjectileConfig& config = *bulletStat.projectile;
+    const sf::Vector2f origin = getMouthPosition();
+    const unsigned int count = std::max(1u, config.count);
+    objectPool.acquireEffect({
+        "Projectile", "BossBulletFX", origin,
+        0.f, { 1.f, 1.f }, 0.045f, false, false, 0.f,
+        origin, sf::Color::White
+    });
+    const float centerIndex = (static_cast<float>(count) - 1.f) * 0.5f;
+    unsigned int spawnedCount = 0;
+    for (unsigned int index = 0; index < count; ++index) {
+        const float angle = m_bulletRotation +
+            (static_cast<float>(index) - centerIndex) * config.spreadRadian;
+        ProjectileSpawnRequest request;
+        request.type = config.type;
+        request.isRangedWeapon = true;
+        request.animationKey = config.animationKey;
+        request.returnAnimationKey = config.returnAnimationKey;
+        request.target = config.target;
+        request.position = origin;
+        request.direction = { std::cos(angle), std::sin(angle) };
+        request.speed = config.speed;
+        request.damage = config.damage;
+        request.lifetime = config.lifetime;
+        request.rotateToDirection = config.rotateToDirection;
+        request.rotationOffsetRadian = config.rotationOffsetRadian;
+        if (Projectile* bullet = objectPool.acquireProjectile(request)) {
+            ++spawnedCount;
+        }
+    }
+    std::cout << "[SkelBoss] BulletCross requested=" << count
+              << ", spawned=" << spawnedCount
+              << ", animation=" << config.animationKey << '\n';
     // 화면 좌표계에서는 양의 회전이 시계 방향입니다.
-    m_bulletRotation += 0.18f;
+    m_bulletRotation += kBulletRotationStep;
 }
 
 void SkelBoss::updateRotatingBullets(float dt, ObjectPoolingManager& objectPool) {
@@ -401,10 +469,12 @@ void SkelBoss::summonSwordFan(ObjectPoolingManager& objectPool) {
 void SkelBoss::spawnSword(const sf::Vector2f& position,
     ObjectPoolingManager& objectPool) {
     if (!m_swordWeapon) {
+        std::cerr << "[SkelBoss] SwordFan skipped: sword weapon is unavailable\n";
         return;
     }
     const EquipStat swordStat = m_swordWeapon->getStat();
     if (!swordStat.projectile) {
+        std::cerr << "[SkelBoss] SwordFan skipped: sword projectile config is unavailable\n";
         return;
     }
     const ProjectileConfig& config = *swordStat.projectile;
@@ -424,6 +494,8 @@ void SkelBoss::spawnSword(const sf::Vector2f& position,
     request.damageActiveOnSpawn = false;
     if (Projectile* sword = objectPool.acquireProjectile(request)) {
         m_swords.push_back(sword);
+        std::cout << "[SkelBoss] SwordFan sword spawned: active="
+                  << sword->isActive() << '\n';
         m_swordChargeEffects.push_back(objectPool.acquireEffect({
             "Projectile", "BossSword_Charge", position,
             0.f, { 1.f, 1.f }, 0.06f, true, false, 0.f,
