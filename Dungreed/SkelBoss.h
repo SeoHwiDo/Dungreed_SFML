@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <memory>
 #include <optional>
+#include <random>
 #include <vector>
 
 class Effect;
@@ -57,8 +58,10 @@ private:
 
     std::optional<sf::Sprite> m_leftHand;
     std::optional<sf::Sprite> m_rightHand;
+    std::optional<sf::Sprite> m_backSprite;
     Animator m_leftHandAnimator;
     Animator m_rightHandAnimator;
+    Animator m_backAnimator;
     sf::Vector2f m_leftHandPosition{};
     sf::Vector2f m_rightHandPosition{};
 
@@ -75,6 +78,8 @@ private:
 
     float m_bulletIntervalTimer = 0.f;
     float m_bulletRotation = 0.f;
+    float m_backParticleTimer = 0.f;
+    std::mt19937 m_backParticleRandom{ std::random_device{}() };
 
     std::shared_ptr<Equip> m_handLaserWeapon;
     std::shared_ptr<Equip> m_bulletWeapon;
@@ -96,6 +101,8 @@ private:
     void configureHands();
     void configureLaser();
     void configurePatternWeapons();
+    void updateBackVisual(float dt);
+    void updateBackParticles(float dt, ObjectPoolingManager& objectPool);
     void updateHands(float dt, const TileMap& tileMap);
     void updateHandPositions(const TileMap& tileMap);
     void setHandAttackAnimation(bool rightHand);
