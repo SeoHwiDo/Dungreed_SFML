@@ -31,12 +31,9 @@ bool selectConnectionDoors(const RoomInstanceData& fromData,
     for (const auto& [candidateFromDoor, candidateToDoor] : pairs) {
         const std::size_t fromIndex = static_cast<std::size_t>(candidateFromDoor);
         const std::size_t toIndex = static_cast<std::size_t>(candidateToDoor);
-        const bool isFromAvailable = std::find(fromData.availableDoorPositions.begin(),
-            fromData.availableDoorPositions.end(), candidateFromDoor) !=
-            fromData.availableDoorPositions.end();
-        const bool isToAvailable = std::find(toData.availableDoorPositions.begin(),
-            toData.availableDoorPositions.end(), candidateToDoor) !=
-            toData.availableDoorPositions.end();
+        const bool isFromAvailable = std::find(fromData.availableDoorPositions.begin(), fromData.availableDoorPositions.end(), candidateFromDoor) != fromData.availableDoorPositions.end();
+        const bool isToAvailable = std::find(toData.availableDoorPositions.begin(),toData.availableDoorPositions.end(), candidateToDoor) != toData.availableDoorPositions.end();
+
         if (!fromDoors[fromIndex] && !toDoors[toIndex] && isFromAvailable && isToAvailable){
             fromDoor = candidateFromDoor;
             toDoor = candidateToDoor;
@@ -166,12 +163,13 @@ bool MapManager::createCurrentRoomFromData(const FloorData& floor,
         m_floorRooms.emplace(instanceId, std::move(managedRoom));
         m_floorRoomOrder.push_back(instanceId);
     }
-    for (const std::string& instanceId : restRoomIds) {
+    //휴식방 임시 비활성화
+    /*for (const std::string& instanceId : restRoomIds) {
         FloorManagedRoom managedRoom;
         managedRoom.room = std::make_unique<Room>();
         m_floorRooms.emplace(instanceId, std::move(managedRoom));
         m_floorRoomOrder.push_back(instanceId);
-    }
+    }*/
 
     std::vector<RoomConnection> connections;
     for (std::size_t index = 0; index + 1 < route.size(); ++index) {
@@ -189,19 +187,19 @@ bool MapManager::createCurrentRoomFromData(const FloorData& floor,
     }
 
     // 휴식방은 메인 경로의 몬스터방 3개 중 가운데 방 하단에 가지로 연결합니다.
-    if (!restRoomIds.empty() && !monsterRoomCandidates.empty()) {
-        const std::string& middleMonsterId =
-            monsterRoomCandidates[monsterRoomCandidates.size() / 2];
-        const std::string& restRoomId = restRoomIds.front();
-        if (!selectFixedConnectionDoors(*instanceData.at(middleMonsterId),
-            *instanceData.at(restRoomId), doorPositions.at(middleMonsterId),
-            doorPositions.at(restRoomId), DoorPosition::Down, DoorPosition::Up)) {
-            m_floorRooms.clear();
-            return false;
-        }
-        connections.push_back({ middleMonsterId, DoorPosition::Down,
-            restRoomId, DoorPosition::Up });
-    }
+    //if (!restRoomIds.empty() && !monsterRoomCandidates.empty()) {
+    //    const std::string& middleMonsterId =
+    //        monsterRoomCandidates[monsterRoomCandidates.size() / 2];
+    //    const std::string& restRoomId = restRoomIds.front();
+    //    if (!selectFixedConnectionDoors(*instanceData.at(middleMonsterId),
+    //        *instanceData.at(restRoomId), doorPositions.at(middleMonsterId),
+    //        doorPositions.at(restRoomId), DoorPosition::Down, DoorPosition::Up)) {
+    //        m_floorRooms.clear();
+    //        return false;
+    //    }
+    //    connections.push_back({ middleMonsterId, DoorPosition::Down,
+    //        restRoomId, DoorPosition::Up });
+    //}
 
     for (const auto& [instanceId, managedRoom] : m_floorRooms) {
         const RoomReferenceData& reference = *referenceData.at(instanceId);
