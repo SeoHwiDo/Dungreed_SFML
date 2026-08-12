@@ -6,7 +6,7 @@
       "atlasKey": "Equip",
       "frame": "ShortSword_Idle-00.png",
       "type": "Melee",
-      "damage": 100.0,
+      "damage": 20.0,
       "attackSpeed": 2.5,
       "range": 40.0
     },
