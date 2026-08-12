@@ -1,5 +1,6 @@
 ﻿#include "Monster.h"
 
+#include "AudioManager.h"
 #include "Player.h"
 #include "ResourceManager.h"
 
@@ -35,6 +36,8 @@ void Monster::init(const std::string &atlasKey) {
         movement.isGrounded = false;
     }
     Actor::init(atlasKey);
+    // 재사용한 몬스터에 이전 아틀라스의 프레임 포인터가 남지 않게 합니다.
+    animator = Animator{};
 
     auto &resources = ResourceManager::getInstance();
     const std::vector<std::string> animationNames = resources.getAnimationNames(atlasKey);
@@ -257,6 +260,9 @@ void Monster::changeState(MonsterState newState) {
         movement.velocity.y = 0.f;
         m_chargeDirection = fsm.facingDirection;
         m_chargeImpactConsumed = false;
+        if (previousState != MonsterState::Charge) {
+            AudioManager::getInstance().playSfx(getId(), m_type + "_Charge");
+        }
         if (animator.hasAnimation(m_type + "_Charge")) {
             animator.play(m_type + "_Charge");
         } else if (animator.hasAnimation(m_type + "_Run")) {

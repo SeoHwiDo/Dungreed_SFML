@@ -7,6 +7,7 @@
 #include <unordered_set>
 
 #include "Animator.h"
+#include "EntityId.h"
 #include "Equip.h"
 
 /// 풀에서 대여할 단일 이펙트의 재생·배치·공격 판정 정보를 묶습니다.

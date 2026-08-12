@@ -1,5 +1,7 @@
 ﻿#include "Equip.h"
 #include "Actor.h"
+#include "LogManager.h"
+
 #include <algorithm>
 #include <cmath>
 #include <iostream>
@@ -28,7 +30,7 @@ void Equip::init(const std::string &atlasKey, const std::string &frameName) {
         m_sprite->setTextureRect(*rect);
         m_sprite->setOrigin(pivot.value_or(sf::Vector2f{rect->size.x / 2.f, rect->size.y / 2.f}));
     } else {
-        std::cerr << "[Equip] 무기 스프라이트를 찾을 수 없습니다: " << actualFrameName << std::endl;
+        LogManager::getInstance().error("Equip", "무기 스프라이트를 찾을 수 없습니다: " + atlasKey + '/' + actualFrameName);
     }
 }
 

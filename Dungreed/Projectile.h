@@ -42,6 +42,8 @@ class Projectile {
     void setDirection(const sf::Vector2f &direction, float speed);
     void setAnimation(const std::string &animationKey);
     void setDamageEnabled(bool enabled) { m_damageEnabled = enabled; }
+    /// 보스 칼처럼 대상 피해 후에도 지형까지 진행하는 투사체에 사용합니다.
+    void markTargetDamaged() { m_hasDamagedTarget = true; }
     void embedInWall(float duration, float overlapPixels = 5.f);
     bool isEmbedded() const { return m_isEmbedded; }
     const sf::Vector2f &getDirection() const { return m_direction; }
@@ -61,6 +63,7 @@ class Projectile {
     bool m_isRangedWeapon = false;
     bool m_isEmbedded = false;
     bool m_damageEnabled = true;
+    bool m_hasDamagedTarget = false;
     bool m_rotateToDirection = false;
     ProjectileType m_type = ProjectileType::Arrow;
     std::string m_animationKey;

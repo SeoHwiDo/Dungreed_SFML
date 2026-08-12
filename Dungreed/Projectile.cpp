@@ -1,6 +1,8 @@
 ﻿#include "Projectile.h"
 #include "ResourceManager.h"
 
+#include "LogManager.h"
+
 #include <algorithm>
 #include <cmath>
 #include <iostream>
@@ -10,6 +12,7 @@ void Projectile::activate(const ProjectileSpawnRequest &request) {
     m_isPlayingReturnTrail = false;
     m_isEmbedded = false;
     m_damageEnabled = request.damageActiveOnSpawn;
+    m_hasDamagedTarget = false;
     m_isRangedWeapon = request.isRangedWeapon;
     m_type = request.type;
     m_animationKey = request.animationKey;
@@ -32,9 +35,9 @@ void Projectile::activate(const ProjectileSpawnRequest &request) {
 
     if (m_isRangedWeapon) {
         if (m_animationKey.empty()) {
-            std::cerr << "[Projectile] 원거리 투사체 애니메이션 키가 비어 있습니다.\n";
+            LogManager::getInstance().error("Projectile", "원거리 투사체 애니메이션 키가 비어 있습니다.");
         } else if (!loadVisual(m_animationKey)) {
-            std::cerr << "[Projectile] 투사체 리소스를 찾을 수 없습니다: " << m_animationKey << '\n';
+            LogManager::getInstance().error("Projectile", "투사체 리소스를 찾을 수 없습니다: " + m_animationKey);
         }
     }
 
@@ -131,6 +134,7 @@ void Projectile::deactivate() {
     m_isPlayingReturnTrail = false;
     m_isEmbedded = false;
     m_damageEnabled = true;
+    m_hasDamagedTarget = false;
     m_isRangedWeapon = false;
     m_animationKey.clear();
     m_returnAnimationKey.clear();
@@ -147,7 +151,7 @@ void Projectile::deactivate() {
     m_collision.updateHitbox({});
 }
 
-bool Projectile::checkHit(const sf::FloatRect &targetBounds) const { return isDamageActive() && m_collision.checkHit(targetBounds).has_value(); }
+bool Projectile::checkHit(const sf::FloatRect &targetBounds) const { return isDamageActive() && !m_hasDamagedTarget && m_collision.checkHit(targetBounds).has_value(); }
 
 sf::FloatRect Projectile::getGlobalBoundsAt(const sf::Vector2f &position) const {
     sf::FloatRect bounds = getGlobalBounds();

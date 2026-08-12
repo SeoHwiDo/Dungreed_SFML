@@ -41,6 +41,8 @@ class ObjectPoolingManager {
     Projectile *acquireProjectile(const ProjectileSpawnRequest &request);
     /// 투사체를 삭제하지 않고 비활성 슬롯으로 반환합니다.
     void releaseProjectile(Projectile *projectile);
+    /// 장면 이탈 시 남은 투사체를 Trail 없이 즉시 비활성화합니다.
+    void clearActiveProjectiles();
     /// 현재 활성 투사체를 순회합니다. 충돌 연산은 호출자 매니저가 수행합니다.
     void forEachActiveProjectile(const std::function<void(Projectile &)> &operation);
     /// 비활성 효과 슬롯을 재사용하거나 새 슬롯을 생성합니다.

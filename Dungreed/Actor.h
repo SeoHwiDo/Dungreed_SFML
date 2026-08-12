@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <SFML/Graphics.hpp>
 #include <optional>
 #include <string>
@@ -7,7 +7,7 @@
 #include "ResourceManager.h"
 #include "Collision.h"
 #include "Equip.h"
-
+#include "EntityId.h"
 class Equip;
 
 constexpr float kDefaultMaxHp = 100.0f;
@@ -126,7 +126,7 @@ class Actor {
     void playAnimation(const std::string &animationName);
     /// 피격 색상 및 넉백 지속 시간을 감소시키고 종료 상태를 복구합니다.
     void updateHitFeedback(float dt);
-
+    void playSound(const std::string &soundName);
     float m_hitTimer = 0.f;
     float m_knockbackTimer = 0.f;
     sf::Vector2f m_knockbackVelocity{0.f, 0.f};

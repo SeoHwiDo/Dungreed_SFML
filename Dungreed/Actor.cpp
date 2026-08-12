@@ -1,4 +1,4 @@
-#include "Actor.h"
+﻿#include "Actor.h"
 
 #include <algorithm>
 #include <iostream>
@@ -16,9 +16,12 @@ void Actor::init(const std::string &atlasKey) {
     if (tex) {
         if (!sprite.has_value()) {
             sprite.emplace(*tex);
-            setBottomCenterOrigin();
-            col.updateHitbox(sprite->getGlobalBounds());
+        } else {
+            // 풀 객체가 다시 초기화될 때도 현재 리소스의 텍스처를 다시 연결합니다.
+            sprite->setTexture(*tex);
         }
+        setBottomCenterOrigin();
+        col.updateHitbox(sprite->getGlobalBounds());
     }
 }
 
@@ -151,6 +154,9 @@ void Actor::updateHitFeedback(float dt) {
         }
     }
 }
+// void Actor::playSound(const std::string& soundName) {
+//     if()
+// }
 void Actor::updateAnimation(float dt) {
     if (sprite) {
         animator.update(dt, *sprite);

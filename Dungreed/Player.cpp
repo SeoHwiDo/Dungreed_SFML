@@ -1,5 +1,6 @@
 ﻿#include "Player.h"
 
+#include "AudioManager.h"
 #include "Collision.h"
 #include "Equip.h"
 #include "ResourceManager.h"
@@ -395,4 +396,5 @@ void Player::takeDamage(float damage, const sf::Vector2f &attackerPosition, floa
         return;
     }
     Actor::takeDamage(damage, attackerPosition, knockbackMultiplier);
+    AudioManager::getInstance().playSfx(getId(), "Player_Hit");
 }

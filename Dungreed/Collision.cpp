@@ -79,6 +79,39 @@ bool Collision::resolveProjectileMapCollision(Projectile &projectile, const Tile
     const sf::Vector2f start = projectile.getPreviousPosition();
     const sf::Vector2f end = projectile.getPosition();
     const sf::Vector2f delta = end - start;
+    if (projectile.getType() == ProjectileType::BossSword) {
+        // 보스 칼은 긴 스프라이트의 AABB가 중간 플랫폼이나 벽에 먼저 닿아
+        // 멈추지 않도록, 진행 경로 아래에 있는 Solid 타일의 윗면만 판정합니다.
+        // OneWay 타일은 의도적으로 모두 통과하며 바닥에만 꽂힙니다.
+        if (delta.y <= 0.f) {
+            return false;
+        }
+
+        float firstGroundHit = 2.f;
+        for (const auto &tile : map.getCollisionTiles()) {
+            if (tile.type != TileType::Solid || end.y < tile.bounds.position.y) {
+                continue;
+            }
+
+            const float hitProgress = (tile.bounds.position.y - start.y) / delta.y;
+            if (hitProgress < 0.f || hitProgress > 1.f || hitProgress >= firstGroundHit) {
+                continue;
+            }
+
+            const float hitX = start.x + delta.x * hitProgress;
+            if (hitX < tile.bounds.position.x || hitX > tile.bounds.position.x + tile.bounds.size.x) {
+                continue;
+            }
+            firstGroundHit = hitProgress;
+        }
+
+        if (firstGroundHit <= 1.f) {
+            projectile.setPosition(start + delta * firstGroundHit);
+            return true;
+        }
+        return false;
+    }
+
     const sf::Vector2f tileSize = map.getTileSize();
     const float distance = std::max(std::abs(delta.x), std::abs(delta.y));
     const unsigned int samples = std::max(1u, static_cast<unsigned int>(std::ceil(distance / std::max(1.f, std::max(tileSize.x, tileSize.y)))));

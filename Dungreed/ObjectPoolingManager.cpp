@@ -1,5 +1,6 @@
 ﻿#include "ObjectPoolingManager.h"
 
+#include "AudioManager.h"
 #include "GameDataManager.h"
 
 void ObjectPoolingManager::prewarmMonsters(std::size_t count, const std::string &type, Actor::Status status, const std::string &atlasKey, MonsterBehaviorConfig behavior) {
@@ -79,6 +80,7 @@ void ObjectPoolingManager::releaseMonster(Monster *monster) {
             if (!slot.active) {
                 return;
             }
+            AudioManager::getInstance().stopActorSounds(monster->getId());
             slot.active = false;
             enqueueInactiveMonster(index);
             return;
@@ -130,6 +132,18 @@ void ObjectPoolingManager::releaseProjectile(Projectile *projectile) {
             enqueueInactiveProjectile(index);
             return;
         }
+    }
+}
+
+void ObjectPoolingManager::clearActiveProjectiles() {
+    for (std::size_t index = 0; index < m_projectiles.size(); ++index) {
+        ProjectileSlot &slot = m_projectiles[index];
+        if (!slot.active || !slot.object) {
+            continue;
+        }
+        slot.object->deactivate();
+        slot.active = false;
+        enqueueInactiveProjectile(index);
     }
 }
 

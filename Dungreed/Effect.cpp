@@ -1,6 +1,6 @@
 #include "Effect.h"
 
-#include <iostream>
+#include "LogManager.h"
 
 #include "ResourceManager.h"
 
@@ -9,7 +9,7 @@ bool Effect::activate(const EffectSpawnRequest &request) {
     const sf::Texture *texture = resourceManager.getAtlasTexture(request.atlasKey);
     const std::vector<sf::IntRect> *frames = resourceManager.getAnimationFrames(request.atlasKey, request.animationName);
     if (!texture || !frames || frames->empty()) {
-        std::cerr << "[Effect] 이펙트 애니메이션을 찾을 수 없습니다: " << request.atlasKey << '/' << request.animationName << '\n';
+        LogManager::getInstance().error("Effect", "이펙트 애니메이션을 찾을 수 없습니다: " + request.atlasKey + '/' + request.animationName);
         return false;
     }
 

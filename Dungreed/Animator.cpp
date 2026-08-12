@@ -1,11 +1,11 @@
 #include "Animator.h"
-#include <iostream>
+#include "LogManager.h"
 
 void Animator::addAnimation(const std::string &name, const AnimationClip &clip) {
     if (clip.frames != nullptr && !clip.frames->empty()) { // 참조해온 정보가 존재하는지 확인
         m_animations[name] = clip;
     } else {
-        std::cerr << "[Animator] 경고: 유효하지 않은 프레임 데이터가 등록되었습니다. (" << name << ")\n";
+        LogManager::getInstance().warning("Animator", "유효하지 않은 프레임 데이터 등록 요청: " + name);
     }
 }
 
@@ -19,7 +19,7 @@ void Animator::play(const std::string &name) {
         m_currentFrame = 0;
         m_isPlaying = true;
     } else {
-        std::cerr << "[Animator] 경고: 애니메이션을 찾을 수 없습니다. :" << name << "\n";
+        LogManager::getInstance().warning("Animator", "애니메이션을 찾을 수 없습니다: " + name);
     }
 }
 

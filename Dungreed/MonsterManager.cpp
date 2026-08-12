@@ -4,8 +4,10 @@
 #include <iostream>
 #include <vector>
 
+#include "AudioManager.h"
 #include "Collision.h"
 #include "GameDataManager.h"
+#include "LogManager.h"
 #include "EffectManager.h"
 #include "Player.h"
 #include "Room.h"
@@ -108,6 +110,7 @@ bool MonsterManager::spawnMonster(const MonsterData &monsterData, std::vector<sf
         }
 
         const float revealDelay = effectManager.spawnMonsterMagicCircle(objectPool, monster->getBodyCenterPosition());
+        AudioManager::getInstance().playSfx(monster->getId(), "Monster_Summon");
         monster->beginSpawn(std::max(activationDelay, revealDelay), revealDelay);
         m_activeRoomMonsters.push_back(monster);
         m_monsterPhaseIndices.emplace(monster, phaseIndex);
@@ -115,7 +118,7 @@ bool MonsterManager::spawnMonster(const MonsterData &monsterData, std::vector<sf
         return true;
     }
 
-    std::cerr << "[몬스터] 안전한 스폰 위치 없음: " << monsterData.id << '\n';
+    LogManager::getInstance().warning("MonsterManager", "안전한 몬스터 스폰 위치가 없습니다: " + monsterData.id);
     objectPool.releaseMonster(monster);
     return false;
 }

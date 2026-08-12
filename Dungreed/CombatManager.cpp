@@ -1,5 +1,6 @@
 #include "CombatManager.h"
 
+#include "AudioManager.h"
 #include "Player.h"
 #include "Boss.h"
 #include "Monster.h"
@@ -19,6 +20,7 @@ std::unordered_set<EntityId> CombatManager::resolvePlayerAttack(Player &player, 
 
     // 근접 무기는 공격 중인 스프라이트 경계를 즉시 검사합니다.
     if (weapon->getStat().type == WeaponType::Melee && weapon->consumeMeleeSwingStarted()) {
+        AudioManager::getInstance().playSfx(player.getId(), "Player_Attack");
         effectManager.spawnPlayerSwing(objectPool, player.getBodyCenterPosition(), weapon->getAimRadian(), weapon->getStat().damage);
     }
     // SwingFX와 실제 무기 스프라이트 중 하나라도 닿으면 적중으로 처리합니다.
@@ -39,6 +41,7 @@ std::unordered_set<EntityId> CombatManager::resolvePlayerAttack(Player &player, 
             }
             if (hitPosition && effect.consumeHit(monster.getId())) {
                 monster.takeDamage(effect.getDamage(), effect.getAttackerPosition());
+                AudioManager::getInstance().playSfx(monster.getId(), monster.dead() ? "Monster_Death" : "Monster_Hit");
                 hitMonsters.insert(monster.getId());
                 effectManager.spawnHitSlash(objectPool, *hitPosition, effect.getRotationRadian());
             }
@@ -126,6 +129,7 @@ void CombatManager::resolveMonsterAttacks(float dt, Player &player, ObjectPoolin
         const float aim = std::atan2(toPlayer.y, toPlayer.x);
         weapon->update(dt, origin, aim);
         weapon->attack();
+        AudioManager::getInstance().playSfx(monster.getId(), monster.getType() + "_Attack");
 
         if (!isMelee) {
             for (const ProjectileSpawnRequest &request : weapon->consumeProjectileRequests()) {
@@ -180,7 +184,12 @@ std::unordered_set<EntityId> CombatManager::updateProjectiles(float dt, Player &
             if (!player.dead() && !player.isDashing() && projectile.checkHit(player.getGlobalBounds())) {
                 // 투사체는 근접 공격의 절반 힘으로만 넉백을 적용합니다.
                 player.takeDamage(projectile.getDamage(), projectile.getPosition(), 0.5f);
-                toRelease.push_back(&projectile);
+                if (projectile.getType() == ProjectileType::BossSword) {
+                    // 칼은 플레이어에 한 번 피해를 준 뒤에도 바닥 충돌 지점까지 진행합니다.
+                    projectile.markTargetDamaged();
+                } else {
+                    toRelease.push_back(&projectile);
+                }
             }
             return;
         }
@@ -192,6 +201,7 @@ std::unordered_set<EntityId> CombatManager::updateProjectiles(float dt, Player &
             }
             if (!monster.dead() && projectile.checkHit(monster.getGlobalBounds())) {
                 monster.takeDamage(projectile.getDamage(), projectile.getPosition());
+                AudioManager::getInstance().playSfx(monster.getId(), monster.dead() ? "Monster_Death" : "Monster_Hit");
                 hitMonsters.insert(monster.getId());
                 hit = true;
             }

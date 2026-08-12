@@ -3,11 +3,9 @@
 #include <string>
 #include <optional>
 #include <vector>
-#include <cstdint>
 #include "ResourceManager.h"
 
 class Actor; // 전방 선언
-using EntityId = std::uint32_t;
 
 enum class WeaponType { Melee, Ranged };
 
