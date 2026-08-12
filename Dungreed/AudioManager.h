@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <SFML/Audio.hpp>
 
@@ -37,7 +37,7 @@ class AudioManager {
     AudioManager() = default;
     ~AudioManager() = default;
 
-    static constexpr std::size_t kSfxVoiceCount = 8;
+    static constexpr std::size_t kSfxVoiceCount = 32;
 
     SfxVoice &acquireSfxVoice();
 
