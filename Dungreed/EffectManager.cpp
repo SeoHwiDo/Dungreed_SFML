@@ -64,7 +64,20 @@ void EffectManager::forEachActiveAttackEffect(const ObjectPoolingManager &object
 }
 
 void EffectManager::render(sf::RenderWindow &window, const ObjectPoolingManager &objectPool) const {
-    objectPool.forEachActiveEffect([&](Effect &effect) { effect.render(window); });
+    objectPool.forEachActiveEffect([&](Effect &effect) {
+        if (!effect.rendersBehindActors()) {
+            effect.render(window);
+        }
+    });
+}
+
+void EffectManager::renderBehindActors(sf::RenderWindow &window,
+    const ObjectPoolingManager &objectPool) const {
+    objectPool.forEachActiveEffect([&](Effect &effect) {
+        if (effect.rendersBehindActors()) {
+            effect.render(window);
+        }
+    });
 }
 
 void EffectManager::clear(ObjectPoolingManager &objectPool) {

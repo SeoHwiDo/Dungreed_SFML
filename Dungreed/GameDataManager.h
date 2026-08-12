@@ -4,6 +4,7 @@
 #include "Room.h"
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <unordered_map>
@@ -12,6 +13,7 @@
 inline constexpr std::string_view kWeaponsDataFileName = "weapons.json";
 inline constexpr std::string_view kMonstersDataFileName = "monsters.json";
 inline constexpr std::string_view kRoomDataFileName = "room_data.json";
+inline constexpr std::string_view kActorDataFileName = "actor_data.json";
 
 struct WeaponData {
     std::string id;
@@ -23,10 +25,27 @@ struct WeaponData {
 struct MonsterData {
     std::string id;
     bool enabled = true;
-    std::string atlasKey = "Monster";
-    Actor::Status status{kDefaultMaxHp, kDefaultMaxHp, kDefaultPower, kDefaultDex};
+    std::string atlasKey;
+    Actor::Status status{};
     MonsterBehaviorConfig behavior;
     std::string weaponId;
+};
+
+struct PlayerData {
+    std::string atlasKey;
+    std::string defaultWeaponId;
+    Actor::Status defaultStatus{};
+    Actor::Status easyStatus{};
+};
+
+struct BossData {
+    std::string id;
+    std::string displayName;
+    std::string atlasKey;
+    Actor::Status status{};
+    std::string handLaserWeaponId;
+    std::string rotatingBulletWeaponId;
+    std::string swordFanWeaponId;
 };
 
 struct RoomReferenceData {
@@ -92,6 +111,8 @@ class GameDataManager {
     const WeaponData *findWeapon(const std::string &id) const;
     const MonsterData *findMonster(const std::string &id) const;
     const FloorData *findFloor(const std::string &id) const;
+    const PlayerData *getPlayerData() const;
+    const BossData *findBoss(const std::string &id) const;
     PoolPrewarmPlan createPoolPrewarmPlan(float reserveRatio) const;
 
     std::shared_ptr<Equip> createEquip(const std::string &weaponId) const;
@@ -100,9 +121,12 @@ class GameDataManager {
     GameDataManager() = default;
     ~GameDataManager() = default;
     bool loadWeaponsFromFile(const std::string &path);
+    bool loadActorDataFromFile(const std::string &path);
     bool loadMonstersFromFile(const std::string &path);
     bool loadRoomDataFromFile(const std::string &path);
     std::unordered_map<std::string, WeaponData> m_weapons;
+    std::optional<PlayerData> m_playerData;
+    std::unordered_map<std::string, BossData> m_bosses;
     std::unordered_map<std::string, MonsterData> m_monsters;
     std::unordered_map<std::string, FloorData> m_floors;
 };

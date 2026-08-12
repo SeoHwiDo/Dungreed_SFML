@@ -3,13 +3,6 @@
 #include <algorithm>
 #include <iostream>
 
-Actor::Actor() {
-    status.maxHp = kDefaultMaxHp;
-    status.tmpHp = status.maxHp;
-    status.dex = kDefaultDex;
-    status.power = kDefaultPower;
-}
-
 void Actor::init(const std::string &atlasKey) {
     auto &resourceManager = ResourceManager::getInstance();
     const sf::Texture *tex = resourceManager.getAtlasTexture(atlasKey);

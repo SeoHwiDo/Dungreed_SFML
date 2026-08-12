@@ -3,6 +3,7 @@
 #include "AudioManager.h"
 #include "Collision.h"
 #include "Equip.h"
+#include "LogManager.h"
 #include "ResourceManager.h"
 #include "TileMap.h"
 
@@ -11,13 +12,13 @@
 #include <cstdint>
 #include <utility>
 
+Player::Player(Status defaultStatus, std::string atlasKey)
+    : Actor(defaultStatus), m_defaultStatus(defaultStatus), m_easyStatus(defaultStatus) {
+    init(atlasKey);
+}
+
 void Player::init(const std::string &atlasKey) {
     Actor::init(atlasKey);
-    if (!equipment) {
-        auto defaultWeapon = std::make_shared<Equip>("ShortSword", EquipStat{10.f, 2.5f, 40.f});
-        defaultWeapon->init("Equip", "ShortSword_Idle-00");
-        setEquipment(defaultWeapon);
-    }
 
     auto &resourceManager = ResourceManager::getInstance();
     for (const std::string &animationName : resourceManager.getAnimationNames(atlasKey)) {
@@ -105,7 +106,7 @@ void Player::restoreDashCharges(int amount) {
 }
 
 void Player::restoreForVillage() {
-    resetForReuse({kDefaultMaxHp, kDefaultMaxHp, kDefaultPower, kDefaultDex});
+    resetForReuse(m_isEasyMode ? m_easyStatus : m_defaultStatus);
     m_dashCharges = m_dashConfig.maxCharges;
     m_dashRechargeTimer = 0.f;
     m_isDashing = false;
@@ -119,6 +120,22 @@ void Player::restoreForVillage() {
         afterimage.remainingTime = 0.f;
     }
     changeState(PlayerState::Idle);
+}
+
+void Player::configureStatPresets(Status defaultStatus, Status easyStatus) {
+    m_defaultStatus = defaultStatus;
+    m_easyStatus = easyStatus;
+}
+
+void Player::activateEasyMode() {
+    m_isEasyMode = true;
+    resetForReuse(m_easyStatus);
+    m_dashCharges = m_dashConfig.maxCharges;
+    m_dashRechargeTimer = 0.f;
+    m_isDashing = false;
+    m_ignoreOneWayPlatforms = false;
+    m_dropThroughTimer = 0.f;
+    LogManager::getInstance().info("Player", "Easy stat preset applied.");
 }
 
 bool Player::tryStartDash(const sf::Vector2f &cursorPosition) {
@@ -142,6 +159,14 @@ bool Player::tryStartDash(const sf::Vector2f &cursorPosition) {
     changeState(PlayerState::Dash);
     spawnDashAfterimage();
     return true;
+}
+
+void Player::tryAttack() {
+    if (!equipment||!equipment->attack()) {
+        return;
+    }
+    //추후에 무기 다양화시 현재 장비값을 받아서 전달
+    AudioManager::getInstance().playSfx(getId(), "Player_Attack");
 }
 
 void Player::cancelDash() {
@@ -284,14 +309,14 @@ void Player::handleState(float dt, const InputData &input, const TileMap &tileMa
     if (input.isDashing && tryStartDash(input.aimWorldPosition)) {
         // 대시 시작과 동시에 장비 공격을 실행해, 이동 중에도 무기 판정을 유지합니다.
         if (equipment) {
-            equipment->attack();
+            tryAttack();
         }
         return;
     }
     if (m_isDashing) {
         // 대시 도중의 공격 입력도 무시하지 않습니다.
         if (input.isAttacking && equipment) {
-            equipment->attack();
+            tryAttack();
         }
         return;
     }
@@ -311,7 +336,9 @@ void Player::handleState(float dt, const InputData &input, const TileMap &tileMa
     }
 
     if (input.isJumping && movement.isGrounded) {
-        jump();
+        if (jump()) {
+            AudioManager::getInstance().playSfx(getId(), "Player_Jump");
+        }
     }
 
     if (!movement.isGrounded) {
@@ -325,7 +352,7 @@ void Player::handleState(float dt, const InputData &input, const TileMap &tileMa
     setHorizontalInput(input.moveDirX);
 
     if (input.isAttacking && equipment) {
-        equipment->attack();
+        tryAttack();
     }
     if (equipment) {
         equipment->update(dt, getBodyCenterPosition(), input.aimRadian);

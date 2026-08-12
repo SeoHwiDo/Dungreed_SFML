@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <SFML/Graphics.hpp>
 
@@ -26,7 +26,7 @@ class DungeonScene {
     bool isReady() const;
     unsigned int getFloorNumber() const { return m_floorNumber; }
     bool consumeBossDefeat();
-
+    inline const SkelBoss* getActiveBoss() const { return m_activeBoss.get(); }
   private:
     bool placePlayerAtCurrentRoom();
 

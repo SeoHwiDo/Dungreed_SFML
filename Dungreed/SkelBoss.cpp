@@ -31,12 +31,21 @@ constexpr float kSwordFanHalfRadian = 0.95f;
 constexpr float kBackParticleInterval = 0.18f;
 constexpr float kBackParticleHorizontalRadius = 48.f;
 constexpr float kBackParticleVerticalRadius = 42.f;
+constexpr float kDeathGravity = 980.f;
+constexpr float kDeathSequenceDuration = 1.5f;
+constexpr std::array<const char*, 6> kDeathFragmentFrames{
+    "SkellBoss_Dead_0.png", "SkellBoss_Dead_3.png", "SkellBoss_Dead_4.png",
+    "SkellBoss_Dead_5.png", "SkellBoss_Dead_6.png", "SkellBoss_Dead_7.png"
+};
 } // namespace
 
-SkelBoss::SkelBoss() : Boss("", {1200.f, 1200.f, 18.f, 1.f}) {
-    setDisplayName(kUiDisplayName);
+SkelBoss::SkelBoss(const BossData &data)
+    : Boss(data.displayName, data.status),
+      m_handLaserWeaponId(data.handLaserWeaponId),
+      m_rotatingBulletWeaponId(data.rotatingBulletWeaponId),
+      m_swordFanWeaponId(data.swordFanWeaponId) {
     configurePatternWeapons();
-    init("Boss");
+    init(data.atlasKey);
     beginSummon();
 }
 
@@ -48,9 +57,9 @@ void SkelBoss::init(const std::string &atlasKey) {
 
 void SkelBoss::configurePatternWeapons() {
     const auto &gameData = GameDataManager::getInstance();
-    m_handLaserWeapon = gameData.createEquip("SkelBossHandLaser");
-    m_bulletWeapon = gameData.createEquip("SkelBossRotatingBullet");
-    m_swordWeapon = gameData.createEquip("SkelBossSword");
+    m_handLaserWeapon = gameData.createEquip(m_handLaserWeaponId);
+    m_bulletWeapon = gameData.createEquip(m_rotatingBulletWeaponId);
+    m_swordWeapon = gameData.createEquip(m_swordFanWeaponId);
 
     if (!m_bulletWeapon) {
         LogManager::getInstance().error("SkelBoss", "Bullet 패턴 장비를 생성하지 못했습니다.");
@@ -108,7 +117,9 @@ void SkelBoss::updateBackParticles(float dt, ObjectPoolingManager &objectPool) {
         const float angle = angleDistribution(m_backParticleRandom);
         const float radius = radiusDistribution(m_backParticleRandom);
         const sf::Vector2f position = m_backSprite->getPosition() + sf::Vector2f{std::cos(angle) * kBackParticleHorizontalRadius * radius, std::sin(angle) * kBackParticleVerticalRadius * radius};
-        objectPool.acquireEffect({"Boss", "SkellBoss_Particle", position, angle, {0.75f, 0.75f}, 0.055f, false, false, 0.f, position, sf::Color::White});
+        objectPool.acquireEffect({"Boss", "SkellBoss_Particle", position, angle,
+            {0.75f, 0.75f}, 0.055f, false, false, 0.f, position,
+            sf::Color::White, true});
     }
 }
 
@@ -445,7 +456,7 @@ void SkelBoss::summonSwordFan(ObjectPoolingManager &objectPool) {
     const ProjectileConfig &config = *m_swordWeapon->getStat().projectile;
     const unsigned int swordCount = std::max(1u, config.count);
     stopSwordChargeEffects(objectPool);
-    m_swords.clear();
+    clearManagedSwords(objectPool);
     m_swords.reserve(swordCount);
     m_swordChargeEffects.reserve(swordCount);
     m_pendingSwordSpawns.clear();
@@ -487,6 +498,8 @@ void SkelBoss::spawnSword(const sf::Vector2f &position, ObjectPoolingManager &ob
     request.direction = {0.f, 1.f};
     request.speed = 0.f;
     request.damageActiveOnSpawn = false;
+    request.externallyManaged = true;
+    request.renderBehindTilesWhenEmbedded = true;
     if (Projectile *sword = objectPool.acquireProjectile(request)) {
         m_swords.push_back(sword);
         std::cout << "[SkelBoss] SwordFan sword spawned: active=" << sword->isActive() << '\n';
@@ -564,20 +577,198 @@ void SkelBoss::updateSwordFan(float dt, Player &player, ObjectPoolingManager &ob
     }
 }
 
+bool SkelBoss::resolveSwordGroundCollision(Projectile &sword,
+    const TileMap &tileMap) const {
+    const sf::Vector2f start = sword.getPreviousPosition();
+    const sf::Vector2f end = sword.getPosition();
+    const sf::Vector2f delta = end - start;
+    if (delta.y <= 0.f) {
+        return false;
+    }
+
+    float firstGroundHit = 2.f;
+    for (const TileData &tile : tileMap.getCollisionTiles()) {
+        if (tile.type != TileType::Solid || end.y < tile.bounds.position.y) {
+            continue;
+        }
+
+        const float hitProgress = (tile.bounds.position.y - start.y) / delta.y;
+        if (hitProgress < 0.f || hitProgress > 1.f || hitProgress >= firstGroundHit) {
+            continue;
+        }
+
+        const float hitX = start.x + delta.x * hitProgress;
+        if (hitX < tile.bounds.position.x ||
+            hitX > tile.bounds.position.x + tile.bounds.size.x) {
+            continue;
+        }
+        firstGroundHit = hitProgress;
+    }
+
+    if (firstGroundHit > 1.f) {
+        return false;
+    }
+
+    sword.setPosition(start + delta * firstGroundHit);
+    return true;
+}
+
+void SkelBoss::updateManagedSwords(float dt, Player &player,
+    ObjectPoolingManager &objectPool, const TileMap &tileMap) {
+    for (auto swordIt = m_swords.begin(); swordIt != m_swords.end();) {
+        Projectile *sword = *swordIt;
+        if (!sword || !sword->isActive()) {
+            if (sword) {
+                objectPool.releaseProjectile(sword);
+            }
+            swordIt = m_swords.erase(swordIt);
+            continue;
+        }
+
+        sword->update(dt);
+        if (!sword->isActive()) {
+            objectPool.releaseProjectile(sword);
+            swordIt = m_swords.erase(swordIt);
+            continue;
+        }
+        if (sword->isPlayingReturnTrail() || sword->isEmbedded() ||
+            !sword->isDamageActive()) {
+            ++swordIt;
+            continue;
+        }
+
+        if (resolveSwordGroundCollision(*sword, tileMap)) {
+            const sf::FloatRect swordBounds = sword->getGlobalBounds();
+            const float halfSwordLength =
+                std::max(swordBounds.size.x, swordBounds.size.y) * 0.5f;
+            const sf::Vector2f impactPosition = sword->getPosition() +
+                sword->getDirection() * halfSwordLength;
+            objectPool.acquireEffect({"Projectile", "BossSwordHitFX", impactPosition,
+                sword->getRotationRadian(), {1.f, 1.f}, 0.06f, false, false, 0.f,
+                impactPosition, sf::Color::White});
+            sword->embedInWall(1.25f, halfSwordLength + 5.f);
+            ++swordIt;
+            continue;
+        }
+
+        if (!player.dead() && !player.isDashing() &&
+            sword->checkHit(player.getGlobalBounds())) {
+            player.takeDamage(sword->getDamage(), sword->getPosition(), 0.5f);
+            // 보스 검은 플레이어에게 한 번만 피해를 주고 바닥까지 계속 이동합니다.
+            sword->markTargetDamaged();
+        }
+        ++swordIt;
+    }
+}
+
+void SkelBoss::clearManagedSwords(ObjectPoolingManager &objectPool) {
+    for (Projectile *sword : m_swords) {
+        if (!sword) {
+            continue;
+        }
+        sword->deactivate();
+        objectPool.releaseProjectile(sword);
+    }
+    m_swords.clear();
+}
+
+void SkelBoss::beginDeathSequence(ObjectPoolingManager &objectPool) {
+    m_isDeathSequenceActive = true;
+    m_deathSequenceElapsed = 0.f;
+    m_laserActive = false;
+    animator.stop();
+    m_leftHandAnimator.stop();
+    m_rightHandAnimator.stop();
+    m_backAnimator.stop();
+    stopSwordChargeEffects(objectPool);
+    clearManagedSwords(objectPool);
+
+    m_leftHandDeathVelocity = {-125.f, -255.f};
+    m_rightHandDeathVelocity = {125.f, -235.f};
+    const sf::Vector2f center = getBodyCenterPosition();
+    std::uniform_real_distribution<float> horizontalOffset(-46.f, 46.f);
+    std::uniform_real_distribution<float> verticalOffset(-64.f, 38.f);
+    std::uniform_real_distribution<float> horizontalVelocity(-185.f, 185.f);
+    std::uniform_real_distribution<float> verticalVelocity(-300.f, -135.f);
+    std::uniform_real_distribution<float> angularVelocity(-7.f, 7.f);
+
+    const sf::Texture* texture = ResourceManager::getInstance().getAtlasTexture("Boss");
+    if (texture) {
+        m_deathFragments.clear();
+        m_deathFragments.reserve(kDeathFragmentFrames.size());
+        for (const char* frameName : kDeathFragmentFrames) {
+            const sf::IntRect* frame = ResourceManager::getInstance().getFrameRect(
+                "Boss", frameName);
+            if (!frame) {
+                continue;
+            }
+
+            sf::Sprite sprite(*texture);
+            sprite.setTextureRect(*frame);
+            sprite.setOrigin({frame->size.x * 0.5f, frame->size.y * 0.5f});
+            sprite.setScale({kBossScale, kBossScale});
+            sprite.setPosition(center + sf::Vector2f{
+                horizontalOffset(m_backParticleRandom),
+                verticalOffset(m_backParticleRandom)});
+            m_deathFragments.push_back({std::move(sprite),
+                {horizontalVelocity(m_backParticleRandom),
+                    verticalVelocity(m_backParticleRandom)},
+                angularVelocity(m_backParticleRandom)});
+        }
+    }
+
+    constexpr int kDeathEffectCount = 5;
+    for (int index = 0; index < kDeathEffectCount; ++index) {
+        const sf::Vector2f position = center + sf::Vector2f{
+            horizontalOffset(m_backParticleRandom), verticalOffset(m_backParticleRandom)};
+        objectPool.acquireEffect({"Monster", "Monster_Die", position,
+            angularVelocity(m_backParticleRandom), {1.25f, 1.25f}, 0.055f,
+            false, false, 0.f, position, sf::Color::White});
+    }
+
+    AudioManager::getInstance().playSfx(getId(), "SkellBoss_Death");
+}
+
+void SkelBoss::updateDeathSequence(float dt) {
+    m_deathSequenceElapsed += dt;
+    for (DeathFragment& fragment : m_deathFragments) {
+        fragment.velocity.y += kDeathGravity * dt;
+        fragment.sprite.move(fragment.velocity * dt);
+        fragment.sprite.rotate(sf::radians(fragment.angularVelocity * dt));
+    }
+
+    const auto updateHand = [dt](std::optional<sf::Sprite>& hand,
+        sf::Vector2f& velocity) {
+        if (!hand) {
+            return;
+        }
+        velocity.y += kDeathGravity * dt;
+        hand->move(velocity * dt);
+        hand->rotate(sf::radians(velocity.x * 0.012f * dt));
+    };
+    updateHand(m_leftHand, m_leftHandDeathVelocity);
+    updateHand(m_rightHand, m_rightHandDeathVelocity);
+}
+
+bool SkelBoss::isDeathSequenceFinished() const {
+    return m_isDeathSequenceActive &&
+        m_deathSequenceElapsed >= kDeathSequenceDuration;
+}
+
 void SkelBoss::update(float dt, Player &player, ObjectPoolingManager &objectPool, EffectManager &effectManager, const TileMap &tileMap) {
     updateBossBase(dt);
-    updateBackVisual(dt);
-    updateHands(dt, tileMap);
 
     if (dead()) {
         if (m_state != State::Dead) {
-            AudioManager::getInstance().playSfx(getId(), "SkellBoss_Death");
+            m_state = State::Dead;
+            beginDeathSequence(objectPool);
         }
-        m_state = State::Dead;
-        m_laserActive = false;
-        stopSwordChargeEffects(objectPool);
+        updateDeathSequence(dt);
         return;
     }
+    updateBackVisual(dt);
+    updateHands(dt, tileMap);
+    updateManagedSwords(dt, player, objectPool, tileMap);
     updateBackParticles(dt, objectPool);
     if (isSummoning()) {
         m_state = State::Summoning;
@@ -613,10 +804,15 @@ void SkelBoss::update(float dt, Player &player, ObjectPoolingManager &objectPool
 }
 
 void SkelBoss::render(sf::RenderWindow &window) {
-    if (m_backSprite) {
+    if (!m_isDeathSequenceActive && m_backSprite) {
         window.draw(*m_backSprite);
     }
-    Actor::render(window);
+    if (!m_isDeathSequenceActive) {
+        Actor::render(window);
+    }
+    for (const DeathFragment& fragment : m_deathFragments) {
+        window.draw(fragment.sprite);
+    }
     if (m_leftHand) {
         window.draw(*m_leftHand);
     }

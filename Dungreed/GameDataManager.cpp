@@ -1,4 +1,4 @@
-#include "GameDataManager.h"
+﻿#include "GameDataManager.h"
 
 #include "LogManager.h"
 
@@ -15,44 +15,6 @@ namespace {
 std::string makeGameDataPath(std::string_view fileName) { return (std::filesystem::path(__FILE__).parent_path() / "Resources" / "data" / std::string(fileName)).string(); }
 
 WeaponType parseWeaponType(const std::string &value) { return value == "Ranged" ? WeaponType::Ranged : WeaponType::Melee; }
-
-ProjectileType parseProjectileType(const std::string &value) {
-    if (value == "Fireball") {
-        return ProjectileType::Fireball;
-    }
-    if (value == "Bullet") {
-        return ProjectileType::Bullet;
-    }
-    if (value == "BabyBatBullet") {
-        return ProjectileType::BabyBatBullet;
-    }
-    if (value == "BansheeBullet") {
-        return ProjectileType::BansheeBullet;
-    }
-    if (value == "BossBullet") {
-        return ProjectileType::BossBullet;
-    }
-    if (value == "BossSword") {
-        return ProjectileType::BossSword;
-    }
-    return ProjectileType::Arrow;
-}
-
-MonsterAttackPattern parseAttackPattern(const std::string &value) {
-    if (value == "Ranged") {
-        return MonsterAttackPattern::Ranged;
-    }
-    if (value == "GhostTouch") {
-        return MonsterAttackPattern::GhostTouch;
-    }
-    if (value == "RadialProjectile") {
-        return MonsterAttackPattern::RadialProjectile;
-    }
-    if (value == "ChargeCombo") {
-        return MonsterAttackPattern::ChargeCombo;
-    }
-    return MonsterAttackPattern::Standard;
-}
 
 ProjectileTarget parseTarget(const std::string &value) { return value == "Player" ? ProjectileTarget::Player : ProjectileTarget::Monster; }
 
@@ -210,7 +172,10 @@ RoomLayout createOpenVillageLayout(const json &layoutJson) {
 }
 } // namespace
 
-bool GameDataManager::loadSharedGameData() { return loadWeaponsFromFile(makeGameDataPath(kWeaponsDataFileName)); }
+bool GameDataManager::loadSharedGameData() {
+    return loadWeaponsFromFile(makeGameDataPath(kWeaponsDataFileName)) &&
+        loadActorDataFromFile(makeGameDataPath(kActorDataFileName));
+}
 
 bool GameDataManager::loadVillageData() { return loadSharedGameData() && loadRoomDataFromFile(makeGameDataPath(kRoomDataFileName)); }
 
@@ -232,37 +197,119 @@ bool GameDataManager::loadWeaponsFromFile(const std::string &path) {
     }
     m_weapons.clear();
 
-    for (const auto &entry : root.at("weapons")) {
-        WeaponData data;
-        data.id = entry.at("id").get<std::string>();
-        data.atlasKey = entry.value("atlasKey", "");
-        data.frame = entry.value("frame", "");
-        data.stat.damage = entry.value("damage", 10.f);
-        data.stat.attackSpeed = entry.value("attackSpeed", 1.f);
-        data.stat.range = entry.value("range", 50.f);
-        data.stat.type = parseWeaponType(entry.value("type", "Melee"));
+    try {
+        for (const auto &entry : root.at("weapons")) {
+            WeaponData data;
+            data.id = entry.at("id").get<std::string>();
+            data.atlasKey = entry.value("atlasKey", "");
+            data.frame = entry.value("frame", "");
+            data.stat.damage = entry.at("damage").get<float>();
+            data.stat.attackSpeed = entry.at("attackSpeed").get<float>();
+            data.stat.range = entry.at("range").get<float>();
+            data.stat.type = parseWeaponType(entry.at("type").get<std::string>());
 
-        if (entry.contains("projectile")) {
-            const auto &projectile = entry.at("projectile");
-            ProjectileConfig config;
-            config.animationKey = projectile.value("type", "Arrow");
-            config.type = parseProjectileType(config.animationKey);
-            config.target = parseTarget(projectile.value("target", "Monster"));
-            config.speed = projectile.value("speed", 400.f);
-            config.damage = projectile.value("damage", data.stat.damage);
-            config.count = projectile.value("count", 1u);
-            config.spreadRadian = projectile.value("spreadRadian", 0.f);
-            config.lifetime = projectile.value("lifetime", 3.f);
-            config.returnAnimationKey = projectile.value("returnAnimationKey", "");
-            config.rotateToDirection = projectile.value("rotateToDirection", false);
-            config.rotationOffsetRadian = projectile.value("rotationOffsetRadian", 0.f);
-            data.stat.projectile = config;
+            if (entry.contains("projectile")) {
+                const auto &projectile = entry.at("projectile");
+                ProjectileConfig config;
+                config.animationKey = projectile.at("type").get<std::string>();
+                config.target = parseTarget(projectile.at("target").get<std::string>());
+                config.speed = projectile.at("speed").get<float>();
+                config.damage = projectile.value("damage", data.stat.damage);
+                config.count = projectile.at("count").get<unsigned int>();
+                config.spreadRadian = projectile.at("spreadRadian").get<float>();
+                config.lifetime = projectile.at("lifetime").get<float>();
+                config.returnAnimationKey = projectile.value("returnAnimationKey", "");
+                config.rotateToDirection = projectile.value("rotateToDirection", false);
+                config.rotationOffsetRadian = projectile.value("rotationOffsetRadian", 0.f);
+                data.stat.projectile = config;
+            }
+
+            if (!m_weapons.emplace(data.id, std::move(data)).second) {
+                LogManager::getInstance().error("GameDataManager",
+                    "Duplicate weapon id: " + entry.at("id").get<std::string>());
+                return false;
+            }
         }
+    } catch (const json::exception &exception) {
+        LogManager::getInstance().error("GameDataManager",
+            "Invalid weapon data: " + path + " (" + exception.what() + ')');
+        return false;
+    }
 
-        m_weapons.emplace(data.id, std::move(data));
+    if (m_weapons.empty()) {
+        LogManager::getInstance().error("GameDataManager", "Weapon data contains no usable entries: " + path);
+        return false;
     }
 
     return true;
+}
+
+bool GameDataManager::loadActorDataFromFile(const std::string &path) {
+    std::ifstream file(path);
+    if (!file) {
+        LogManager::getInstance().error("GameDataManager", "Actor data file could not be opened: " + path);
+        return false;
+    }
+
+    json root;
+    try {
+        file >> root;
+
+        const json &playerJson = root.at("player");
+        const json &presetsJson = playerJson.at("presets");
+        const auto parseStatus = [](const json &statusJson) {
+            const float maxHp = statusJson.at("maxHp").get<float>();
+            return Actor::Status{
+                maxHp,
+                maxHp,
+                statusJson.at("power").get<float>(),
+                statusJson.at("dex").get<float>()
+            };
+        };
+
+        PlayerData playerData;
+        playerData.atlasKey = playerJson.at("atlasKey").get<std::string>();
+        playerData.defaultWeaponId = playerJson.at("defaultWeaponId").get<std::string>();
+        playerData.defaultStatus = parseStatus(presetsJson.at("default"));
+        playerData.easyStatus = parseStatus(presetsJson.at("easy"));
+        if (playerData.atlasKey.empty() || playerData.defaultWeaponId.empty() ||
+            !findWeapon(playerData.defaultWeaponId)) {
+            LogManager::getInstance().error("GameDataManager",
+                "Player data has an invalid atlas or default weapon reference.");
+            return false;
+        }
+
+        m_bosses.clear();
+        for (const json &bossJson : root.at("bosses")) {
+            BossData boss;
+            boss.id = bossJson.at("id").get<std::string>();
+            boss.displayName = bossJson.at("displayName").get<std::string>();
+            boss.atlasKey = bossJson.at("atlasKey").get<std::string>();
+            boss.status = parseStatus(bossJson.at("status"));
+            const json &weaponIds = bossJson.at("patternWeaponIds");
+            boss.handLaserWeaponId = weaponIds.at("handLaser").get<std::string>();
+            boss.rotatingBulletWeaponId = weaponIds.at("rotatingBullet").get<std::string>();
+            boss.swordFanWeaponId = weaponIds.at("swordFan").get<std::string>();
+            if (boss.id.empty() || boss.displayName.empty() || boss.atlasKey.empty() ||
+                !findWeapon(boss.handLaserWeaponId) || !findWeapon(boss.rotatingBulletWeaponId) ||
+                !findWeapon(boss.swordFanWeaponId) || !m_bosses.emplace(boss.id, std::move(boss)).second) {
+                LogManager::getInstance().error("GameDataManager",
+                    "Boss data has an invalid or duplicate id/reference.");
+                return false;
+            }
+        }
+
+        if (m_bosses.empty()) {
+            LogManager::getInstance().error("GameDataManager", "Actor data contains no boss entries: " + path);
+            return false;
+        }
+        m_playerData = std::move(playerData);
+        return true;
+    } catch (const json::exception &exception) {
+        LogManager::getInstance().error("GameDataManager",
+            "Invalid actor data: " + path + " (" + exception.what() + ')');
+        return false;
+    }
 }
 
 bool GameDataManager::loadMonstersFromFile(const std::string &path) {
@@ -281,56 +328,72 @@ bool GameDataManager::loadMonstersFromFile(const std::string &path) {
     }
     m_monsters.clear();
 
+    try {
     for (const auto &entry : root.at("monsters")) {
         MonsterData data;
         data.id = entry.at("id").get<std::string>();
-        data.enabled = entry.value("enabled", true);
-        data.atlasKey = entry.value("atlasKey", "Monster");
+        data.enabled = entry.at("enabled").get<bool>();
+        data.atlasKey = entry.at("atlasKey").get<std::string>();
 
         const auto &status = entry.at("status");
-        data.status.maxHp = status.value("maxHp", kDefaultMaxHp);
+        data.status.maxHp = status.at("maxHp").get<float>();
         data.status.tmpHp = data.status.maxHp;
-        data.status.power = status.value("power", kDefaultPower);
-        data.status.dex = status.value("dex", kDefaultDex);
+        data.status.power = status.at("power").get<float>();
+        data.status.dex = status.at("dex").get<float>();
 
         const auto &ai = entry.at("ai");
-        data.behavior.detectRange = ai.value("detectRange", 100.f);
-        data.behavior.attackRange = ai.value("attackRange", 50.f);
-        data.behavior.attackWindup = ai.value("attackWindup", 0.35f);
-        data.behavior.idleDuration = ai.value("idleDuration", 2.f);
-        data.behavior.patrolDuration = ai.value("patrolDuration", 1.f);
-        data.behavior.patrolSpeedMultiplier = ai.value("patrolSpeedMultiplier", 0.2f);
-        data.behavior.chaseExitRangeMultiplier = ai.value("chaseExitRangeMultiplier", 1.5f);
-        data.behavior.attackReadyDuration = ai.value("attackReadyDuration", 0.4f);
-        data.behavior.attackRecoveryDuration = ai.value("attackRecoveryDuration", 0.4f);
-        data.behavior.attackActiveTimeout = ai.value("attackActiveTimeout", 1.5f);
-        data.behavior.lockAttackFacing = ai.value("lockAttackFacing", false);
-        data.behavior.playReleaseAnimation = ai.value("playReleaseAnimation", false);
-        data.behavior.waitForAttackCooldownAfterRelease = ai.value("waitForAttackCooldownAfterRelease", false);
-        data.behavior.chargeDuration = ai.value("chargeDuration", 0.55f);
-        data.behavior.chargeSpeedMultiplier = ai.value("chargeSpeedMultiplier", 3.f);
-        data.behavior.stunDuration = ai.value("stunDuration", 0.45f);
-        data.behavior.attackPattern = parseAttackPattern(ai.value("attackPattern", "Standard"));
+        data.behavior.detectRange = ai.at("detectRange").get<float>();
+        data.behavior.attackRange = ai.at("attackRange").get<float>();
+        data.behavior.idleDuration = ai.at("idleDuration").get<float>();
+        data.behavior.patrolDuration = ai.at("patrolDuration").get<float>();
+        data.behavior.patrolSpeedMultiplier = ai.at("patrolSpeedMultiplier").get<float>();
+        data.behavior.chaseExitRangeMultiplier = ai.at("chaseExitRangeMultiplier").get<float>();
+        data.behavior.attackReadyDuration = ai.at("attackReadyDuration").get<float>();
+        data.behavior.attackRecoveryDuration = ai.at("attackRecoveryDuration").get<float>();
+        data.behavior.attackActiveTimeout = ai.at("attackActiveTimeout").get<float>();
+        data.behavior.lockAttackFacing = ai.at("lockAttackFacing").get<bool>();
+        data.behavior.playReleaseAnimation = ai.at("playReleaseAnimation").get<bool>();
+        data.behavior.waitForAttackCooldownAfterRelease = ai.at("waitForAttackCooldownAfterRelease").get<bool>();
 
-        if (entry.contains("movement")) {
-            const auto &movement = entry.at("movement");
-            data.behavior.moveSpeed = movement.value("moveSpeed", 300.f);
-            data.behavior.gravity = movement.value("gravity", 980.f);
-            data.behavior.isFlying = movement.value("mode", "Ground") == "Flying";
-            data.behavior.ignoresWalls = movement.value("ignoresWalls", false);
+        if (entry.contains("chargeCombo")) {
+            const json &chargeCombo = entry.at("chargeCombo");
+            data.behavior.chargeCombo = ChargeComboConfig{
+                chargeCombo.at("windup").get<float>(),
+                chargeCombo.at("duration").get<float>(),
+                chargeCombo.at("speedMultiplier").get<float>(),
+                chargeCombo.at("stunDuration").get<float>()
+            };
         }
 
-        if (entry.contains("animations")) {
-            for (const auto &[stateName, animation] : entry.at("animations").items()) {
-                MonsterAnimationConfig config;
-                config.isLoop = animation.value("isLoop", true);
-                config.frameDuration = animation.value("frameDuration", 0.2f);
-                data.behavior.animations.emplace(stateName, config);
-            }
+        const auto &movement = entry.at("movement");
+        data.behavior.moveSpeed = movement.at("moveSpeed").get<float>();
+        data.behavior.gravity = movement.at("gravity").get<float>();
+        data.behavior.isFlying = movement.at("mode").get<std::string>() == "Flying";
+        data.behavior.ignoresWalls = movement.at("ignoresWalls").get<bool>();
+
+        for (const auto &[stateName, animation] : entry.at("animations").items()) {
+            MonsterAnimationConfig config;
+            config.isLoop = animation.at("isLoop").get<bool>();
+            config.frameDuration = animation.at("frameDuration").get<float>();
+            data.behavior.animations.emplace(stateName, config);
         }
 
-        data.weaponId = entry.value("weaponId", "");
-        m_monsters.emplace(data.id, std::move(data));
+        data.weaponId = entry.at("weaponId").get<std::string>();
+        if (!m_monsters.emplace(data.id, std::move(data)).second) {
+            LogManager::getInstance().error("GameDataManager",
+                "Duplicate monster id: " + entry.at("id").get<std::string>());
+            return false;
+        }
+    }
+    } catch (const json::exception &exception) {
+        LogManager::getInstance().error("GameDataManager",
+            "Invalid monster data: " + path + " (" + exception.what() + ')');
+        return false;
+    }
+
+    if (m_monsters.empty()) {
+        LogManager::getInstance().error("GameDataManager", "Monster data contains no usable entries: " + path);
+        return false;
     }
 
     return true;
@@ -471,6 +534,15 @@ const MonsterData *GameDataManager::findMonster(const std::string &id) const {
 const FloorData *GameDataManager::findFloor(const std::string &id) const {
     const auto it = m_floors.find(id);
     return it == m_floors.end() ? nullptr : &it->second;
+}
+
+const PlayerData *GameDataManager::getPlayerData() const {
+    return m_playerData ? &*m_playerData : nullptr;
+}
+
+const BossData *GameDataManager::findBoss(const std::string &id) const {
+    const auto it = m_bosses.find(id);
+    return it == m_bosses.end() ? nullptr : &it->second;
 }
 
 PoolPrewarmPlan GameDataManager::createPoolPrewarmPlan(float reserveRatio) const {

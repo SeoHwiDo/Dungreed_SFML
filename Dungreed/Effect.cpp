@@ -30,6 +30,7 @@ bool Effect::activate(const EffectSpawnRequest &request) {
     m_animator.play(request.animationName);
     m_hitTargets.clear();
     m_isAttackEffect = request.isAttackEffect;
+    m_renderBehindActors = request.renderBehindActors;
     m_damage = request.damage;
     m_attackerPosition = request.attackerPosition;
     m_rotationRadian = request.rotationRadian;

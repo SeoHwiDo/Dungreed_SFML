@@ -23,6 +23,7 @@ struct EffectSpawnRequest {
     float damage = 0.f;
     sf::Vector2f attackerPosition{};
     sf::Color color = sf::Color::White;
+    bool renderBehindActors = false;
 };
 
 /// 시각 이펙트와 공격 판정을 함께 표현하는, 재사용 가능한 풀 객체입니다.
@@ -43,6 +44,7 @@ class Effect {
     std::optional<sf::FloatRect> getAttackHitbox() const;
     bool isFinished() const { return m_finished; }
     bool isAttackEffect() const { return m_isAttackEffect; }
+    bool rendersBehindActors() const { return m_renderBehindActors; }
     float getDamage() const { return m_damage; }
     const sf::Vector2f &getAttackerPosition() const { return m_attackerPosition; }
     float getRotationRadian() const { return m_rotationRadian; }
@@ -53,6 +55,7 @@ class Effect {
     std::unordered_set<EntityId> m_hitTargets;
     bool m_finished = true;
     bool m_isAttackEffect = false;
+    bool m_renderBehindActors = false;
     float m_damage = 0.f;
     float m_rotationRadian = 0.f;
     sf::Vector2f m_attackerPosition{};

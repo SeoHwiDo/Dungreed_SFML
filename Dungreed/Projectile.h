@@ -26,7 +26,7 @@ class Projectile {
     bool beginReturnTrail();
     /// 플레이어 또는 몬스터 중 투사체가 공격할 대상을 반환합니다.
     ProjectileTarget getTarget() const { return m_target; }
-    ProjectileType getType() const { return m_type; }
+    bool isExternallyManaged() const { return m_externallyManaged; }
     /// 현재 투사체의 피해량을 반환합니다.
     float getDamage() const { return m_damage; }
     /// 현재 스프라이트의 월드 충돌 영역을 반환합니다.
@@ -65,7 +65,8 @@ class Projectile {
     bool m_damageEnabled = true;
     bool m_hasDamagedTarget = false;
     bool m_rotateToDirection = false;
-    ProjectileType m_type = ProjectileType::Arrow;
+    bool m_externallyManaged = false;
+    bool m_renderBehindTilesWhenEmbedded = false;
     std::string m_animationKey;
     std::string m_returnAnimationKey;
     ProjectileTarget m_target = ProjectileTarget::Monster;

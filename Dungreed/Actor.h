@@ -10,10 +10,6 @@
 #include "EntityId.h"
 class Equip;
 
-constexpr float kDefaultMaxHp = 100.0f;
-constexpr float kDefaultPower = 10.0f;
-constexpr float kDefaultDex = 1.0f;
-
 struct MovementData {
     sf::Vector2f velocity{0.f, 0.f};
     sf::Vector2f acceleration{0.f, 0.f};
@@ -31,10 +27,8 @@ class Actor {
         float power; // 공격력
         float dex;   // 회피 및 치명타 확률
     };
-    /// 기본 능력치로 액터를 생성하고, 이후 init으로 아틀라스 스프라이트를 준비합니다.
-    Actor();
     /// 지정한 능력치로 액터를 생성합니다. 파생 클래스 생성자에서 초기 능력치를 넘길 때 사용합니다.
-    Actor(Status initialStatus) : status(initialStatus) {};
+    explicit Actor(Status initialStatus) : status(initialStatus) {};
 
     virtual ~Actor() = default;
 
@@ -106,7 +100,10 @@ class Actor {
     virtual void update(float dt);
     /// 본체 스프라이트와 장착 장비를 창에 그립니다.
     virtual void render(sf::RenderWindow &window);
-
+    inline bool isAnimationFinished(std::string_view animationName) const {
+        return animator.getCurrentAnimation() == animationName &&
+            animator.isFinished();
+    }
   protected:
     Status status;
     std::optional<sf::Sprite> sprite;

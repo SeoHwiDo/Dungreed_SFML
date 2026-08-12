@@ -14,7 +14,8 @@ void Projectile::activate(const ProjectileSpawnRequest &request) {
     m_damageEnabled = request.damageActiveOnSpawn;
     m_hasDamagedTarget = false;
     m_isRangedWeapon = request.isRangedWeapon;
-    m_type = request.type;
+    m_externallyManaged = request.externallyManaged;
+    m_renderBehindTilesWhenEmbedded = request.renderBehindTilesWhenEmbedded;
     m_animationKey = request.animationKey;
     m_returnAnimationKey = request.returnAnimationKey;
     m_rotateToDirection = request.rotateToDirection;
@@ -136,6 +137,8 @@ void Projectile::deactivate() {
     m_damageEnabled = true;
     m_hasDamagedTarget = false;
     m_isRangedWeapon = false;
+    m_externallyManaged = false;
+    m_renderBehindTilesWhenEmbedded = false;
     m_animationKey.clear();
     m_returnAnimationKey.clear();
     m_direction = {1.f, 0.f};
@@ -251,7 +254,7 @@ void Projectile::render(sf::RenderWindow &window) const {
     }
 
     if (m_sprite) {
-        if (m_isEmbedded && m_type == ProjectileType::BossSword) {
+        if (m_isEmbedded && m_renderBehindTilesWhenEmbedded) {
             return;
         }
         window.draw(*m_sprite);
@@ -261,7 +264,7 @@ void Projectile::render(sf::RenderWindow &window) const {
 }
 
 void Projectile::renderBehindTiles(sf::RenderWindow &window) const {
-    if (!m_active || !m_isEmbedded || m_type != ProjectileType::BossSword || !m_sprite) {
+    if (!m_active || !m_isEmbedded || !m_renderBehindTilesWhenEmbedded || !m_sprite) {
         return;
     }
     window.draw(*m_sprite);

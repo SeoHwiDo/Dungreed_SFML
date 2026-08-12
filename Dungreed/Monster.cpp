@@ -201,11 +201,20 @@ bool Monster::consumeChargeImpact() {
 }
 
 float Monster::getChargeDistance() const {
-    const float chargeSpeed = movement.moveSpeed * m_behavior.chargeSpeedMultiplier;
-    return std::max(0.f, chargeSpeed * m_behavior.chargeDuration);
+    if (!m_behavior.chargeCombo) {
+        return 0.f;
+    }
+    const float chargeSpeed = movement.moveSpeed *
+        m_behavior.chargeCombo->speedMultiplier;
+    return std::max(0.f, chargeSpeed * m_behavior.chargeCombo->duration);
 }
 
-bool Monster::isChargeImpactActive() const { return state == MonsterState::Charge && fsm.stateTimer >= m_behavior.attackWindup && fsm.stateTimer < m_behavior.attackWindup + m_behavior.chargeDuration; }
+bool Monster::isChargeImpactActive() const {
+    return m_behavior.chargeCombo && state == MonsterState::Charge &&
+        fsm.stateTimer >= m_behavior.chargeCombo->windup &&
+        fsm.stateTimer < m_behavior.chargeCombo->windup +
+            m_behavior.chargeCombo->duration;
+}
 
 bool Monster::readyForPoolRelease() const { return dead() && state == MonsterState::Dead && animator.isFinished(); }
 
@@ -355,7 +364,7 @@ void Monster::handleFSM(float dt, const Player &player) {
             sprite->setScale({directionX, 1.f});
         }
     };
-    const bool usesChargeCombo = m_behavior.attackPattern == MonsterAttackPattern::ChargeCombo;
+    const bool usesChargeCombo = m_behavior.chargeCombo.has_value();
     const bool isWithinChargeDistance = horizontalDistance <= getChargeDistance();
     const auto weapon = getEquipment();
     const bool isMeleeAttack = weapon && weapon->getStat().type == WeaponType::Melee;
@@ -410,10 +419,14 @@ void Monster::handleFSM(float dt, const Player &player) {
         break;
 
     case MonsterState::Charge:
-        if (fsm.stateTimer < m_behavior.attackWindup) {
+        if (!m_behavior.chargeCombo) {
+            changeState(MonsterState::Chase);
+        } else if (fsm.stateTimer < m_behavior.chargeCombo->windup) {
             stopMovement();
-        } else if (fsm.stateTimer < m_behavior.attackWindup + m_behavior.chargeDuration) {
-            movement.velocity.x = m_chargeDirection * movement.moveSpeed * m_behavior.chargeSpeedMultiplier;
+        } else if (fsm.stateTimer < m_behavior.chargeCombo->windup +
+            m_behavior.chargeCombo->duration) {
+            movement.velocity.x = m_chargeDirection * movement.moveSpeed *
+                m_behavior.chargeCombo->speedMultiplier;
             movement.velocity.y = 0.f;
             if (sprite) {
                 sprite->setScale({m_chargeDirection, 1.f});

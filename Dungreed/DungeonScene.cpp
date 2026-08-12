@@ -21,6 +21,7 @@
 #include "UIManager.h"
 
 #include <iomanip>
+#include <cstdlib>
 #include <iostream>
 #include <memory>
 #include <sstream>
@@ -122,7 +123,13 @@ void DungeonScene::update(float dt) {
     // 같은 씬 BGM 요청은 AudioManager가 무시하므로 매 프레임 호출해도 재시작되지 않습니다.
     AudioManager::getInstance().playBgm(isBossRoom ? "Boss_BGM" : "Dungeon_BGM");
     if (isBossRoom && !currentRoom->getInfo().isClear && !m_activeBoss) {
-        m_activeBoss = std::make_unique<SkelBoss>();
+        const BossData *bossData = GameDataManager::getInstance().findBoss("SkelBoss");
+        if (!bossData) {
+            LogManager::getInstance().error("DungeonScene",
+                "Critical boss data is missing: SkelBoss. Terminating game.");
+            std::exit(EXIT_FAILURE);
+        }
+        m_activeBoss = std::make_unique<SkelBoss>(*bossData);
         std::cout << "[DungeonScene] SkelBoss created\n";
         m_activeBoss->placeAtMapCenter(tileMap);
     } else if (!isBossRoom) {
@@ -207,6 +214,7 @@ void DungeonScene::render() {
     if (const TileMap *tileMap = mapManager.getCurrentTileMap()) {
         m_window.draw(*tileMap);
     }
+    effectManager.renderBehindActors(m_window, objectPool);
     if (m_activeBoss) {
         m_activeBoss->render(m_window);
     }

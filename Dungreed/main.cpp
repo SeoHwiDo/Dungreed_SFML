@@ -2,6 +2,7 @@
 #include <Windows.h>
 
 #include <algorithm>
+#include <cstdlib>
 #include <iostream>
 #include <memory>
 #include <optional>
@@ -10,6 +11,7 @@
 #include "AudioManager.h"
 #include "GameDataManager.h"
 #include "GameplayContext.h"
+#include "LogManager.h"
 #include "Player.h"
 #include "ResourceManager.h"
 #include "SceneManager.h"
@@ -24,15 +26,27 @@ int main() {
 
     auto &resources = ResourceManager::getInstance();
     auto &gameData = GameDataManager::getInstance();
-    if (!resources.loadSharedGameplayResources() || !resources.loadSharedAudioResources() || !AudioManager::getInstance().initialize() || !gameData.loadSharedGameData()) {
-        return 1;
+    if (!resources.loadSharedGameplayResources() || !resources.loadSharedAudioResources() ||
+        !AudioManager::getInstance().initialize() || !gameData.loadDungeonData()) {
+        LogManager::getInstance().error("main", "Critical startup data could not be loaded. Terminating game.");
+        return EXIT_FAILURE;
     }
 
-    auto player = std::make_unique<Player>();
+    const PlayerData *playerData = gameData.getPlayerData();
+    if (!playerData) {
+        LogManager::getInstance().error("main", "Critical player data is missing. Terminating game.");
+        return EXIT_FAILURE;
+    }
+
+    auto player = std::make_unique<Player>(playerData->defaultStatus, playerData->atlasKey);
+    player->configureStatPresets(playerData->defaultStatus, playerData->easyStatus);
     std::cout << "[main] Player created (id=" << player->getId() << ")\n";
-    if (const auto weapon = gameData.createEquip("ShortSword")) {
+    if (const auto weapon = gameData.createEquip(playerData->defaultWeaponId)) {
         player->setEquipment(weapon);
-        std::cout << "[main] Initial equipment created: ShortSword\n";
+        std::cout << "[main] Initial equipment created: " << playerData->defaultWeaponId << "\n";
+    } else {
+        LogManager::getInstance().error("main", "Critical player default weapon could not be created. Terminating game.");
+        return EXIT_FAILURE;
     }
 
     auto camera = std::make_unique<Camera>(window.getSize(), sf::FloatRect({0.f, 0.f}, {1.f, 1.f}), 1.0f);

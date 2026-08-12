@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "player": {
+    "atlasKey": "Player",
+    "defaultWeaponId": "ShortSword",
+    "presets": {
+      "default": {
+        "maxHp": 100.0,
+        "power": 10.0,
+        "dex": 1.0
+      },
+      "easy": {
+        "maxHp": 300.0,
+        "power": 100.0,
+        "dex": 5.0
+      }
+    }
+  },
+  "bosses": [
+    {
+      "id": "SkelBoss",
+      "displayName": "\uBCA8\uB9AC\uC54C",
+      "atlasKey": "Boss",
+      "status": {
+        "maxHp": 1200.0,
+        "power": 18.0,
+        "dex": 1.0
+      },
+      "patternWeaponIds": {
+        "handLaser": "SkelBossHandLaser",
+        "rotatingBullet": "SkelBossRotatingBullet",
+        "swordFan": "SkelBossSword"
+      }
+    }
+  ]
+}

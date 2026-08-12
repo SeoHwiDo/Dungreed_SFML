@@ -11,22 +11,22 @@
 
 class Effect;
 class Projectile;
+struct BossData;
 
 enum class SkelBossPattern { None, HandLaser, RotatingBullet, SwordFan };
 
 class SkelBoss final : public Boss {
   public:
-    SkelBoss();
+    explicit SkelBoss(const BossData &data);
 
     void init(const std::string &atlasKey = "Boss") override;
     void update(float dt, Player &player, ObjectPoolingManager &objectPool, EffectManager &effectManager, const TileMap &tileMap) override;
     void render(sf::RenderWindow &window) override;
 
     SkelBossPattern getCurrentPattern() const { return m_currentPattern; }
+    bool isDeathSequenceFinished() const;
 
   private:
-    static constexpr const char *kUiDisplayName = u8"벨리알";
-
     enum class State { Summoning, Idle, Attacking, Dead };
 
     static constexpr float kPostPatternIdleDuration = 3.f;
@@ -38,11 +38,20 @@ class SkelBoss final : public Boss {
         float remainingFxTime = 0.f;
     };
 
+    struct DeathFragment {
+        sf::Sprite sprite;
+        sf::Vector2f velocity{};
+        float angularVelocity = 0.f;
+    };
+
     State m_state = State::Summoning;
     SkelBossPattern m_currentPattern = SkelBossPattern::None;
     std::array<std::uint64_t, 3> m_patternLastUsed{};
     std::uint64_t m_patternUseSequence = 0;
     float m_stateTimer = 0.f;
+    std::string m_handLaserWeaponId;
+    std::string m_rotatingBulletWeaponId;
+    std::string m_swordFanWeaponId;
     float m_patternTimer = 0.f;
 
     std::optional<sf::Sprite> m_leftHand;
@@ -85,6 +94,11 @@ class SkelBoss final : public Boss {
     bool m_swordsLaunched = false;
     bool m_swordsReadyForAim = false;
     float m_swordAimTimer = 0.f;
+    std::vector<DeathFragment> m_deathFragments;
+    sf::Vector2f m_leftHandDeathVelocity{};
+    sf::Vector2f m_rightHandDeathVelocity{};
+    float m_deathSequenceElapsed = 0.f;
+    bool m_isDeathSequenceActive = false;
 
     void configureAnimations();
     void configureHands();
@@ -108,6 +122,12 @@ class SkelBoss final : public Boss {
     void summonSwordFan(ObjectPoolingManager &objectPool);
     void spawnSword(const sf::Vector2f &position, ObjectPoolingManager &objectPool);
     void stopSwordChargeEffects(ObjectPoolingManager &objectPool);
+    void updateManagedSwords(float dt, Player &player, ObjectPoolingManager &objectPool,
+        const TileMap &tileMap);
+    bool resolveSwordGroundCollision(Projectile &sword, const TileMap &tileMap) const;
+    void clearManagedSwords(ObjectPoolingManager &objectPool);
+    void beginDeathSequence(ObjectPoolingManager &objectPool);
+    void updateDeathSequence(float dt);
 
     sf::Vector2f getMouthPosition() const;
     static std::size_t patternIndex(SkelBossPattern pattern);

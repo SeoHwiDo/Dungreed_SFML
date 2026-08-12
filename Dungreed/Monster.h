@@ -4,12 +4,11 @@
 
 #include <SFML/System/Vector2.hpp>
 
+#include <optional>
 #include <string>
 #include <unordered_map>
 
 enum class MonsterState { Idle, Patrol, Chase, Charge, Attack, Dead };
-
-enum class MonsterAttackPattern { Standard, Ranged, GhostTouch, RadialProjectile, ChargeCombo };
 
 /// Attack 상태 안에서 준비 애니메이션·실제 판정·후딜을 구분합니다.
 enum class MonsterAttackPhase { Ready, Active, Recovery };
@@ -29,6 +28,13 @@ struct MonsterAnimationConfig {
     float frameDuration = 0.2f;
 };
 
+struct ChargeComboConfig {
+    float windup = 0.f;
+    float duration = 0.f;
+    float speedMultiplier = 0.f;
+    float stunDuration = 0.f;
+};
+
 struct MonsterBehaviorConfig {
     float detectRange = 100.f;
     float attackRange = 50.f;
@@ -38,19 +44,15 @@ struct MonsterBehaviorConfig {
     float patrolDuration = 1.f;
     float patrolSpeedMultiplier = 0.2f;
     float chaseExitRangeMultiplier = 1.5f;
-    float attackWindup = 0.35f;
     float attackReadyDuration = 0.4f;
     float attackRecoveryDuration = 0.4f;
     float attackActiveTimeout = 1.5f;
-    float chargeDuration = 0.55f;
-    float chargeSpeedMultiplier = 3.f;
-    float stunDuration = 0.45f;
     bool isFlying = false;
     bool ignoresWalls = false;
     bool lockAttackFacing = false;
     bool playReleaseAnimation = false;
     bool waitForAttackCooldownAfterRelease = false;
-    MonsterAttackPattern attackPattern = MonsterAttackPattern::Standard;
+    std::optional<ChargeComboConfig> chargeCombo;
     /// 상태 키(Idle, Attack, Release 등)별 애니메이션 재생 규칙입니다.
     std::unordered_map<std::string, MonsterAnimationConfig> animations;
 };
@@ -62,7 +64,8 @@ class Monster : public Actor {
     MonsterState state = MonsterState::Idle;
 
     void init(const std::string &atlasKey = "Monster") override;
-    Monster(const std::string &type, Status status = {kDefaultMaxHp, kDefaultMaxHp, kDefaultPower, kDefaultDex}, const std::string &atlasKey = "Monster", MonsterBehaviorConfig behavior = {}) : Actor(status), m_type(type) {
+    Monster(const std::string &type, Status status, const std::string &atlasKey,
+        MonsterBehaviorConfig behavior) : Actor(status), m_type(type) {
         setBehavior(behavior);
         init(atlasKey);
     }
@@ -91,13 +94,15 @@ class Monster : public Actor {
     sf::FloatRect getFrontAttackBounds() const;
     /// 대상이 몬스터 전면 충돌 영역과 실제로 겹치는지 검사합니다.
     bool isTargetInFrontContact(const sf::FloatRect &targetBounds) const;
-    float getChargeStunDuration() const { return m_behavior.stunDuration; }
+    float getChargeStunDuration() const {
+        return m_behavior.chargeCombo ? m_behavior.chargeCombo->stunDuration : 0.f;
+    }
     /// 플레이어를 추적하기 시작하는 탐지 반지름을 반환합니다.
     float getDetectRange() const { return fsm.detectRange; }
     /// 현재 공격 판정에서 목표와의 거리를 검사할 때 사용하는 반지름을 반환합니다.
     float getAttackRange() const { return fsm.attackRange; }
     float getFacingDirection() const { return fsm.facingDirection; }
-    MonsterAttackPattern getAttackPattern() const { return m_behavior.attackPattern; }
+    bool hasChargeCombo() const { return m_behavior.chargeCombo.has_value(); }
     const std::string &getType() const { return m_type; }
     bool isTargetInAttackRange(const sf::Vector2f &targetPosition) const;
 

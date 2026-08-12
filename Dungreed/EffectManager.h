@@ -34,6 +34,8 @@ class EffectManager {
     void forEachActiveAttackEffect(const ObjectPoolingManager &objectPool, const std::function<void(Effect &)> &operation) const;
     /// 활성 이펙트를 모든 액터 위에 렌더링합니다.
     void render(sf::RenderWindow &window, const ObjectPoolingManager &objectPool) const;
+    void renderBehindActors(sf::RenderWindow &window,
+        const ObjectPoolingManager &objectPool) const;
     /// 방 전환 때 남아 있는 이펙트를 즉시 풀로 돌려보냅니다.
     void clear(ObjectPoolingManager &objectPool);
 

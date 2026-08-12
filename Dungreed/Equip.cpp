@@ -34,21 +34,27 @@ void Equip::init(const std::string &atlasKey, const std::string &frameName) {
     }
 }
 
-void Equip::attack() {
+bool Equip::attack() {
     if (m_stat.type == WeaponType::Ranged) {
+        if (m_projectileRequestPending) {
+            return false;
+        }
         // 원거리 장비는 스윙 상태 대신 한 번의 투사체 생성 요청만 예약합니다.
         m_projectileRequestPending = true;
-        return;
+        return true;
     }
 
     // 이미 공격 중이 아닐 때만 공격 실행
     if (!m_isAttacking) {
+
         m_isAttacking = true;
         m_meleeSwingStarted = true;
         m_attackTimer = 0.f;
         // stat의 attackSpeed를 반영하여 공격 시간 설정 (기본 0.5초 기준)
         m_attackDuration = 0.1f / (m_stat.attackSpeed > 0.f ? m_stat.attackSpeed : 1.f);
+        return true;
     }
+    return false;
 }
 
 bool Equip::consumeMeleeSwingStarted() {
@@ -72,7 +78,7 @@ const std::vector<ProjectileSpawnRequest> &Equip::consumeProjectileRequests(unsi
     for (unsigned int index = 0; index < count; ++index) {
         const float center = (static_cast<float>(count) - 1.f) * 0.5f;
         const float angle = m_lastAimRadian + (static_cast<float>(index) - center) * config.spreadRadian;
-        m_projectileRequestBuffer.push_back({config.type, m_stat.type == WeaponType::Ranged, config.animationKey, config.target, m_lastOwnerPosition, {std::cos(angle), std::sin(angle)}, config.speed, config.damage, config.lifetime});
+        m_projectileRequestBuffer.push_back({m_stat.type == WeaponType::Ranged, config.animationKey, config.target, m_lastOwnerPosition, {std::cos(angle), std::sin(angle)}, config.speed, config.damage, config.lifetime});
         ProjectileSpawnRequest &request = m_projectileRequestBuffer.back();
         request.returnAnimationKey = config.returnAnimationKey;
         request.rotateToDirection = config.rotateToDirection;

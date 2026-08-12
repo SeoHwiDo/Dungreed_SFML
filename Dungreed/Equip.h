@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <SFML/Graphics.hpp>
 #include <string>
 #include <optional>
@@ -9,13 +9,10 @@ class Actor; // 전방 선언
 
 enum class WeaponType { Melee, Ranged };
 
-enum class ProjectileType { Arrow, Fireball, Bullet, BabyBatBullet, BansheeBullet, BossBullet, BossSword };
-
 enum class ProjectileTarget { Player, Monster };
 
 /// 원거리 장비가 생성할 투사체의 공통 설정입니다.
 struct ProjectileConfig {
-    ProjectileType type = ProjectileType::Arrow;
     /// 아틀라스 애니메이션 접두사입니다. 예: BansheeBullet_Fly, BansheeBullet_Trail.
     std::string animationKey;
     ProjectileTarget target = ProjectileTarget::Monster;
@@ -31,7 +28,6 @@ struct ProjectileConfig {
 
 /// 장비가 풀 매니저에 전달하는 투사체 생성 요청입니다. 실제 Projectile 객체는 장비가 만들지 않습니다.
 struct ProjectileSpawnRequest {
-    ProjectileType type = ProjectileType::Arrow;
     /// 발사 장비가 원거리 장비인지 나타냅니다. 반환 Trail 재생 여부의 기준입니다.
     bool isRangedWeapon = false;
     std::string animationKey;
@@ -46,6 +42,8 @@ struct ProjectileSpawnRequest {
     bool rotateToDirection = false;
     float rotationOffsetRadian = 0.f;
     bool damageActiveOnSpawn = true;
+    bool externallyManaged = false;
+    bool renderBehindTilesWhenEmbedded = false;
 };
 
 struct EquipStat {
@@ -82,7 +80,7 @@ class Equip {
     std::optional<sf::FloatRect> getAttackHitbox() const;
 
     /// 새 스윙을 시작하고 같은 대상에 대한 피해 처리 여부를 초기화합니다.
-    void attack();
+    bool attack();
     /// 스윙 애니메이션이 진행 중인지 반환합니다.
     inline bool isAttacking() const { return m_isAttacking; }
     /// 새 근접 스윙이 시작됐을 때 한 번만 true를 반환합니다.

@@ -1,8 +1,9 @@
-#pragma once
+﻿#pragma once
 
 #include "Actor.h"
 #include "Controller.h"
 
+#include <string>
 #include <vector>
 
 class TileMap;
@@ -22,8 +23,8 @@ class Player : public Actor {
   public:
     PlayerState state = PlayerState::Idle;
 
-    void init(const std::string &atlasKey = "Player") override;
-    Player(Status status = {kDefaultMaxHp, kDefaultMaxHp, kDefaultPower, kDefaultDex}) : Actor(status) { init("Player"); }
+    Player(Status defaultStatus, std::string atlasKey);
+    void init(const std::string &atlasKey) override;
 
     void update(float dt, const sf::RenderWindow &window, const TileMap &tileMap);
     void render(sf::RenderWindow &window) override;
@@ -44,6 +45,11 @@ class Player : public Actor {
     void restoreDashCharges(int amount);
     /// 마을 복귀 시 던전에서 누적된 생존·능력치 상태를 기본값으로 되돌립니다.
     void restoreForVillage();
+    /// 데이터 파일의 default/easy 프리셋을 기록합니다.
+    void configureStatPresets(Status defaultStatus, Status easyStatus);
+    /// Debug F7 입력으로 easy 프리셋을 즉시 적용합니다.
+    void activateEasyMode();
+    bool isEasyMode() const { return m_isEasyMode; }
 
   private:
     struct DashAfterimage {
@@ -65,12 +71,16 @@ class Player : public Actor {
     float m_afterimageTimer = 0.f;
     float m_stunTimer = 0.f;
     float m_facingDirection = 1.f;
+    Status m_defaultStatus;
+    Status m_easyStatus;
+    bool m_isEasyMode = false;
     std::vector<DashAfterimage> m_dashAfterimages;
 
     void changeState(PlayerState newState);
     void handleState(float dt, const InputData &input, const TileMap &tileMap);
     void updateFacingDirection(const sf::Vector2f &aimWorldPosition);
     bool tryStartDash(const sf::Vector2f &cursorPosition);
+    void tryAttack();
     void updateDash(float dt, const TileMap &tileMap);
     void updateDashRecharge(float dt);
     void updateAfterimages(float dt);

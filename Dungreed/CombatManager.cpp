@@ -1,4 +1,4 @@
-#include "CombatManager.h"
+﻿#include "CombatManager.h"
 
 #include "AudioManager.h"
 #include "Player.h"
@@ -20,7 +20,6 @@ std::unordered_set<EntityId> CombatManager::resolvePlayerAttack(Player &player, 
 
     // 근접 무기는 공격 중인 스프라이트 경계를 즉시 검사합니다.
     if (weapon->getStat().type == WeaponType::Melee && weapon->consumeMeleeSwingStarted()) {
-        AudioManager::getInstance().playSfx(player.getId(), "Player_Attack");
         effectManager.spawnPlayerSwing(objectPool, player.getBodyCenterPosition(), weapon->getAimRadian(), weapon->getStat().damage);
     }
     // SwingFX와 실제 무기 스프라이트 중 하나라도 닿으면 적중으로 처리합니다.
@@ -81,7 +80,7 @@ void CombatManager::resolveMonsterAttacks(float dt, Player &player, ObjectPoolin
             return;
         }
 
-        if (monster.getAttackPattern() == MonsterAttackPattern::ChargeCombo && monster.state == MonsterState::Charge) {
+        if (monster.hasChargeCombo() && monster.state == MonsterState::Charge) {
             const bool isChargeContact = monster.isChargeImpactActive() && monster.getCollision().checkHit(playerBounds).has_value();
             if (isChargeContact) {
                 if (monster.consumeChargeImpact()) {
@@ -148,7 +147,8 @@ std::unordered_set<EntityId> CombatManager::updateProjectiles(float dt, Player &
     toRelease.clear();
 
     objectPool.forEachActiveProjectile([&](Projectile &projectile) {
-        if (!projectile.isActive() || projectile.getTarget() != target) {
+        if (!projectile.isActive() || projectile.isExternallyManaged() ||
+            projectile.getTarget() != target) {
             return;
         }
         projectile.update(dt);
@@ -163,20 +163,8 @@ std::unordered_set<EntityId> CombatManager::updateProjectiles(float dt, Player &
         if (projectile.isEmbedded()) {
             return;
         }
-        if (projectile.getType() == ProjectileType::BossSword && !projectile.isDamageActive()) {
-            return;
-        }
         if (Collision::resolveProjectileMapCollision(projectile, tileMap)) {
-            if (projectile.getType() == ProjectileType::BossSword) {
-                const sf::FloatRect swordBounds = projectile.getGlobalBounds();
-                const float halfSwordLength = std::max(swordBounds.size.x, swordBounds.size.y) * 0.5f;
-                const sf::Vector2f impactPosition = projectile.getPosition() + projectile.getDirection() * halfSwordLength;
-                objectPool.acquireEffect({"Projectile", "BossSwordHitFX", impactPosition, projectile.getRotationRadian(), {1.f, 1.f}, 0.06f, false, false, 0.f, impactPosition, sf::Color::White});
-                // 칼 중심이 충돌면 안쪽 약 5px에 오도록 넣은 뒤, 타일 뒤에서 렌더링합니다.
-                projectile.embedInWall(1.25f, halfSwordLength + 5.f);
-            } else {
-                toRelease.push_back(&projectile);
-            }
+            toRelease.push_back(&projectile);
             return;
         }
 
@@ -184,12 +172,7 @@ std::unordered_set<EntityId> CombatManager::updateProjectiles(float dt, Player &
             if (!player.dead() && !player.isDashing() && projectile.checkHit(player.getGlobalBounds())) {
                 // 투사체는 근접 공격의 절반 힘으로만 넉백을 적용합니다.
                 player.takeDamage(projectile.getDamage(), projectile.getPosition(), 0.5f);
-                if (projectile.getType() == ProjectileType::BossSword) {
-                    // 칼은 플레이어에 한 번 피해를 준 뒤에도 바닥 충돌 지점까지 진행합니다.
-                    projectile.markTargetDamaged();
-                } else {
-                    toRelease.push_back(&projectile);
-                }
+                toRelease.push_back(&projectile);
             }
             return;
         }
