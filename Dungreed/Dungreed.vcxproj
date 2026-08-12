@@ -137,12 +137,14 @@
   <ItemGroup>
     <ClCompile Include="Actor.cpp" />
     <ClCompile Include="Animator.cpp" />
+    <ClCompile Include="AudioManager.cpp" />
     <ClCompile Include="Boss.cpp" />
     <ClCompile Include="Collision.cpp" />
     <ClCompile Include="Controller.cpp" />
     <ClCompile Include="Equip.cpp" />
     <ClCompile Include="GameDataManager.cpp" />
     <ClCompile Include="GameplayContext.cpp" />
+    <ClCompile Include="LogManager.cpp" />
     <ClCompile Include="Projectile.cpp" />
     <ClCompile Include="ObjectPoolingManager.cpp" />
     <ClCompile Include="MonsterManager.cpp" />
@@ -171,12 +173,15 @@
   <ItemGroup>
     <ClInclude Include="Actor.h" />
     <ClInclude Include="Animator.h" />
+    <ClInclude Include="AudioManager.h" />
     <ClInclude Include="Boss.h" />
     <ClInclude Include="Collision.h" />
     <ClInclude Include="Controller.h" />
+    <ClInclude Include="EntityId.h" />
     <ClInclude Include="Equip.h" />
     <ClInclude Include="GameDataManager.h" />
     <ClInclude Include="GameplayContext.h" />
+    <ClInclude Include="LogManager.h" />
     <ClInclude Include="Projectile.h" />
     <ClInclude Include="ObjectPoolingManager.h" />
     <ClInclude Include="MonsterManager.h" />

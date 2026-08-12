@@ -1,7 +1,10 @@
 #include "GameDataManager.h"
 
+#include "LogManager.h"
+
 #include <algorithm>
 #include <cmath>
+#include <filesystem>
 #include <fstream>
 
 #include <nlohmann/json.hpp>
@@ -9,6 +12,8 @@
 using json = nlohmann::json;
 
 namespace {
+std::string makeGameDataPath(std::string_view fileName) { return (std::filesystem::path(__FILE__).parent_path() / "Resources" / "data" / std::string(fileName)).string(); }
+
 WeaponType parseWeaponType(const std::string &value) { return value == "Ranged" ? WeaponType::Ranged : WeaponType::Melee; }
 
 ProjectileType parseProjectileType(const std::string &value) {
@@ -160,7 +165,8 @@ RoomLayout createStyledRoomLayout(const json &layoutJson) {
 
     layout.playerSpawnCell = sf::Vector2u{left + 4, ground - 1};
 
-    for (const auto &platform : layoutJson.value("platforms", json::array())) {
+    const json platformsJson = layoutJson.value("platforms", json::array());
+    for (const auto &platform : platformsJson) {
         const unsigned int platformX = platform.at("x").get<unsigned int>();
         const unsigned int platformY = platform.at("y").get<unsigned int>();
         const unsigned int platformLength = platform.at("length").get<unsigned int>();
@@ -204,14 +210,26 @@ RoomLayout createOpenVillageLayout(const json &layoutJson) {
 }
 } // namespace
 
-bool GameDataManager::loadWeapons(const std::string &path) {
+bool GameDataManager::loadSharedGameData() { return loadWeaponsFromFile(makeGameDataPath(kWeaponsDataFileName)); }
+
+bool GameDataManager::loadVillageData() { return loadSharedGameData() && loadRoomDataFromFile(makeGameDataPath(kRoomDataFileName)); }
+
+bool GameDataManager::loadDungeonData() { return loadVillageData() && loadMonstersFromFile(makeGameDataPath(kMonstersDataFileName)); }
+
+bool GameDataManager::loadWeaponsFromFile(const std::string &path) {
     std::ifstream file(path);
     if (!file) {
+        LogManager::getInstance().error("GameDataManager", "무기 데이터 파일 로드 실패: " + path);
         return false;
     }
 
     json root;
-    file >> root;
+    try {
+        file >> root;
+    } catch (const json::exception &exception) {
+        LogManager::getInstance().error("GameDataManager", "Failed to parse weapon data JSON: " + path + " (" + exception.what() + ')');
+        return false;
+    }
     m_weapons.clear();
 
     for (const auto &entry : root.at("weapons")) {
@@ -247,14 +265,20 @@ bool GameDataManager::loadWeapons(const std::string &path) {
     return true;
 }
 
-bool GameDataManager::loadMonsters(const std::string &path) {
+bool GameDataManager::loadMonstersFromFile(const std::string &path) {
     std::ifstream file(path);
     if (!file) {
+        LogManager::getInstance().error("GameDataManager", "몬스터 데이터 파일 로드 실패: " + path);
         return false;
     }
 
     json root;
-    file >> root;
+    try {
+        file >> root;
+    } catch (const json::exception &exception) {
+        LogManager::getInstance().error("GameDataManager", "Failed to parse monster data JSON: " + path + " (" + exception.what() + ')');
+        return false;
+    }
     m_monsters.clear();
 
     for (const auto &entry : root.at("monsters")) {
@@ -312,14 +336,20 @@ bool GameDataManager::loadMonsters(const std::string &path) {
     return true;
 }
 
-bool GameDataManager::loadRoomData(const std::string &path) {
+bool GameDataManager::loadRoomDataFromFile(const std::string &path) {
     std::ifstream file(path);
     if (!file) {
+        LogManager::getInstance().error("GameDataManager", "방 데이터 파일 로드 실패: " + path);
         return false;
     }
 
     json root;
-    file >> root;
+    try {
+        file >> root;
+    } catch (const json::exception &exception) {
+        LogManager::getInstance().error("GameDataManager", "Failed to parse room data JSON: " + path + " (" + exception.what() + ')');
+        return false;
+    }
     m_floors.clear();
 
     for (const auto &floorJson : root.at("floors")) {
@@ -339,9 +369,11 @@ bool GameDataManager::loadRoomData(const std::string &path) {
             if (layoutJson.contains("decorations")) {
                 reference.decorations = parseDecorations(layoutJson.at("decorations"));
             } else {
-                reference.decorations = parseDecorations(referenceJson.value("decorations", json::array()));
+                const json decorationsJson = referenceJson.value("decorations", json::array());
+                reference.decorations = parseDecorations(decorationsJson);
             }
-            for (const auto &backgroundJson : referenceJson.value("backgrounds", json::array())) {
+            const json backgroundsJson = referenceJson.value("backgrounds", json::array());
+            for (const auto &backgroundJson : backgroundsJson) {
                 BackgroundLayerConfig background;
                 background.atlasKey = backgroundJson.value("atlasKey", "");
                 background.frameName = backgroundJson.value("frame", "");
@@ -351,6 +383,7 @@ bool GameDataManager::loadRoomData(const std::string &path) {
                 }
             }
             if (reference.layout.cells.empty()) {
+                LogManager::getInstance().error("GameDataManager", "유효한 레이아웃을 만들지 못했습니다: " + reference.id);
                 return false;
             }
             floor.roomReferences.emplace(reference.id, std::move(reference));
@@ -364,11 +397,13 @@ bool GameDataManager::loadRoomData(const std::string &path) {
             room.minDoorCount = roomJson.value("minDoorCount", 0);
             room.maxDoorCount = roomJson.value("maxDoorCount", 0);
 
-            for (const auto &door : roomJson.value("availableDoorPositions", json::array())) {
+            const json availableDoorsJson = roomJson.value("availableDoorPositions", json::array());
+            for (const auto &door : availableDoorsJson) {
                 room.availableDoorPositions.push_back(parseDoorPosition(door.get<std::string>()));
             }
 
-            for (const auto &spawn : roomJson.value("monsters", json::array())) {
+            const json monsterSpawnsJson = roomJson.value("monsters", json::array());
+            for (const auto &spawn : monsterSpawnsJson) {
                 RoomMonsterSpawn monsterSpawn;
                 monsterSpawn.monsterId = spawn.at("monsterId").get<std::string>();
                 monsterSpawn.activationDelay = spawn.value("activationDelay", 1.f);
@@ -408,14 +443,19 @@ bool GameDataManager::loadRoomData(const std::string &path) {
         floor.startRoomId = connection.at("startRoomId").get<std::string>();
         floor.bossRoomId = connection.value("bossRoomId", "");
         floor.randomMonsterRoomCount = connection.value("randomMonsterRoomCount", 0u);
-        for (const auto &roomId : connection.value("shuffleRoomIds", json::array())) {
+        const json shuffleRoomIdsJson = connection.value("shuffleRoomIds", json::array());
+        for (const auto &roomId : shuffleRoomIdsJson) {
             floor.shuffleRoomIds.push_back(roomId.get<std::string>());
         }
 
         m_floors.emplace(floor.id, std::move(floor));
     }
 
-    return !m_floors.empty();
+    if (m_floors.empty()) {
+        LogManager::getInstance().error("GameDataManager", "방 데이터에 유효한 층 정보가 없습니다: " + path);
+        return false;
+    }
+    return true;
 }
 
 const WeaponData *GameDataManager::findWeapon(const std::string &id) const {
