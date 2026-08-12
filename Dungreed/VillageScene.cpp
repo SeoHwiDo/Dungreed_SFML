@@ -1,16 +1,17 @@
 ﻿#include "VillageScene.h"
 
 #include "Camera.h"
+#include "AudioManager.h"
 #include "Collision.h"
 #include "GameDataManager.h"
 #include "GameplayContext.h"
+#include "LogManager.h"
 #include "MapManager.h"
 #include "Player.h"
 #include "ResourceManager.h"
 #include "Room.h"
 #include "TileMap.h"
 
-#include <filesystem>
 #include <memory>
 #include <string_view>
 
@@ -36,15 +37,15 @@ bool VillageScene::enter() {
     auto &resources = ResourceManager::getInstance();
     auto &gameData = GameDataManager::getInstance();
     auto &mapManager = MapManager::getInstance();
-    const std::filesystem::path dataDirectory = std::filesystem::path(__FILE__).parent_path() / "Resources" / "data";
-
-    if (!resources.loadTrainingVillageResources() || !gameData.loadWeapons((dataDirectory / "weapons.json").string()) || !gameData.loadRoomData((dataDirectory / "room_data.json").string())) {
+    if (!resources.loadTrainingVillageResources() || !gameData.loadVillageData()) {
+        LogManager::getInstance().error("VillageScene", "시작마을 리소스 또는 게임 데이터 로드에 실패했습니다.");
         return false;
     }
 
     const FloorData *floor = gameData.findFloor("floor_00");
     const RoomTileSet roomTiles = createRoomTileSet();
     if (!floor || !mapManager.createCurrentRoomFromData(*floor, floor->startRoomId) || !mapManager.preloadFloorTileMaps("TileMap", roomTiles)) {
+        LogManager::getInstance().error("VillageScene", "시작마을 방 또는 타일맵 초기화에 실패했습니다.");
         return false;
     }
 
@@ -52,6 +53,7 @@ bool VillageScene::enter() {
     TileMap *tileMap = mapManager.getCurrentTileMap();
     const sf::Font *font = resources.getDefaultFont();
     if (!room || !tileMap || !font) {
+        LogManager::getInstance().error("VillageScene", "시작마을 방, 타일맵 또는 기본 폰트를 찾지 못했습니다.");
         return false;
     }
 
@@ -76,6 +78,7 @@ bool VillageScene::enter() {
     m_helpText->setFillColor(sf::Color(235, 229, 255));
     m_helpText->setOutlineColor(sf::Color(25, 18, 40));
     m_helpText->setOutlineThickness(1.5f);
+    AudioManager::getInstance().playBgm("Village_BGM");
     return true;
 }
 

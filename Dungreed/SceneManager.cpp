@@ -3,6 +3,7 @@
 #include "DebugManager.h"
 #include "GameDataManager.h"
 #include "GameplayContext.h"
+#include "LogManager.h"
 #include "Player.h"
 #include "ResourceManager.h"
 
@@ -12,11 +13,24 @@ SceneManager::SceneManager(sf::RenderWindow &window, GameplayContext &gameplay) 
 
 bool SceneManager::init() {
     if (!m_titleScene.enter()) {
+        LogManager::getInstance().error("SceneManager", "타이틀 장면 초기화에 실패했습니다.");
         return false;
     }
 
     const sf::Font *font = ResourceManager::getInstance().getDefaultFont();
-    return font && m_transition.init(*font, m_window.getSize()) && m_deathScene.init(*font);
+    if (!font) {
+        LogManager::getInstance().error("SceneManager", "기본 폰트를 찾지 못해 장면 관리자를 초기화할 수 없습니다.");
+        return false;
+    }
+    if (!m_transition.init(*font, m_window.getSize())) {
+        LogManager::getInstance().error("SceneManager", "장면 전환 화면 초기화에 실패했습니다.");
+        return false;
+    }
+    if (!m_deathScene.init(*font)) {
+        LogManager::getInstance().error("SceneManager", "결과 장면 초기화에 실패했습니다.");
+        return false;
+    }
+    return true;
 }
 
 void SceneManager::handleEvent(const sf::Event &event) {
@@ -104,7 +118,13 @@ bool SceneManager::changeToVillage() {
     if (m_transition.isActive()) {
         return false;
     }
-    return m_transition.begin(GameScene::TrainingVillage, u8"시작 마을", {[this]() { return m_villageScene.enter(); }}, [this]() { m_activeScene = GameScene::TrainingVillage; });
+    return m_transition.begin(GameScene::TrainingVillage, u8"시작 마을", {[this]() {
+                                  if (m_activeScene == GameScene::Dungeon) {
+                                      m_dungeonScene.leave();
+                                  }
+                                  return m_villageScene.enter();
+                              }},
+                              [this]() { m_activeScene = GameScene::TrainingVillage; });
 }
 
 bool SceneManager::changeToDungeon(unsigned int floorNumber) {
@@ -135,6 +155,6 @@ void SceneManager::handleDebugCommand() {
         if (m_dungeonScene.spawnDebugRoom(command.floorId, command.roomId)) {
             return;
         }
-        std::cerr << "[Debug] Room spawn failed. Select another room.\n";
+        LogManager::getInstance().warning("SceneManager", "디버그 방 생성에 실패했습니다. 다른 방을 선택하세요.");
     }
 }

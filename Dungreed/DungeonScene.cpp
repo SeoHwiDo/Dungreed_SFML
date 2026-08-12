@@ -1,12 +1,14 @@
 #include "DungeonScene.h"
 
 #include "Camera.h"
+#include "AudioManager.h"
 #include "Collision.h"
 #include "CombatManager.h"
 #include "DebugManager.h"
 #include "EffectManager.h"
 #include "GameDataManager.h"
 #include "GameplayContext.h"
+#include "LogManager.h"
 #include "MapManager.h"
 #include "MonsterManager.h"
 #include "ObjectPoolingManager.h"
@@ -18,7 +20,6 @@
 #include "TileMap.h"
 #include "UIManager.h"
 
-#include <filesystem>
 #include <iomanip>
 #include <iostream>
 #include <memory>
@@ -45,8 +46,11 @@ DungeonScene::~DungeonScene() = default;
 
 bool DungeonScene::enter(unsigned int floorNumber) {
     if (floorNumber == 0) {
+        LogManager::getInstance().error("DungeonScene", "던전 층 번호는 1 이상이어야 합니다.");
         return false;
     }
+
+    leave();
 
     auto &resources = ResourceManager::getInstance();
     auto &gameData = GameDataManager::getInstance();
@@ -54,29 +58,41 @@ bool DungeonScene::enter(unsigned int floorNumber) {
     auto &objectPool = ObjectPoolingManager::getInstance();
     auto &rewardChestManager = RewardChestManager::getInstance();
     auto &uiManager = UIManager::getInstance();
-    const std::filesystem::path dataDirectory = std::filesystem::path(__FILE__).parent_path() / "Resources" / "data";
-
-    if (!resources.loadDungeonResources() || !gameData.loadWeapons((dataDirectory / "weapons.json").string()) || !gameData.loadRoomData((dataDirectory / "room_data.json").string()) || !gameData.loadMonsters((dataDirectory / "monsters.json").string())) {
+    if (!resources.loadDungeonResources() || !gameData.loadDungeonData()) {
+        LogManager::getInstance().error("DungeonScene", "던전 리소스 또는 게임 데이터 로드에 실패했습니다.");
         return false;
     }
 
     const FloorData *floor = gameData.findFloor(makeFloorId(floorNumber));
     const RoomTileSet roomTiles = createRoomTileSet();
     if (!floor || !mapManager.createCurrentRoomFromData(*floor, floor->startRoomId) || !mapManager.preloadFloorTileMaps("TileMap", roomTiles) || !placePlayerAtCurrentRoom()) {
+        LogManager::getInstance().error("DungeonScene", "던전 시작 방 또는 타일맵 초기화에 실패했습니다.");
         return false;
     }
 
     objectPool.prewarmFromGameData(gameData);
     objectPool.prewarmProjectiles(kBossProjectilePoolCapacity);
     if (!rewardChestManager.init() || !uiManager.init(m_window)) {
+        LogManager::getInstance().error("DungeonScene", "던전 UI 또는 보상 상자 초기화에 실패했습니다.");
         return false;
     }
 
-    m_activeBoss.reset();
     m_areMonstersActivated = false;
     m_bossDefeated = false;
     m_floorNumber = floorNumber;
+    AudioManager::getInstance().playBgm("Dungeon_BGM");
     return true;
+}
+
+void DungeonScene::leave() {
+    auto &objectPool = ObjectPoolingManager::getInstance();
+    MonsterManager::getInstance().clearActiveRoom(objectPool);
+    EffectManager::getInstance().clear(objectPool);
+    objectPool.clearActiveProjectiles();
+    RewardChestManager::getInstance().reset();
+    m_activeBoss.reset();
+    m_areMonstersActivated = false;
+    m_bossDefeated = false;
 }
 
 void DungeonScene::update(float dt) {
@@ -103,6 +119,8 @@ void DungeonScene::update(float dt) {
 
     TileMap &tileMap = *activeTileMap;
     const bool isBossRoom = currentRoom->getInfo().type == RoomType::Boss;
+    // 같은 씬 BGM 요청은 AudioManager가 무시하므로 매 프레임 호출해도 재시작되지 않습니다.
+    AudioManager::getInstance().playBgm(isBossRoom ? "Boss_BGM" : "Dungeon_BGM");
     if (isBossRoom && !currentRoom->getInfo().isClear && !m_activeBoss) {
         m_activeBoss = std::make_unique<SkelBoss>();
         std::cout << "[DungeonScene] SkelBoss created\n";

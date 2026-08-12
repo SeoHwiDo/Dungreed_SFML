@@ -2,12 +2,12 @@
 #include <Windows.h>
 
 #include <algorithm>
-#include <filesystem>
 #include <iostream>
 #include <memory>
 #include <optional>
 
 #include "Camera.h"
+#include "AudioManager.h"
 #include "GameDataManager.h"
 #include "GameplayContext.h"
 #include "Player.h"
@@ -24,8 +24,7 @@ int main() {
 
     auto &resources = ResourceManager::getInstance();
     auto &gameData = GameDataManager::getInstance();
-    const std::filesystem::path dataDirectory = std::filesystem::path(__FILE__).parent_path() / "Resources" / "data";
-    if (!resources.loadSharedGameplayResources() || !gameData.loadWeapons((dataDirectory / "weapons.json").string())) {
+    if (!resources.loadSharedGameplayResources() || !resources.loadSharedAudioResources() || !AudioManager::getInstance().initialize() || !gameData.loadSharedGameData()) {
         return 1;
     }
 
@@ -56,7 +55,6 @@ int main() {
 
         const float dt = std::min(clock.restart().asSeconds(), 0.1f);
         scenes.update(dt);
-
         window.clear(sf::Color(11, 8, 20));
         scenes.render();
         window.display();

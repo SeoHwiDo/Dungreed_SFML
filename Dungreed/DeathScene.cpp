@@ -1,6 +1,7 @@
 #include "DeathScene.h"
 
 #include "ResourceManager.h"
+#include "LogManager.h"
 
 #include <algorithm>
 #include <cstdint>
@@ -40,6 +41,7 @@ bool DeathScene::enter(ResultType resultType) {
     const char *frameName = resultType == ResultType::Failure ? "ResultFail.png" : "ResultSuccess.png";
     const sf::IntRect *frame = resources.getFrameRect("UI", frameName);
     if (!uiTexture || !frame || !m_messageText) {
+        LogManager::getInstance().error("DeathScene", "결과 화면 UI 프레임 또는 텍스트가 준비되지 않았습니다.");
         return false;
     }
 

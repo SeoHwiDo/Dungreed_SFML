@@ -17,6 +17,8 @@ class DungeonScene {
     ~DungeonScene();
 
     bool enter(unsigned int floorNumber);
+    /// 던전에서 참조 중인 풀 객체와 방 상태를 해제합니다.
+    void leave();
     void update(float dt);
     void render();
     bool spawnDebugRoom(const std::string &floorId, const std::string &roomId);

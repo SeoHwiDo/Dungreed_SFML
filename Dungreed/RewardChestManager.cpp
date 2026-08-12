@@ -6,6 +6,7 @@
 
 #include "Player.h"
 #include "EffectManager.h"
+#include "LogManager.h"
 #include "ObjectPoolingManager.h"
 #include "ResourceManager.h"
 #include "Room.h"
@@ -51,10 +52,19 @@ bool RewardChestManager::init() {
     }
 
     if (!m_closedTreasureSprite || !m_openedTreasureSprite || std::any_of(m_fairySprites.begin(), m_fairySprites.end(), [](const auto &fairy) { return !fairy.has_value(); })) {
-        std::cerr << "[RewardChest] 보물상자 또는 요정 스프라이트를 찾을 수 없습니다.\n";
+        LogManager::getInstance().error("RewardChestManager", "보물상자 또는 요정 스프라이트를 찾을 수 없습니다.");
         return false;
     }
     return true;
+}
+
+void RewardChestManager::reset() {
+    m_room = nullptr;
+    m_state = State::Hidden;
+    m_openHoldTime = 0.f;
+    m_rewardElapsed = 0.f;
+    m_fairyRiseElapsed = 0.f;
+    m_isFairyInteractable = false;
 }
 
 void RewardChestManager::update(float dt, Room &room, const TileMap &tileMap, Player &player, EffectManager &effectManager, ObjectPoolingManager &objectPool) {

@@ -29,6 +29,8 @@ class RewardChestManager {
     void update(float dt, Room &room, const TileMap &tileMap, Player &player, EffectManager &effectManager, ObjectPoolingManager &objectPool);
     /// 현재 방에 표시해야 하는 닫힌/열린 상자와 요정을 렌더링합니다.
     void render(sf::RenderWindow &window) const;
+    /// 장면 이탈 시 이전 Room 포인터와 보상 상태를 비웁니다.
+    void reset();
 
   private:
     RewardChestManager() = default;

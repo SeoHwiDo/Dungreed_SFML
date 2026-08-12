@@ -1,6 +1,7 @@
 ﻿#include "TitleScene.h"
 
 #include "ResourceManager.h"
+#include "LogManager.h"
 
 #include <algorithm>
 #include <cmath>
@@ -53,6 +54,7 @@ void drawMidCloud(sf::RenderWindow &window, const sf::Texture &texture, float x,
 bool TitleScene::enter() {
     auto &resources = ResourceManager::getInstance();
     if (!resources.loadTitleResources()) {
+        LogManager::getInstance().error("TitleScene", "타이틀 장면 리소스 로드에 실패했습니다.");
         return false;
     }
 
@@ -64,6 +66,7 @@ bool TitleScene::enter() {
     m_midCloud1Texture = resources.getAtlasTexture("TitleMidCloud1");
     m_frontCloudTexture = resources.getAtlasTexture("TitleFrontCloud");
     if (!font || !m_logoTexture || !m_skyTexture || !m_backCloudTexture || !m_midCloud0Texture || !m_midCloud1Texture || !m_frontCloudTexture) {
+        LogManager::getInstance().error("TitleScene", "타이틀 장면에 필요한 폰트 또는 배경 텍스처를 찾지 못했습니다.");
         return false;
     }
 

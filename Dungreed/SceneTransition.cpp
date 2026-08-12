@@ -1,6 +1,7 @@
 ﻿#include "SceneTransition.h"
 
 #include <algorithm>
+#include "LogManager.h"
 #include <cmath>
 #include <cstdint>
 #include <string_view>
@@ -16,7 +17,11 @@ bool SceneTransition::init(const sf::Font &font, const sf::Vector2u &size) {
     m_loadingText->setFillColor(sf::Color::White);
     m_loadingText->setOutlineColor(sf::Color(16, 12, 28));
     m_loadingText->setOutlineThickness(2.f);
-    return m_coverSprite.has_value();
+    if (!m_coverSprite) {
+        LogManager::getInstance().error("SceneTransition", "장면 전환 가림막 이미지를 만들지 못했습니다.");
+        return false;
+    }
+    return true;
 }
 
 bool SceneTransition::begin(GameScene destination, std::string destinationName, std::vector<LoadTask> loadTasks, std::function<void()> onLoaded) {
