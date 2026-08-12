@@ -15,6 +15,7 @@
 #include "Player.h"
 #include "ResourceManager.h"
 #include "SceneManager.h"
+#include "ObjectPoolingManager.h"
 
 /// 프로그램 진입점은 창과 상위 객체만 조립하고, 실제 흐름은 SceneManager에 위임합니다.
 int main() {
@@ -56,7 +57,10 @@ int main() {
     if (!scenes.init()) {
         return 1;
     }
-
+    auto& objectPool = ObjectPoolingManager::getInstance();
+    objectPool.prewarmFromGameData(gameData);
+    constexpr std::size_t kBossProjectilePoolCapacity = 384;
+    objectPool.prewarmProjectiles(kBossProjectilePoolCapacity);
     sf::Clock clock;
     while (window.isOpen()) {
         while (const std::optional<sf::Event> event = window.pollEvent()) {

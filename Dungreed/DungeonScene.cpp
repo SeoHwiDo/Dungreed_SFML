@@ -1,4 +1,4 @@
-#include "DungeonScene.h"
+﻿#include "DungeonScene.h"
 
 #include "Camera.h"
 #include "AudioManager.h"
@@ -30,7 +30,7 @@
 namespace {
 constexpr float kGameplayCameraZoom = 3.5f;
 constexpr float kBossCinematicCameraZoom = 5.2f;
-constexpr std::size_t kBossProjectilePoolCapacity = 384;
+
 
 RoomTileSet createRoomTileSet() { return {"Wall_Outter.png", "Wall_Top.png", "Wall_Ground.png", "Wall_Left.png", "Wall_Right.png", "Wall_H0.png", "Wall_H2.png", "Wall_H6.png", "Wall_H8.png", "Wall_TopLCorner.png", "Wall_TopRCorner.png", "Wall_BotLCorner.png", "Wall_BotRCorner.png", "Back_Inner.png", "Back_Top.png", "Back_Ground.png", "Back_Left.png", "Back_Right.png", "Back_TopLcorner.png", "Back_TopRCorner.png", "BackBotLCorner.png", "Back_BotRCorner.png", "Back_DoorTopL.png", "Back_DoorTopR.png", "Back_DoorBotL.png", "Back_DoorBotR.png", "Platform.png"}; }
 
@@ -70,9 +70,9 @@ bool DungeonScene::enter(unsigned int floorNumber) {
         LogManager::getInstance().error("DungeonScene", "던전 시작 방 또는 타일맵 초기화에 실패했습니다.");
         return false;
     }
-
-    objectPool.prewarmFromGameData(gameData);
-    objectPool.prewarmProjectiles(kBossProjectilePoolCapacity);
+//아예 사전 풀링을 위한 이동
+    //objectPool.prewarmFromGameData(gameData);
+    //objectPool.prewarmProjectiles(kBossProjectilePoolCapacity);
     if (!rewardChestManager.init() || !uiManager.init(m_window)) {
         LogManager::getInstance().error("DungeonScene", "던전 UI 또는 보상 상자 초기화에 실패했습니다.");
         return false;
