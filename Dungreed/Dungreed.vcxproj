@@ -208,6 +208,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md" />
+    <None Include="resources\data\actor_data.json" />
     <None Include="Resources\data\monsters.json" />
     <None Include="resources\data\room_data.json" />
     <None Include="Resources\data\weapons.json" />

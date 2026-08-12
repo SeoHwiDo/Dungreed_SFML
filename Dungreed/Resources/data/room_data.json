@@ -648,6 +648,114 @@
         "doorSelection": "RandomUnused",
         "resolvedConnections": []
       }
+    },
+    {
+      "id": "Debug_floor",
+      "name": "Debug Floor",
+      "roomReferences": [
+        {
+          "id": "debug_ref_monster",
+          "roomType": "Monster",
+          "layout": {
+            "generator": "StyledRoom",
+            "width": 12,
+            "height": 10,
+            "outlineWidth": 2,
+            "passage": { "topBottomWidth": 3, "sideHeight": 3 },
+            "platforms": []
+          }
+        },
+        {
+          "id": "debug_ref_boss",
+          "roomType": "Boss",
+          "layout": {
+            "generator": "StyledRoom",
+            "width": 12,
+            "height": 10,
+            "outlineWidth": 2,
+            "passage": { "topBottomWidth": 3, "sideHeight": 3 },
+            "platforms": []
+          }
+        }
+      ],
+      "rooms": [
+        {
+          "id": "Banshee",
+          "roomReferenceId": "debug_ref_monster",
+          "role": "Monster",
+          "availableDoorPositions": [],
+          "minDoorCount": 0,
+          "maxDoorCount": 0,
+          "activationDelay": 0.0,
+          "monster_pool": [[{ "monsterId": "Banshee", "count": 1 }]]
+        },
+        {
+          "id": "Bat",
+          "roomReferenceId": "debug_ref_monster",
+          "role": "Monster",
+          "availableDoorPositions": [],
+          "minDoorCount": 0,
+          "maxDoorCount": 0,
+          "activationDelay": 0.0,
+          "monster_pool": [[{ "monsterId": "Bat", "count": 1 }]]
+        },
+        {
+          "id": "BigWhiteSkel",
+          "roomReferenceId": "debug_ref_monster",
+          "role": "Monster",
+          "availableDoorPositions": [],
+          "minDoorCount": 0,
+          "maxDoorCount": 0,
+          "activationDelay": 0.0,
+          "monster_pool": [[{ "monsterId": "BigWhiteSkel", "count": 1 }]]
+        },
+        {
+          "id": "LittleGhost",
+          "roomReferenceId": "debug_ref_monster",
+          "role": "Monster",
+          "availableDoorPositions": [],
+          "minDoorCount": 0,
+          "maxDoorCount": 0,
+          "activationDelay": 0.0,
+          "monster_pool": [[{ "monsterId": "LittleGhost", "count": 1 }]]
+        },
+        {
+          "id": "Minotaurs",
+          "roomReferenceId": "debug_ref_monster",
+          "role": "Monster",
+          "availableDoorPositions": [],
+          "minDoorCount": 0,
+          "maxDoorCount": 0,
+          "activationDelay": 0.0,
+          "monster_pool": [[{ "monsterId": "Minotaurs", "count": 1 }]]
+        },
+        {
+          "id": "SkelDog",
+          "roomReferenceId": "debug_ref_monster",
+          "role": "Monster",
+          "availableDoorPositions": [],
+          "minDoorCount": 0,
+          "maxDoorCount": 0,
+          "activationDelay": 0.0,
+          "monster_pool": [[{ "monsterId": "SkelDog", "count": 1 }]]
+        },
+        {
+          "id": "SkelBoss",
+          "roomReferenceId": "debug_ref_boss",
+          "role": "Boss",
+          "availableDoorPositions": [],
+          "minDoorCount": 0,
+          "maxDoorCount": 0,
+          "monsters": []
+        }
+      ],
+      "connectionGeneration": {
+        "strategy": "Standalone",
+        "startRoomId": "",
+        "shuffleRoomIds": [],
+        "randomMonsterRoomCount": 0,
+        "resolvedConnections": []
+      }
     }
   ]
 }
