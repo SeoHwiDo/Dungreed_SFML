@@ -12,33 +12,22 @@
 class Effect;
 class Projectile;
 
-enum class SkelBossPattern {
-    None,
-    HandLaser,
-    RotatingBullet,
-    SwordFan
-};
+enum class SkelBossPattern { None, HandLaser, RotatingBullet, SwordFan };
 
 class SkelBoss final : public Boss {
-public:
+  public:
     SkelBoss();
 
-    void init(const std::string& atlasKey = "Boss") override;
-    void update(float dt, Player& player, ObjectPoolingManager& objectPool,
-        EffectManager& effectManager, const TileMap& tileMap) override;
-    void render(sf::RenderWindow& window) override;
+    void init(const std::string &atlasKey = "Boss") override;
+    void update(float dt, Player &player, ObjectPoolingManager &objectPool, EffectManager &effectManager, const TileMap &tileMap) override;
+    void render(sf::RenderWindow &window) override;
 
     SkelBossPattern getCurrentPattern() const { return m_currentPattern; }
 
-private:
-    static constexpr const char* kUiDisplayName = u8"벨리알";
+  private:
+    static constexpr const char *kUiDisplayName = u8"벨리알";
 
-    enum class State {
-        Summoning,
-        Idle,
-        Attacking,
-        Dead
-    };
+    enum class State { Summoning, Idle, Attacking, Dead };
 
     static constexpr float kPostPatternIdleDuration = 3.f;
     static constexpr float kSwordAimDuration = 1.5f;
@@ -79,7 +68,7 @@ private:
     float m_bulletIntervalTimer = 0.f;
     float m_bulletRotation = 0.f;
     float m_backParticleTimer = 0.f;
-    std::mt19937 m_backParticleRandom{ std::random_device{}() };
+    std::mt19937 m_backParticleRandom{std::random_device{}()};
 
     std::shared_ptr<Equip> m_handLaserWeapon;
     std::shared_ptr<Equip> m_bulletWeapon;
@@ -90,8 +79,8 @@ private:
     float m_rightHandY = 0.f;
     float m_lockedHandY = 0.f;
 
-    std::vector<Projectile*> m_swords;
-    std::vector<Effect*> m_swordChargeEffects;
+    std::vector<Projectile *> m_swords;
+    std::vector<Effect *> m_swordChargeEffects;
     std::vector<PendingSwordSpawn> m_pendingSwordSpawns;
     bool m_swordsLaunched = false;
     bool m_swordsReadyForAim = false;
@@ -102,29 +91,27 @@ private:
     void configureLaser();
     void configurePatternWeapons();
     void updateBackVisual(float dt);
-    void updateBackParticles(float dt, ObjectPoolingManager& objectPool);
-    void updateHands(float dt, const TileMap& tileMap);
-    void updateHandPositions(const TileMap& tileMap);
+    void updateBackParticles(float dt, ObjectPoolingManager &objectPool);
+    void updateHands(float dt, const TileMap &tileMap);
+    void updateHandPositions(const TileMap &tileMap);
     void setHandAttackAnimation(bool rightHand);
 
-    SkelBossPattern choosePattern(const Player& player, const TileMap& tileMap) const;
-    void startPattern(SkelBossPattern pattern, const Player& player,
-        ObjectPoolingManager& objectPool);
+    SkelBossPattern choosePattern(const Player &player, const TileMap &tileMap) const;
+    void startPattern(SkelBossPattern pattern, const Player &player, ObjectPoolingManager &objectPool);
     void finishPattern();
 
-    void updateHandLaser(float dt, Player& player);
-    void beginLaserHand(const Player& player, bool rightHand);
-    void updateRotatingBullets(float dt, ObjectPoolingManager& objectPool);
-    void fireRotatingCross(ObjectPoolingManager& objectPool);
-    void updateSwordFan(float dt, Player& player, ObjectPoolingManager& objectPool,
-        EffectManager& effectManager, const TileMap& tileMap);
-    void summonSwordFan(ObjectPoolingManager& objectPool);
-    void spawnSword(const sf::Vector2f& position, ObjectPoolingManager& objectPool);
-    void stopSwordChargeEffects(ObjectPoolingManager& objectPool);
+    void updateHandLaser(float dt, Player &player);
+    void beginLaserHand(const Player &player, bool rightHand);
+    void updateRotatingBullets(float dt, ObjectPoolingManager &objectPool);
+    void fireRotatingCross(ObjectPoolingManager &objectPool);
+    void updateSwordFan(float dt, Player &player, ObjectPoolingManager &objectPool, EffectManager &effectManager, const TileMap &tileMap);
+    void summonSwordFan(ObjectPoolingManager &objectPool);
+    void spawnSword(const sf::Vector2f &position, ObjectPoolingManager &objectPool);
+    void stopSwordChargeEffects(ObjectPoolingManager &objectPool);
 
     sf::Vector2f getMouthPosition() const;
     static std::size_t patternIndex(SkelBossPattern pattern);
     void markPatternUsed(SkelBossPattern pattern);
-    static sf::Vector2f normalized(const sf::Vector2f& vector);
-    static float directionAngle(const sf::Vector2f& direction);
+    static sf::Vector2f normalized(const sf::Vector2f &vector);
+    static float directionAngle(const sf::Vector2f &direction);
 };

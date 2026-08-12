@@ -30,27 +30,16 @@ constexpr float kGameplayCameraZoom = 3.5f;
 constexpr float kBossCinematicCameraZoom = 5.2f;
 constexpr std::size_t kBossProjectilePoolCapacity = 384;
 
-RoomTileSet createRoomTileSet() {
-    return {
-        "Wall_Outter.png", "Wall_Top.png", "Wall_Ground.png", "Wall_Left.png",
-        "Wall_Right.png", "Wall_H0.png", "Wall_H2.png", "Wall_H6.png", "Wall_H8.png",
-        "Wall_TopLCorner.png", "Wall_TopRCorner.png", "Wall_BotLCorner.png",
-        "Wall_BotRCorner.png", "Back_Inner.png", "Back_Top.png", "Back_Ground.png",
-        "Back_Left.png", "Back_Right.png", "Back_TopLcorner.png", "Back_TopRCorner.png",
-        "BackBotLCorner.png", "Back_BotRCorner.png", "Back_DoorTopL.png",
-        "Back_DoorTopR.png", "Back_DoorBotL.png", "Back_DoorBotR.png", "Platform.png"
-    };
-}
+RoomTileSet createRoomTileSet() { return {"Wall_Outter.png", "Wall_Top.png", "Wall_Ground.png", "Wall_Left.png", "Wall_Right.png", "Wall_H0.png", "Wall_H2.png", "Wall_H6.png", "Wall_H8.png", "Wall_TopLCorner.png", "Wall_TopRCorner.png", "Wall_BotLCorner.png", "Wall_BotRCorner.png", "Back_Inner.png", "Back_Top.png", "Back_Ground.png", "Back_Left.png", "Back_Right.png", "Back_TopLcorner.png", "Back_TopRCorner.png", "BackBotLCorner.png", "Back_BotRCorner.png", "Back_DoorTopL.png", "Back_DoorTopR.png", "Back_DoorBotL.png", "Back_DoorBotR.png", "Platform.png"}; }
 
 std::string makeFloorId(unsigned int floorNumber) {
     std::ostringstream stream;
     stream << "floor_" << std::setw(2) << std::setfill('0') << floorNumber;
     return stream.str();
 }
-}
+} // namespace
 
-DungeonScene::DungeonScene(sf::RenderWindow& window, GameplayContext& gameplay)
-    : m_window(window), m_gameplay(gameplay) {}
+DungeonScene::DungeonScene(sf::RenderWindow &window, GameplayContext &gameplay) : m_window(window), m_gameplay(gameplay) {}
 
 DungeonScene::~DungeonScene() = default;
 
@@ -59,27 +48,21 @@ bool DungeonScene::enter(unsigned int floorNumber) {
         return false;
     }
 
-    auto& resources = ResourceManager::getInstance();
-    auto& gameData = GameDataManager::getInstance();
-    auto& mapManager = MapManager::getInstance();
-    auto& objectPool = ObjectPoolingManager::getInstance();
-    auto& rewardChestManager = RewardChestManager::getInstance();
-    auto& uiManager = UIManager::getInstance();
-    const std::filesystem::path dataDirectory =
-        std::filesystem::path(__FILE__).parent_path() / "Resources" / "data";
+    auto &resources = ResourceManager::getInstance();
+    auto &gameData = GameDataManager::getInstance();
+    auto &mapManager = MapManager::getInstance();
+    auto &objectPool = ObjectPoolingManager::getInstance();
+    auto &rewardChestManager = RewardChestManager::getInstance();
+    auto &uiManager = UIManager::getInstance();
+    const std::filesystem::path dataDirectory = std::filesystem::path(__FILE__).parent_path() / "Resources" / "data";
 
-    if (!resources.loadDungeonResources() ||
-        !gameData.loadWeapons((dataDirectory / "weapons.json").string()) ||
-        !gameData.loadRoomData((dataDirectory / "room_data.json").string()) ||
-        !gameData.loadMonsters((dataDirectory / "monsters.json").string())) {
+    if (!resources.loadDungeonResources() || !gameData.loadWeapons((dataDirectory / "weapons.json").string()) || !gameData.loadRoomData((dataDirectory / "room_data.json").string()) || !gameData.loadMonsters((dataDirectory / "monsters.json").string())) {
         return false;
     }
 
-    const FloorData* floor = gameData.findFloor(makeFloorId(floorNumber));
+    const FloorData *floor = gameData.findFloor(makeFloorId(floorNumber));
     const RoomTileSet roomTiles = createRoomTileSet();
-    if (!floor || !mapManager.createCurrentRoomFromData(*floor, floor->startRoomId) ||
-        !mapManager.preloadFloorTileMaps("TileMap", roomTiles) ||
-        !placePlayerAtCurrentRoom()) {
+    if (!floor || !mapManager.createCurrentRoomFromData(*floor, floor->startRoomId) || !mapManager.preloadFloorTileMaps("TileMap", roomTiles) || !placePlayerAtCurrentRoom()) {
         return false;
     }
 
@@ -97,28 +80,28 @@ bool DungeonScene::enter(unsigned int floorNumber) {
 }
 
 void DungeonScene::update(float dt) {
-    Player* player = m_gameplay.getPlayer();
-    Camera* camera = m_gameplay.getCamera();
+    Player *player = m_gameplay.getPlayer();
+    Camera *camera = m_gameplay.getCamera();
     if (!isReady() || !player || !camera) {
         return;
     }
 
-    auto& mapManager = MapManager::getInstance();
-    auto& objectPool = ObjectPoolingManager::getInstance();
-    auto& monsterManager = MonsterManager::getInstance();
-    auto& combatManager = CombatManager::getInstance();
-    auto& effectManager = EffectManager::getInstance();
-    auto& rewardChestManager = RewardChestManager::getInstance();
-    auto& gameData = GameDataManager::getInstance();
-    auto& uiManager = UIManager::getInstance();
+    auto &mapManager = MapManager::getInstance();
+    auto &objectPool = ObjectPoolingManager::getInstance();
+    auto &monsterManager = MonsterManager::getInstance();
+    auto &combatManager = CombatManager::getInstance();
+    auto &effectManager = EffectManager::getInstance();
+    auto &rewardChestManager = RewardChestManager::getInstance();
+    auto &gameData = GameDataManager::getInstance();
+    auto &uiManager = UIManager::getInstance();
 
-    TileMap* activeTileMap = mapManager.getCurrentTileMap();
-    Room* currentRoom = mapManager.getCurrentRoom();
+    TileMap *activeTileMap = mapManager.getCurrentTileMap();
+    Room *currentRoom = mapManager.getCurrentRoom();
     if (!activeTileMap || !currentRoom) {
         return;
     }
 
-    TileMap& tileMap = *activeTileMap;
+    TileMap &tileMap = *activeTileMap;
     const bool isBossRoom = currentRoom->getInfo().type == RoomType::Boss;
     if (isBossRoom && !currentRoom->getInfo().isClear && !m_activeBoss) {
         m_activeBoss = std::make_unique<SkelBoss>();
@@ -132,8 +115,7 @@ void DungeonScene::update(float dt) {
     const bool isFirstRoomActivation = !m_areMonstersActivated;
     if (isFirstRoomActivation) {
         if (!isBossRoom) {
-            mapManager.requestCurrentRoomMonsters(monsterManager, objectPool, gameData,
-                tileMap, player->getBodyCenterPosition(), effectManager);
+            mapManager.requestCurrentRoomMonsters(monsterManager, objectPool, gameData, tileMap, player->getBodyCenterPosition(), effectManager);
         }
         m_areMonstersActivated = true;
     }
@@ -163,9 +145,7 @@ void DungeonScene::update(float dt) {
     tileMap.update(dt);
 
     bool didChangeRoom = false;
-    if (const auto enteredDoor = currentRoom->getEnteredDoor(player->getGlobalBounds(),
-        player->getPreviousGlobalBounds(), tileMap);
-        enteredDoor && mapManager.moveCurrentRoom(*enteredDoor)) {
+    if (const auto enteredDoor = currentRoom->getEnteredDoor(player->getGlobalBounds(), player->getPreviousGlobalBounds(), tileMap); enteredDoor && mapManager.moveCurrentRoom(*enteredDoor)) {
         monsterManager.clearActiveRoom(objectPool);
         effectManager.clear(objectPool);
         player->cancelDash();
@@ -176,18 +156,12 @@ void DungeonScene::update(float dt) {
     }
 
     if (!didChangeRoom) {
-        std::unordered_set<EntityId> playerHitMonsters =
-            combatManager.resolvePlayerAttack(*player, objectPool, effectManager,
-                m_activeBoss.get());
-        const auto projectileHits = combatManager.updateProjectiles(dt, *player,
-            objectPool, tileMap, ProjectileTarget::Monster, m_activeBoss.get());
+        std::unordered_set<EntityId> playerHitMonsters = combatManager.resolvePlayerAttack(*player, objectPool, effectManager, m_activeBoss.get());
+        const auto projectileHits = combatManager.updateProjectiles(dt, *player, objectPool, tileMap, ProjectileTarget::Monster, m_activeBoss.get());
         playerHitMonsters.insert(projectileHits.begin(), projectileHits.end());
-        combatManager.resolveMonsterAttacks(dt, *player, objectPool, tileMap,
-            playerHitMonsters);
-        combatManager.updateProjectiles(dt, *player, objectPool, tileMap,
-            ProjectileTarget::Player, m_activeBoss.get());
-        rewardChestManager.update(dt, *currentRoom, tileMap, *player,
-            effectManager, objectPool);
+        combatManager.resolveMonsterAttacks(dt, *player, objectPool, tileMap, playerHitMonsters);
+        combatManager.updateProjectiles(dt, *player, objectPool, tileMap, ProjectileTarget::Player, m_activeBoss.get());
+        rewardChestManager.update(dt, *currentRoom, tileMap, *player, effectManager, objectPool);
     }
 
     const bool isBossCinematic = m_activeBoss && m_activeBoss->isSummoning();
@@ -201,18 +175,18 @@ void DungeonScene::render() {
         return;
     }
 
-    auto& mapManager = MapManager::getInstance();
-    auto& objectPool = ObjectPoolingManager::getInstance();
-    auto& effectManager = EffectManager::getInstance();
-    auto& rewardChestManager = RewardChestManager::getInstance();
-    auto& uiManager = UIManager::getInstance();
-    auto& debugManager = DebugManager::getInstance();
+    auto &mapManager = MapManager::getInstance();
+    auto &objectPool = ObjectPoolingManager::getInstance();
+    auto &effectManager = EffectManager::getInstance();
+    auto &rewardChestManager = RewardChestManager::getInstance();
+    auto &uiManager = UIManager::getInstance();
+    auto &debugManager = DebugManager::getInstance();
 
-    Camera* camera = m_gameplay.getCamera();
-    Player* player = m_gameplay.getPlayer();
+    Camera *camera = m_gameplay.getCamera();
+    Player *player = m_gameplay.getPlayer();
     m_window.setView(camera->getView());
     objectPool.renderBehindTiles(m_window);
-    if (const TileMap* tileMap = mapManager.getCurrentTileMap()) {
+    if (const TileMap *tileMap = mapManager.getCurrentTileMap()) {
         m_window.draw(*tileMap);
     }
     if (m_activeBoss) {
@@ -230,13 +204,13 @@ void DungeonScene::render() {
     uiManager.render(m_window);
 }
 
-bool DungeonScene::spawnDebugRoom(const std::string& floorId, const std::string& roomId) {
-    auto& debugManager = DebugManager::getInstance();
-    auto& gameData = GameDataManager::getInstance();
-    auto& mapManager = MapManager::getInstance();
-    auto& monsterManager = MonsterManager::getInstance();
-    auto& objectPool = ObjectPoolingManager::getInstance();
-    auto& effectManager = EffectManager::getInstance();
+bool DungeonScene::spawnDebugRoom(const std::string &floorId, const std::string &roomId) {
+    auto &debugManager = DebugManager::getInstance();
+    auto &gameData = GameDataManager::getInstance();
+    auto &mapManager = MapManager::getInstance();
+    auto &monsterManager = MonsterManager::getInstance();
+    auto &objectPool = ObjectPoolingManager::getInstance();
+    auto &effectManager = EffectManager::getInstance();
     const RoomTileSet roomTiles = createRoomTileSet();
 
     if (!debugManager.spawnRoom(floorId, roomId, gameData, mapManager, "TileMap", roomTiles)) {
@@ -250,13 +224,9 @@ bool DungeonScene::spawnDebugRoom(const std::string& floorId, const std::string&
     return placePlayerAtCurrentRoom();
 }
 
-void DungeonScene::toggleCombatBounds() {
-    m_showCombatBounds = !m_showCombatBounds;
-}
+void DungeonScene::toggleCombatBounds() { m_showCombatBounds = !m_showCombatBounds; }
 
-bool DungeonScene::isReady() const {
-    return m_gameplay.isReady();
-}
+bool DungeonScene::isReady() const { return m_gameplay.isReady(); }
 
 bool DungeonScene::consumeBossDefeat() {
     const bool wasDefeated = m_bossDefeated;
@@ -265,9 +235,9 @@ bool DungeonScene::consumeBossDefeat() {
 }
 
 bool DungeonScene::placePlayerAtCurrentRoom() {
-    auto& mapManager = MapManager::getInstance();
-    Room* room = mapManager.getCurrentRoom();
-    TileMap* tileMap = mapManager.getCurrentTileMap();
+    auto &mapManager = MapManager::getInstance();
+    Room *room = mapManager.getCurrentRoom();
+    TileMap *tileMap = mapManager.getCurrentTileMap();
     if (!room || !tileMap) {
         return false;
     }

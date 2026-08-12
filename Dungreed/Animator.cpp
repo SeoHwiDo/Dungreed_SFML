@@ -1,18 +1,19 @@
 #include "Animator.h"
-#include<iostream>
+#include <iostream>
 
-void Animator::addAnimation(const std::string& name, const AnimationClip& clip) {
-    if (clip.frames != nullptr && !clip.frames->empty()) {//참조해온 정보가 존재하는지 확인
+void Animator::addAnimation(const std::string &name, const AnimationClip &clip) {
+    if (clip.frames != nullptr && !clip.frames->empty()) { // 참조해온 정보가 존재하는지 확인
         m_animations[name] = clip;
     } else {
         std::cerr << "[Animator] 경고: 유효하지 않은 프레임 데이터가 등록되었습니다. (" << name << ")\n";
     }
 }
 
-void Animator::play(const std::string& name) {
-    if (m_currentAnimation == name && m_isPlaying) return;
+void Animator::play(const std::string &name) {
+    if (m_currentAnimation == name && m_isPlaying)
+        return;
     if (m_animations.find(name) != m_animations.end()) {
-        //정상적으로 존재하는 애니메이션일때
+        // 정상적으로 존재하는 애니메이션일때
         m_currentAnimation = name;
         m_currentTime = 0.f;
         m_currentFrame = 0;
@@ -27,17 +28,17 @@ void Animator::stop() {
     m_currentFrame = 0;
     m_currentTime = 0.f;
 }
-bool Animator::hasAnimation(const std::string& name) const {
-    return m_animations.find(name) != m_animations.end();
-}
+bool Animator::hasAnimation(const std::string &name) const { return m_animations.find(name) != m_animations.end(); }
 
-void Animator::update(float dt, sf::Sprite& sprite) {
-    if (!m_isPlaying || m_currentAnimation.empty()) return;
+void Animator::update(float dt, sf::Sprite &sprite) {
+    if (!m_isPlaying || m_currentAnimation.empty())
+        return;
 
-    const AnimationClip& clip = m_animations[m_currentAnimation];
+    const AnimationClip &clip = m_animations[m_currentAnimation];
 
     // 포인터 유효성 검사
-    if (!clip.frames || clip.frames->empty()) return;
+    if (!clip.frames || clip.frames->empty())
+        return;
 
     // 객체 자신의 독립적인 시간에 dt를 누적 (비동기적 프레임 갱신)
     m_currentTime += dt * m_speedMultiplier;
@@ -61,14 +62,11 @@ void Animator::update(float dt, sf::Sprite& sprite) {
     // SFML 3.1.0 기준: Sprite에 현재 프레임의 영역(IntRect) 적용
     sprite.setTextureRect((*clip.frames)[m_currentFrame]);
 }
-bool Animator::isFinished() const {
-    return !m_isPlaying;
-}
+bool Animator::isFinished() const { return !m_isPlaying; }
 
 bool Animator::isOnLastFrame() const {
     const auto animationIt = m_animations.find(m_currentAnimation);
-    if (animationIt == m_animations.end() || !animationIt->second.frames ||
-        animationIt->second.frames->empty()) {
+    if (animationIt == m_animations.end() || !animationIt->second.frames || animationIt->second.frames->empty()) {
         return false;
     }
     return m_currentFrame + 1 >= animationIt->second.frames->size();

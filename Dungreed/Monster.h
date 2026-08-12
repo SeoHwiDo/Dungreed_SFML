@@ -7,29 +7,12 @@
 #include <string>
 #include <unordered_map>
 
-enum class MonsterState {
-    Idle,
-    Patrol,
-    Chase,
-    Charge,
-    Attack,
-    Dead
-};
+enum class MonsterState { Idle, Patrol, Chase, Charge, Attack, Dead };
 
-enum class MonsterAttackPattern {
-    Standard,
-    Ranged,
-    GhostTouch,
-    RadialProjectile,
-    ChargeCombo
-};
+enum class MonsterAttackPattern { Standard, Ranged, GhostTouch, RadialProjectile, ChargeCombo };
 
 /// Attack 상태 안에서 준비 애니메이션·실제 판정·후딜을 구분합니다.
-enum class MonsterAttackPhase {
-    Ready,
-    Active,
-    Recovery
-};
+enum class MonsterAttackPhase { Ready, Active, Recovery };
 
 struct MonsterFSMData {
     float stateTimer = 0.f;
@@ -75,29 +58,24 @@ struct MonsterBehaviorConfig {
 class Player;
 
 class Monster : public Actor {
-public:
+  public:
     MonsterState state = MonsterState::Idle;
 
-    void init(const std::string& atlasKey = "Monster") override;
-    Monster(const std::string& type,
-        Status status = { kDefaultMaxHp, kDefaultMaxHp, kDefaultPower, kDefaultDex },
-        const std::string& atlasKey = "Monster",
-        MonsterBehaviorConfig behavior = {})
-        : Actor(status), m_type(type) {
+    void init(const std::string &atlasKey = "Monster") override;
+    Monster(const std::string &type, Status status = {kDefaultMaxHp, kDefaultMaxHp, kDefaultPower, kDefaultDex}, const std::string &atlasKey = "Monster", MonsterBehaviorConfig behavior = {}) : Actor(status), m_type(type) {
         setBehavior(behavior);
         init(atlasKey);
     }
 
-    void update(float dt, Player& player);
+    void update(float dt, Player &player);
     void resetForReuse(Status newStatus, MonsterBehaviorConfig behavior = {});
-    void resetForReuse(const std::string& type, Status newStatus,
-        const std::string& atlasKey = "Monster", MonsterBehaviorConfig behavior = {});
+    void resetForReuse(const std::string &type, Status newStatus, const std::string &atlasKey = "Monster", MonsterBehaviorConfig behavior = {});
 
     void beginAttack();
     /// 소환 중 행동을 멈추고, revealDelay가 끝난 뒤에만 스프라이트를 표시합니다.
     void beginSpawn(float duration, float revealDelay = 0.f);
     bool isSpawning() const { return m_spawnActivationTimer > 0.f; }
-    void render(sf::RenderWindow& window) override;
+    void render(sf::RenderWindow &window) override;
     bool consumeAttackAction();
     bool consumeChargeImpact();
     /// 현재 설정된 속도와 지속 시간으로 이동 가능한 최대 돌진 거리를 반환합니다.
@@ -107,15 +85,12 @@ public:
     bool ignoresWalls() const { return m_behavior.ignoresWalls; }
     bool isAttackActionReady() const { return m_attackActionReady; }
     /// 실제 공격 판정이 가능한 프레임인지 반환합니다. 디버그 범위 표시에 사용합니다.
-    bool isAttackDamageWindowActive() const {
-        return state == MonsterState::Attack &&
-            m_attackPhase == MonsterAttackPhase::Active && m_attackActionReady;
-    }
+    bool isAttackDamageWindowActive() const { return state == MonsterState::Attack && m_attackPhase == MonsterAttackPhase::Active && m_attackActionReady; }
     bool isChargeImpactActive() const;
     /// 바라보는 방향의 몸체 전면 절반을 근접 공격의 실제 충돌 영역으로 반환합니다.
     sf::FloatRect getFrontAttackBounds() const;
     /// 대상이 몬스터 전면 충돌 영역과 실제로 겹치는지 검사합니다.
-    bool isTargetInFrontContact(const sf::FloatRect& targetBounds) const;
+    bool isTargetInFrontContact(const sf::FloatRect &targetBounds) const;
     float getChargeStunDuration() const { return m_behavior.stunDuration; }
     /// 플레이어를 추적하기 시작하는 탐지 반지름을 반환합니다.
     float getDetectRange() const { return fsm.detectRange; }
@@ -123,10 +98,10 @@ public:
     float getAttackRange() const { return fsm.attackRange; }
     float getFacingDirection() const { return fsm.facingDirection; }
     MonsterAttackPattern getAttackPattern() const { return m_behavior.attackPattern; }
-    const std::string& getType() const { return m_type; }
-    bool isTargetInAttackRange(const sf::Vector2f& targetPosition) const;
+    const std::string &getType() const { return m_type; }
+    bool isTargetInAttackRange(const sf::Vector2f &targetPosition) const;
 
-private:
+  private:
     std::string m_type;
     int dropGold = 0;
     MonsterFSMData fsm;
@@ -153,6 +128,5 @@ private:
     void playAttackAnimation();
     bool playAttackReleaseAnimation();
     void changeState(MonsterState newState);
-    void handleFSM(float dt, const Player& player);
-
+    void handleFSM(float dt, const Player &player);
 };

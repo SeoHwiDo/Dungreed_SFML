@@ -6,28 +6,25 @@
 #include <algorithm>
 #include <utility>
 
-Boss::Boss(std::string displayName, Status initialStatus)
-    : Actor(initialStatus), m_displayName(std::move(displayName)) {
+Boss::Boss(std::string displayName, Status initialStatus) : Actor(initialStatus), m_displayName(std::move(displayName)) {
     movement.gravity = 0.f;
-    movement.velocity = { 0.f, 0.f };
+    movement.velocity = {0.f, 0.f};
 }
 
-Boss::~Boss() {
-    UIManager::getInstance().detachBoss(this);
-}
+Boss::~Boss() { UIManager::getInstance().detachBoss(this); }
 
-void Boss::init(const std::string& atlasKey) {
+void Boss::init(const std::string &atlasKey) {
     Actor::init(atlasKey);
     movement.gravity = 0.f;
-    movement.velocity = { 0.f, 0.f };
+    movement.velocity = {0.f, 0.f};
 }
 
-void Boss::placeAtMapCenter(const TileMap& tileMap) {
+void Boss::placeAtMapCenter(const TileMap &tileMap) {
     const sf::Vector2f mapSize = tileMap.getPixelSize();
     // Actor 스프라이트의 기준점은 하단 중앙입니다. 따라서 맵 중앙을 그대로
     // 넣으면 발끝만 중앙에 놓이고 몸통은 위로 치우칩니다.
     const float halfVisualHeight = getGlobalBounds().size.y * 0.5f;
-    setPosition({ mapSize.x * 0.5f, mapSize.y * 0.5f + halfVisualHeight });
+    setPosition({mapSize.x * 0.5f, mapSize.y * 0.5f + halfVisualHeight});
 }
 
 void Boss::beginSummon(float duration) {
@@ -36,9 +33,7 @@ void Boss::beginSummon(float duration) {
     UIManager::getInstance().attachBoss(this);
 }
 
-void Boss::setDisplayName(std::string displayName) {
-    m_displayName = std::move(displayName);
-}
+void Boss::setDisplayName(std::string displayName) { m_displayName = std::move(displayName); }
 
 float Boss::getSummonProgress() const {
     if (m_summonDuration <= 0.f) {
@@ -47,19 +42,17 @@ float Boss::getSummonProgress() const {
     return 1.f - std::clamp(m_summonTimer / m_summonDuration, 0.f, 1.f);
 }
 
-void Boss::takeDamage(float damage, const sf::Vector2f& attackerPosition,
-    float /*knockbackMultiplier*/) {
+void Boss::takeDamage(float damage, const sf::Vector2f &attackerPosition, float /*knockbackMultiplier*/) {
     // 보스는 Actor의 피해/피격 색상은 사용하지만 넉백은 받지 않습니다.
     Actor::takeDamage(damage, attackerPosition, 0.f);
-    movement.velocity = { 0.f, 0.f };
+    movement.velocity = {0.f, 0.f};
 }
 
 void Boss::updateBossBase(float dt) {
     m_summonTimer = std::max(0.f, m_summonTimer - dt);
-    movement.velocity = { 0.f, 0.f };
+    movement.velocity = {0.f, 0.f};
     updateHitFeedback(dt);
     updateAnimation(dt);
 }
 
-void Boss::renderBehindTiles(sf::RenderWindow& /*window*/) const {
-}
+void Boss::renderBehindTiles(sf::RenderWindow & /*window*/) const {}

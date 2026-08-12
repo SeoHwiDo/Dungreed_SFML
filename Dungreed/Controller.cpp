@@ -2,28 +2,21 @@
 
 #include <cmath>
 
-InputData Controller::getInput(const sf::RenderWindow& window, const sf::Vector2f& actorCenter) {
+InputData Controller::getInput(const sf::RenderWindow &window, const sf::Vector2f &actorCenter) {
     InputData data;
 
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left) ||
-        sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) {
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Left) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::A)) {
         data.moveDirX -= 1.f;
     }
-    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right) ||
-        sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) {
+    if (sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Right) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::D)) {
         data.moveDirX += 1.f;
     }
 
-    data.isJumping = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space) ||
-        sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W);
-    data.isDroppingThrough = data.isJumping &&
-        sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S);
-    const bool keyboardDashPressed =
-        sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LShift) ||
-        sf::Keyboard::isKeyPressed(sf::Keyboard::Key::RShift);
+    data.isJumping = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::Space) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::W);
+    data.isDroppingThrough = data.isJumping && sf::Keyboard::isKeyPressed(sf::Keyboard::Key::S);
+    const bool keyboardDashPressed = sf::Keyboard::isKeyPressed(sf::Keyboard::Key::LShift) || sf::Keyboard::isKeyPressed(sf::Keyboard::Key::RShift);
     const bool mouseDashPressed = sf::Mouse::isButtonPressed(sf::Mouse::Button::Right);
-    data.isDashing = (keyboardDashPressed && !m_prevKeyboardDashPressed) ||
-        (mouseDashPressed && !m_prevMouseDashPressed);
+    data.isDashing = (keyboardDashPressed && !m_prevKeyboardDashPressed) || (mouseDashPressed && !m_prevMouseDashPressed);
     m_prevKeyboardDashPressed = keyboardDashPressed;
     m_prevMouseDashPressed = mouseDashPressed;
 
@@ -36,6 +29,6 @@ InputData Controller::getInput(const sf::RenderWindow& window, const sf::Vector2
     const float dx = data.aimWorldPosition.x - actorCenter.x;
     const float dy = data.aimWorldPosition.y - actorCenter.y;
     data.aimRadian = std::atan2(dy, dx);
-    data.aimDir = { std::cos(data.aimRadian), std::sin(data.aimRadian) };
+    data.aimDir = {std::cos(data.aimRadian), std::sin(data.aimRadian)};
     return data;
 }

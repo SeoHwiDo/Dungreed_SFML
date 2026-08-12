@@ -19,14 +19,13 @@ int main() {
     SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
 
-    sf::RenderWindow window(sf::VideoMode({ 1280, 720 }), "Dungreed");
+    sf::RenderWindow window(sf::VideoMode({1280, 720}), "Dungreed");
     window.setFramerateLimit(60);
 
-    auto& resources = ResourceManager::getInstance();
-    auto& gameData = GameDataManager::getInstance();
+    auto &resources = ResourceManager::getInstance();
+    auto &gameData = GameDataManager::getInstance();
     const std::filesystem::path dataDirectory = std::filesystem::path(__FILE__).parent_path() / "Resources" / "data";
-    if (!resources.loadSharedGameplayResources() ||
-        !gameData.loadWeapons((dataDirectory / "weapons.json").string())) {
+    if (!resources.loadSharedGameplayResources() || !gameData.loadWeapons((dataDirectory / "weapons.json").string())) {
         return 1;
     }
 
@@ -37,8 +36,7 @@ int main() {
         std::cout << "[main] Initial equipment created: ShortSword\n";
     }
 
-    auto camera = std::make_unique<Camera>(window.getSize(),
-        sf::FloatRect({ 0.f, 0.f }, { 1.f, 1.f }), 1.0f);
+    auto camera = std::make_unique<Camera>(window.getSize(), sf::FloatRect({0.f, 0.f}, {1.f, 1.f}), 1.0f);
     std::cout << "[main] Camera created\n";
     GameplayContext gameplay(*player, *camera);
     SceneManager scenes(window, gameplay);

@@ -19,7 +19,7 @@ struct MonsterData {
     std::string id;
     bool enabled = true;
     std::string atlasKey = "Monster";
-    Actor::Status status{ kDefaultMaxHp, kDefaultMaxHp, kDefaultPower, kDefaultDex };
+    Actor::Status status{kDefaultMaxHp, kDefaultMaxHp, kDefaultPower, kDefaultDex};
     MonsterBehaviorConfig behavior;
     std::string weaponId;
 };
@@ -69,26 +69,26 @@ struct PoolPrewarmPlan {
 };
 
 class GameDataManager {
-public:
-    static GameDataManager& getInstance() {
+  public:
+    static GameDataManager &getInstance() {
         static GameDataManager instance;
         return instance;
     }
 
-    GameDataManager(const GameDataManager&) = delete;
-    GameDataManager& operator=(const GameDataManager&) = delete;
-    bool loadWeapons(const std::string& path);
-    bool loadMonsters(const std::string& path);
-    bool loadRoomData(const std::string& path);
+    GameDataManager(const GameDataManager &) = delete;
+    GameDataManager &operator=(const GameDataManager &) = delete;
+    bool loadWeapons(const std::string &path);
+    bool loadMonsters(const std::string &path);
+    bool loadRoomData(const std::string &path);
 
-    const WeaponData* findWeapon(const std::string& id) const;
-    const MonsterData* findMonster(const std::string& id) const;
-    const FloorData* findFloor(const std::string& id) const;
+    const WeaponData *findWeapon(const std::string &id) const;
+    const MonsterData *findMonster(const std::string &id) const;
+    const FloorData *findFloor(const std::string &id) const;
     PoolPrewarmPlan createPoolPrewarmPlan(float reserveRatio) const;
 
-    std::shared_ptr<Equip> createEquip(const std::string& weaponId) const;
+    std::shared_ptr<Equip> createEquip(const std::string &weaponId) const;
 
-private:
+  private:
     GameDataManager() = default;
     ~GameDataManager() = default;
     std::unordered_map<std::string, WeaponData> m_weapons;

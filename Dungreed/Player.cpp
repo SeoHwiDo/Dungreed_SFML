@@ -10,30 +10,30 @@
 #include <cstdint>
 #include <utility>
 
-void Player::init(const std::string& atlasKey) {
+void Player::init(const std::string &atlasKey) {
     Actor::init(atlasKey);
     if (!equipment) {
-        auto defaultWeapon = std::make_shared<Equip>("ShortSword", EquipStat{ 10.f, 2.5f, 40.f });
+        auto defaultWeapon = std::make_shared<Equip>("ShortSword", EquipStat{10.f, 2.5f, 40.f});
         defaultWeapon->init("Equip", "ShortSword_Idle-00");
         setEquipment(defaultWeapon);
     }
 
-    auto& resourceManager = ResourceManager::getInstance();
-    for (const std::string& animationName : resourceManager.getAnimationNames(atlasKey)) {
-        const auto* frames = resourceManager.getAnimationFrames(atlasKey, animationName);
+    auto &resourceManager = ResourceManager::getInstance();
+    for (const std::string &animationName : resourceManager.getAnimationNames(atlasKey)) {
+        const auto *frames = resourceManager.getAnimationFrames(atlasKey, animationName);
         if (!frames) {
             continue;
         }
 
-        const bool isLoop = animationName.find("Attack") == std::string::npos &&animationName.find("Dead") == std::string::npos &&animationName.find("Die") == std::string::npos;
+        const bool isLoop = animationName.find("Attack") == std::string::npos && animationName.find("Dead") == std::string::npos && animationName.find("Die") == std::string::npos;
         float frameDuration = 0.10f;
-        //if (animationName.find("Idle") != std::string::npos) {
-        //    frameDuration = 0.10f;
-        //} else if (animationName.find("Run") != std::string::npos) {
-        //    frameDuration = 0.10f;
-        //} else if (animationName.find("Attack") != std::string::npos) {
-        //    frameDuration = 0.10f;
-        //}
+        // if (animationName.find("Idle") != std::string::npos) {
+        //     frameDuration = 0.10f;
+        // } else if (animationName.find("Run") != std::string::npos) {
+        //     frameDuration = 0.10f;
+        // } else if (animationName.find("Attack") != std::string::npos) {
+        //     frameDuration = 0.10f;
+        // }
         animator.addAnimation(animationName, AnimationClip(frames, frameDuration, isLoop));
     }
     animator.play("Player_Idle");
@@ -66,7 +66,7 @@ void Player::changeState(PlayerState newState) {
     case PlayerState::Dead:
         setHorizontalInput(0.f);
         movement.velocity.y = 0.f;
-        m_knockbackVelocity = { 0.f, 0.f };
+        m_knockbackVelocity = {0.f, 0.f};
         m_knockbackTimer = 0.f;
         playAnimation("Player_Die");
         break;
@@ -104,7 +104,7 @@ void Player::restoreDashCharges(int amount) {
 }
 
 void Player::restoreForVillage() {
-    resetForReuse({ kDefaultMaxHp, kDefaultMaxHp, kDefaultPower, kDefaultDex });
+    resetForReuse({kDefaultMaxHp, kDefaultMaxHp, kDefaultPower, kDefaultDex});
     m_dashCharges = m_dashConfig.maxCharges;
     m_dashRechargeTimer = 0.f;
     m_isDashing = false;
@@ -113,14 +113,14 @@ void Player::restoreForVillage() {
     m_dashElapsed = 0.f;
     m_afterimageTimer = 0.f;
     m_stunTimer = 0.f;
-    for (DashAfterimage& afterimage : m_dashAfterimages) {
+    for (DashAfterimage &afterimage : m_dashAfterimages) {
         afterimage.active = false;
         afterimage.remainingTime = 0.f;
     }
     changeState(PlayerState::Idle);
 }
 
-bool Player::tryStartDash(const sf::Vector2f& cursorPosition) {
+bool Player::tryStartDash(const sf::Vector2f &cursorPosition) {
     if (m_isDashing || m_dashCharges <= 0 || !sprite) {
         return false;
     }
@@ -155,46 +155,33 @@ void Player::cancelDash() {
     setHorizontalInput(0.f);
 }
 
-void Player::updateDash(float dt, const TileMap& tileMap) {
+void Player::updateDash(float dt, const TileMap &tileMap) {
     m_previousGlobalBounds = getGlobalBounds();
-    const float previousProgress =
-        m_dashElapsed / m_dashConfig.duration;
-    m_dashElapsed = std::min(
-        m_dashElapsed + dt, m_dashConfig.duration);
-    const float currentProgress =
-        m_dashElapsed / m_dashConfig.duration;
-    const sf::Vector2f delta =
-        m_dashDelta * (currentProgress - previousProgress);
+    const float previousProgress = m_dashElapsed / m_dashConfig.duration;
+    m_dashElapsed = std::min(m_dashElapsed + dt, m_dashConfig.duration);
+    const float currentProgress = m_dashElapsed / m_dashConfig.duration;
+    const sf::Vector2f delta = m_dashDelta * (currentProgress - previousProgress);
 
     const sf::Vector2f tileSize = tileMap.getTileSize();
-    const float maximumStep = std::max(
-        1.f, std::min(tileSize.x, tileSize.y) * 0.25f);
-    const int stepCount = std::max(1, static_cast<int>(std::ceil(
-        std::max(std::abs(delta.x), std::abs(delta.y)) /
-        maximumStep)));
-    const sf::Vector2f step =
-        delta / static_cast<float>(stepCount);
+    const float maximumStep = std::max(1.f, std::min(tileSize.x, tileSize.y) * 0.25f);
+    const int stepCount = std::max(1, static_cast<int>(std::ceil(std::max(std::abs(delta.x), std::abs(delta.y)) / maximumStep)));
+    const sf::Vector2f step = delta / static_cast<float>(stepCount);
 
     for (int index = 0; index < stepCount; ++index) {
         const sf::Vector2f positionBeforeStep = getPosition();
         move(step.x, step.y);
         Collision::resolveMapCollision(*this, tileMap, true);
 
-        const sf::Vector2f actualMovement =
-            getPosition() - positionBeforeStep;
+        const sf::Vector2f actualMovement = getPosition() - positionBeforeStep;
         constexpr float collisionEpsilon = 0.1f;
-        if (std::abs(actualMovement.x - step.x) >
-            collisionEpsilon ||
-            std::abs(actualMovement.y - step.y) >
-            collisionEpsilon) {
+        if (std::abs(actualMovement.x - step.x) > collisionEpsilon || std::abs(actualMovement.y - step.y) > collisionEpsilon) {
             cancelDash();
             break;
         }
     }
 
     m_afterimageTimer += dt;
-    while (m_afterimageTimer >=
-        m_dashConfig.afterimageInterval) {
+    while (m_afterimageTimer >= m_dashConfig.afterimageInterval) {
         m_afterimageTimer -= m_dashConfig.afterimageInterval;
         spawnDashAfterimage();
     }
@@ -210,8 +197,7 @@ void Player::updateDashRecharge(float dt) {
     }
 
     m_dashRechargeTimer += dt;
-    while (m_dashRechargeTimer >= m_dashConfig.chargeRecoveryTime &&
-        m_dashCharges < m_dashConfig.maxCharges) {
+    while (m_dashRechargeTimer >= m_dashConfig.chargeRecoveryTime && m_dashCharges < m_dashConfig.maxCharges) {
         m_dashRechargeTimer -= m_dashConfig.chargeRecoveryTime;
         ++m_dashCharges;
     }
@@ -222,15 +208,12 @@ void Player::spawnDashAfterimage() {
         return;
     }
 
-    const auto inactiveIt = std::find_if(m_dashAfterimages.begin(),
-        m_dashAfterimages.end(), [](const DashAfterimage& afterimage) {
-            return !afterimage.active;
-        });
+    const auto inactiveIt = std::find_if(m_dashAfterimages.begin(), m_dashAfterimages.end(), [](const DashAfterimage &afterimage) { return !afterimage.active; });
     if (inactiveIt == m_dashAfterimages.end()) {
         return;
     }
 
-    DashAfterimage& afterimage = *inactiveIt;
+    DashAfterimage &afterimage = *inactiveIt;
     afterimage.sprite = *sprite;
     afterimage.remainingTime = m_dashConfig.afterimageLifetime;
     afterimage.active = true;
@@ -238,13 +221,12 @@ void Player::spawnDashAfterimage() {
 }
 
 void Player::updateAfterimages(float dt) {
-    for (DashAfterimage& afterimage : m_dashAfterimages) {
+    for (DashAfterimage &afterimage : m_dashAfterimages) {
         if (!afterimage.active) {
             continue;
         }
         afterimage.remainingTime -= dt;
-        const float alphaRatio = std::clamp(
-            afterimage.remainingTime / m_dashConfig.afterimageLifetime, 0.f, 1.f);
+        const float alphaRatio = std::clamp(afterimage.remainingTime / m_dashConfig.afterimageLifetime, 0.f, 1.f);
         sf::Color color = afterimage.sprite.getColor();
         color.a = static_cast<std::uint8_t>(140.f * alphaRatio);
         afterimage.sprite.setColor(color);
@@ -258,10 +240,8 @@ void Player::prewarmDashAfterimages() {
     if (!sprite) {
         return;
     }
-    const float requiredLifetime = std::max(m_dashConfig.duration,
-        m_dashConfig.afterimageLifetime);
-    const std::size_t requiredCount = static_cast<std::size_t>(std::ceil(
-        requiredLifetime / m_dashConfig.afterimageInterval)) + 1;
+    const float requiredLifetime = std::max(m_dashConfig.duration, m_dashConfig.afterimageLifetime);
+    const std::size_t requiredCount = static_cast<std::size_t>(std::ceil(requiredLifetime / m_dashConfig.afterimageInterval)) + 1;
     if (m_dashAfterimages.size() < requiredCount) {
         m_dashAfterimages.reserve(requiredCount);
         while (m_dashAfterimages.size() < requiredCount) {
@@ -283,19 +263,18 @@ void Player::applyStun(float duration) {
     setHorizontalInput(0.f);
 }
 
-void Player::updateFacingDirection(const sf::Vector2f& aimWorldPosition) {
-    const float horizontalDistance =
-        aimWorldPosition.x - getBodyCenterPosition().x;
+void Player::updateFacingDirection(const sf::Vector2f &aimWorldPosition) {
+    const float horizontalDistance = aimWorldPosition.x - getBodyCenterPosition().x;
     if (horizontalDistance == 0) {
         return;
     }
 
     m_facingDirection = horizontalDistance < 0 ? -1.f : 1.f;
     if (sprite) {
-        sprite->setScale({ m_facingDirection, 1.f });
+        sprite->setScale({m_facingDirection, 1.f});
     }
 }
-void Player::handleState(float dt, const InputData& input, const TileMap& tileMap) {
+void Player::handleState(float dt, const InputData &input, const TileMap &tileMap) {
     if (dead()) {
         changeState(PlayerState::Dead);
         return;
@@ -319,16 +298,9 @@ void Player::handleState(float dt, const InputData& input, const TileMap& tileMa
     if (input.isDroppingThrough && movement.isGrounded) {
         const sf::FloatRect bounds = getGlobalBounds();
         constexpr float groundEpsilon = 2.f;
-        const sf::FloatRect footCheck(
-            { bounds.position.x + 2.f, bounds.position.y + bounds.size.y },
-            { std::max(0.f, bounds.size.x - 4.f), groundEpsilon });
+        const sf::FloatRect footCheck({bounds.position.x + 2.f, bounds.position.y + bounds.size.y}, {std::max(0.f, bounds.size.x - 4.f), groundEpsilon});
 
-        const bool standingOnOneWay = std::any_of(
-            tileMap.getCollisionTiles().begin(), tileMap.getCollisionTiles().end(),
-            [&footCheck](const TileData& tile) {
-                return tile.type == TileType::OneWay &&
-                    footCheck.findIntersection(tile.bounds).has_value();
-            });
+        const bool standingOnOneWay = std::any_of(tileMap.getCollisionTiles().begin(), tileMap.getCollisionTiles().end(), [&footCheck](const TileData &tile) { return tile.type == TileType::OneWay && footCheck.findIntersection(tile.bounds).has_value(); });
         if (standingOnOneWay) {
             // 플랫폼 두께를 완전히 통과할 때까지 one-way 충돌을 잠시 무시합니다.
             m_dropThroughTimer = 0.20f;
@@ -359,8 +331,7 @@ void Player::handleState(float dt, const InputData& input, const TileMap& tileMa
     }
 }
 
-void Player::update(float dt, const sf::RenderWindow& window,
-    const TileMap& tileMap) {
+void Player::update(float dt, const sf::RenderWindow &window, const TileMap &tileMap) {
     m_dropThroughTimer = std::max(0.f, m_dropThroughTimer - dt);
     if (!m_isDashing) {
         m_ignoreOneWayPlatforms = false;
@@ -410,8 +381,8 @@ void Player::update(float dt, const sf::RenderWindow& window,
     updateAnimation(dt);
 }
 
-void Player::render(sf::RenderWindow& window) {
-    for (const DashAfterimage& afterimage : m_dashAfterimages) {
+void Player::render(sf::RenderWindow &window) {
+    for (const DashAfterimage &afterimage : m_dashAfterimages) {
         if (afterimage.active) {
             window.draw(afterimage.sprite);
         }
@@ -419,8 +390,7 @@ void Player::render(sf::RenderWindow& window) {
     Actor::render(window);
 }
 
-void Player::takeDamage(float damage, const sf::Vector2f& attackerPosition,
-    float knockbackMultiplier) {
+void Player::takeDamage(float damage, const sf::Vector2f &attackerPosition, float knockbackMultiplier) {
     if (m_isDashing) {
         return;
     }

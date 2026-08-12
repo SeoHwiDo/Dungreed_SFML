@@ -4,33 +4,29 @@
 #include <cmath>
 #include <iostream>
 
-Equip::Equip(const std::string& name, EquipStat stat)
-    : m_name(name), m_stat(stat) {
+Equip::Equip(const std::string &name, EquipStat stat) : m_name(name), m_stat(stat) {
     if (m_stat.projectile) {
         m_projectileRequestBuffer.reserve(std::max(1u, m_stat.projectile->count));
     }
 }
 
-void Equip::init(const std::string& atlasKey, const std::string& frameName) {
-    auto& resMgr = ResourceManager::getInstance();
-    const sf::Texture* tex = resMgr.getAtlasTexture(atlasKey);
+void Equip::init(const std::string &atlasKey, const std::string &frameName) {
+    auto &resMgr = ResourceManager::getInstance();
+    const sf::Texture *tex = resMgr.getAtlasTexture(atlasKey);
     // equip_atlas.json 프레임 형식("ShortSword.png")에 맞게 수정
-
 
     // 확장자 .png가 없으면 자동으로 붙여주도록 처리
     std::string actualFrameName = frameName;
     if (actualFrameName.find(".png") == std::string::npos) {
         actualFrameName += ".png";
     }
-    const sf::IntRect* rect = resMgr.getFrameRect(atlasKey, actualFrameName);
+    const sf::IntRect *rect = resMgr.getFrameRect(atlasKey, actualFrameName);
     const auto pivot = resMgr.getFramePivot(atlasKey, actualFrameName);
 
     if (tex && rect) {
         m_sprite.emplace(*tex);
         m_sprite->setTextureRect(*rect);
-        m_sprite->setOrigin(pivot.value_or(sf::Vector2f{
-            rect->size.x / 2.f, rect->size.y / 2.f
-        }));
+        m_sprite->setOrigin(pivot.value_or(sf::Vector2f{rect->size.x / 2.f, rect->size.y / 2.f}));
     } else {
         std::cerr << "[Equip] 무기 스프라이트를 찾을 수 없습니다: " << actualFrameName << std::endl;
     }
@@ -61,35 +57,21 @@ bool Equip::consumeMeleeSwingStarted() {
     return true;
 }
 
-const std::vector<ProjectileSpawnRequest>& Equip::consumeProjectileRequests(
-    unsigned int requestCountOverride) {
+const std::vector<ProjectileSpawnRequest> &Equip::consumeProjectileRequests(unsigned int requestCountOverride) {
     m_projectileRequestBuffer.clear();
     if (!m_projectileRequestPending || !m_stat.projectile) {
         return m_projectileRequestBuffer;
     }
 
     m_projectileRequestPending = false;
-    const ProjectileConfig& config = *m_stat.projectile;
-    const unsigned int configuredCount = requestCountOverride == 0
-        ? config.count
-        : requestCountOverride;
+    const ProjectileConfig &config = *m_stat.projectile;
+    const unsigned int configuredCount = requestCountOverride == 0 ? config.count : requestCountOverride;
     const unsigned int count = std::max(1u, configuredCount);
     for (unsigned int index = 0; index < count; ++index) {
         const float center = (static_cast<float>(count) - 1.f) * 0.5f;
-        const float angle = m_lastAimRadian +
-            (static_cast<float>(index) - center) * config.spreadRadian;
-        m_projectileRequestBuffer.push_back({
-            config.type,
-            m_stat.type == WeaponType::Ranged,
-            config.animationKey,
-            config.target,
-            m_lastOwnerPosition,
-            { std::cos(angle), std::sin(angle) },
-            config.speed,
-            config.damage,
-            config.lifetime
-        });
-        ProjectileSpawnRequest& request = m_projectileRequestBuffer.back();
+        const float angle = m_lastAimRadian + (static_cast<float>(index) - center) * config.spreadRadian;
+        m_projectileRequestBuffer.push_back({config.type, m_stat.type == WeaponType::Ranged, config.animationKey, config.target, m_lastOwnerPosition, {std::cos(angle), std::sin(angle)}, config.speed, config.damage, config.lifetime});
+        ProjectileSpawnRequest &request = m_projectileRequestBuffer.back();
         request.returnAnimationKey = config.returnAnimationKey;
         request.rotateToDirection = config.rotateToDirection;
         request.rotationOffsetRadian = config.rotationOffsetRadian;
@@ -97,10 +79,11 @@ const std::vector<ProjectileSpawnRequest>& Equip::consumeProjectileRequests(
     return m_projectileRequestBuffer;
 }
 
-void Equip::update(float dt, const sf::Vector2f& ownerPos, float aimRadian) {
+void Equip::update(float dt, const sf::Vector2f &ownerPos, float aimRadian) {
     m_lastOwnerPosition = ownerPos;
     m_lastAimRadian = aimRadian;
-    if (!m_sprite || m_stat.type == WeaponType::Ranged) return;
+    if (!m_sprite || m_stat.type == WeaponType::Ranged)
+        return;
     constexpr float kPi = 3.14159265358979323846f;
     constexpr float kHalfPi = kPi / 2.f;
 
@@ -113,10 +96,7 @@ void Equip::update(float dt, const sf::Vector2f& ownerPos, float aimRadian) {
     const float forwardOffset = std::max(bodyWidth * 0.35f, 5.f);
     const float upDownOffset = std::max(bodyHeight * 0.25f, 5.f);
 
-    const sf::Vector2f adjustedPos = {
-        ownerPos.x + facingDirection * forwardOffset,
-        ownerPos.y + upDownOffset
-    };
+    const sf::Vector2f adjustedPos = {ownerPos.x + facingDirection * forwardOffset, ownerPos.y + upDownOffset};
     m_sprite->setPosition(adjustedPos);
 
     // 기본 무기 이미지가 12시 방향을 향하므로 π/2를 보정합니다.
@@ -157,17 +137,18 @@ void Equip::update(float dt, const sf::Vector2f& ownerPos, float aimRadian) {
     // 스윙 오프셋도 라디안으로 변환해 최종 회전을 적용합니다.
     constexpr float kDegreeToRadian = kPi / 180.f;
     m_sprite->setRotation(sf::radians(baseRotation + swingOffset * kDegreeToRadian));
-    m_sprite->setScale({ 1.f, isFacingLeft ? -1.f : 1.f });
+    m_sprite->setScale({1.f, isFacingLeft ? -1.f : 1.f});
 }
 
-void Equip::render(sf::RenderWindow& window) {
+void Equip::render(sf::RenderWindow &window) {
     if (m_sprite) {
         window.draw(*m_sprite);
     }
 }
 
 std::optional<sf::FloatRect> Equip::getAttackHitbox() const {
-    if (!m_sprite || !m_isAttacking) return std::nullopt;
+    if (!m_sprite || !m_isAttacking)
+        return std::nullopt;
     // 회전과 스케일이 모두 반영된 최종 Bounding Box 반환
     return m_sprite->getGlobalBounds();
 }

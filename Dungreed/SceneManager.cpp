@@ -8,27 +8,18 @@
 
 #include <iostream>
 
-SceneManager::SceneManager(sf::RenderWindow& window, GameplayContext& gameplay)
-    : m_window(window),
-      m_gameplay(gameplay),
-      m_titleScene(window),
-      m_villageScene(window, gameplay),
-      m_dungeonScene(window, gameplay),
-      m_deathScene(window) {
-    std::cout << "[SceneManager] TitleScene, VillageScene, DungeonScene, DeathScene created\n";
-}
+SceneManager::SceneManager(sf::RenderWindow &window, GameplayContext &gameplay) : m_window(window), m_gameplay(gameplay), m_titleScene(window), m_villageScene(window, gameplay), m_dungeonScene(window, gameplay), m_deathScene(window) { std::cout << "[SceneManager] TitleScene, VillageScene, DungeonScene, DeathScene created\n"; }
 
 bool SceneManager::init() {
     if (!m_titleScene.enter()) {
         return false;
     }
 
-    const sf::Font* font = ResourceManager::getInstance().getDefaultFont();
-    return font && m_transition.init(*font, m_window.getSize()) &&
-        m_deathScene.init(*font);
+    const sf::Font *font = ResourceManager::getInstance().getDefaultFont();
+    return font && m_transition.init(*font, m_window.getSize()) && m_deathScene.init(*font);
 }
 
-void SceneManager::handleEvent(const sf::Event& event) {
+void SceneManager::handleEvent(const sf::Event &event) {
     if (m_transition.isActive()) {
         return;
     }
@@ -41,7 +32,7 @@ void SceneManager::handleEvent(const sf::Event& event) {
         return;
     }
 
-    if (const auto* key = event.getIf<sf::Event::KeyPressed>()) {
+    if (const auto *key = event.getIf<sf::Event::KeyPressed>()) {
         if (key->code == sf::Keyboard::Key::Enter) {
             if (m_activeScene == GameScene::Title) {
                 changeToVillage();
@@ -72,7 +63,7 @@ void SceneManager::update(float dt) {
         break;
     case GameScene::Dungeon:
         m_dungeonScene.update(dt);
-        if (Player* player = m_gameplay.getPlayer(); player && player->dead()) {
+        if (Player *player = m_gameplay.getPlayer(); player && player->dead()) {
             m_deathScene.enter(ResultType::Failure);
         } else if (m_dungeonScene.consumeBossDefeat()) {
             m_deathScene.enter(ResultType::Success);
@@ -113,23 +104,19 @@ bool SceneManager::changeToVillage() {
     if (m_transition.isActive()) {
         return false;
     }
-    return m_transition.begin(GameScene::TrainingVillage, u8"시작 마을",
-        { [this]() { return m_villageScene.enter(); } },
-        [this]() { m_activeScene = GameScene::TrainingVillage; });
+    return m_transition.begin(GameScene::TrainingVillage, u8"시작 마을", {[this]() { return m_villageScene.enter(); }}, [this]() { m_activeScene = GameScene::TrainingVillage; });
 }
 
 bool SceneManager::changeToDungeon(unsigned int floorNumber) {
     if (floorNumber == 0 || m_transition.isActive()) {
         return false;
     }
-    return m_transition.begin(GameScene::Dungeon, u8"던전",
-        { [this, floorNumber]() { return m_dungeonScene.enter(floorNumber); } },
-        [this]() { m_activeScene = GameScene::Dungeon; });
+    return m_transition.begin(GameScene::Dungeon, u8"던전", {[this, floorNumber]() { return m_dungeonScene.enter(floorNumber); }}, [this]() { m_activeScene = GameScene::Dungeon; });
 }
 
 void SceneManager::handleDebugCommand() {
-    auto& debugManager = DebugManager::getInstance();
-    const auto& gameData = GameDataManager::getInstance();
+    auto &debugManager = DebugManager::getInstance();
+    const auto &gameData = GameDataManager::getInstance();
     while (true) {
         const DebugCommand command = debugManager.readConsoleCommand(gameData);
         if (command.type == DebugCommandType::None) {

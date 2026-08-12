@@ -2,8 +2,7 @@
 
 #include "GameDataManager.h"
 
-void ObjectPoolingManager::prewarmMonsters(std::size_t count,
-    const std::string& type, Actor::Status status, const std::string& atlasKey, MonsterBehaviorConfig behavior) {
+void ObjectPoolingManager::prewarmMonsters(std::size_t count, const std::string &type, Actor::Status status, const std::string &atlasKey, MonsterBehaviorConfig behavior) {
     for (std::size_t i = 0; i < count; ++i) {
         MonsterSlot slot;
         slot.object = std::make_unique<Monster>(type, status, atlasKey, behavior);
@@ -40,15 +39,13 @@ void ObjectPoolingManager::prewarmEffects(std::size_t count) {
         enqueueInactiveEffect(m_effects.size() - 1);
     }
 }
-void ObjectPoolingManager::prewarmFromGameData(const GameDataManager& gameData,
-    float reserveRatio) {
+void ObjectPoolingManager::prewarmFromGameData(const GameDataManager &gameData, float reserveRatio) {
     const PoolPrewarmPlan plan = gameData.createPoolPrewarmPlan(reserveRatio);
     std::size_t requiredMonsterSlots = 0;
-    for (const MonsterPrewarmData& monster : plan.monsters) {
+    for (const MonsterPrewarmData &monster : plan.monsters) {
         requiredMonsterSlots += monster.count;
         if (m_monsters.size() < requiredMonsterSlots) {
-            prewarmMonsters(requiredMonsterSlots - m_monsters.size(),
-                monster.monsterId, monster.status, monster.atlasKey, monster.behavior);
+            prewarmMonsters(requiredMonsterSlots - m_monsters.size(), monster.monsterId, monster.status, monster.atlasKey, monster.behavior);
         }
     }
     prewarmProjectiles(plan.projectileCount);
@@ -56,9 +53,8 @@ void ObjectPoolingManager::prewarmFromGameData(const GameDataManager& gameData,
     prewarmEffects(40);
 }
 
-Monster* ObjectPoolingManager::acquireMonster(const std::string& type,
-    Actor::Status status, const std::string& atlasKey, MonsterBehaviorConfig behavior) {
-    if (MonsterSlot* slot = dequeueInactiveMonster()) {
+Monster *ObjectPoolingManager::acquireMonster(const std::string &type, Actor::Status status, const std::string &atlasKey, MonsterBehaviorConfig behavior) {
+    if (MonsterSlot *slot = dequeueInactiveMonster()) {
         slot->object->resetForReuse(type, status, atlasKey, behavior);
         slot->active = true;
         return slot->object.get();
@@ -68,17 +64,17 @@ Monster* ObjectPoolingManager::acquireMonster(const std::string& type,
     MonsterSlot slot;
     slot.object = std::make_unique<Monster>(type, status, atlasKey, behavior);
     slot.active = true;
-    Monster* result = slot.object.get();
+    Monster *result = slot.object.get();
     m_monsters.push_back(std::move(slot));
     return result;
 }
 
-void ObjectPoolingManager::releaseMonster(Monster* monster) {
+void ObjectPoolingManager::releaseMonster(Monster *monster) {
     if (!monster) {
         return;
     }
     for (std::size_t index = 0; index < m_monsters.size(); ++index) {
-        MonsterSlot& slot = m_monsters[index];
+        MonsterSlot &slot = m_monsters[index];
         if (slot.object.get() == monster) {
             if (!slot.active) {
                 return;
@@ -90,18 +86,16 @@ void ObjectPoolingManager::releaseMonster(Monster* monster) {
     }
 }
 
-void ObjectPoolingManager::forEachActiveMonster(
-    const std::function<void(Monster&)>& operation) {
-    for (MonsterSlot& slot : m_monsters) {
+void ObjectPoolingManager::forEachActiveMonster(const std::function<void(Monster &)> &operation) {
+    for (MonsterSlot &slot : m_monsters) {
         if (slot.active && slot.object) {
             operation(*slot.object);
         }
     }
 }
 
-Projectile* ObjectPoolingManager::acquireProjectile(
-    const ProjectileSpawnRequest& request) {
-    if (ProjectileSlot* slot = dequeueInactiveProjectile()) {
+Projectile *ObjectPoolingManager::acquireProjectile(const ProjectileSpawnRequest &request) {
+    if (ProjectileSlot *slot = dequeueInactiveProjectile()) {
         slot->object->activate(request);
         slot->active = true;
         return slot->object.get();
@@ -112,17 +106,17 @@ Projectile* ObjectPoolingManager::acquireProjectile(
     slot.object = std::make_unique<Projectile>();
     slot.object->activate(request);
     slot.active = true;
-    Projectile* result = slot.object.get();
+    Projectile *result = slot.object.get();
     m_projectiles.push_back(std::move(slot));
     return result;
 }
 
-void ObjectPoolingManager::releaseProjectile(Projectile* projectile) {
+void ObjectPoolingManager::releaseProjectile(Projectile *projectile) {
     if (!projectile) {
         return;
     }
     for (std::size_t index = 0; index < m_projectiles.size(); ++index) {
-        ProjectileSlot& slot = m_projectiles[index];
+        ProjectileSlot &slot = m_projectiles[index];
         if (slot.object.get() == projectile) {
             if (!slot.active) {
                 return;
@@ -139,8 +133,8 @@ void ObjectPoolingManager::releaseProjectile(Projectile* projectile) {
     }
 }
 
-Effect* ObjectPoolingManager::acquireEffect(const EffectSpawnRequest& request) {
-    if (EffectSlot* slot = dequeueInactiveEffect()) {
+Effect *ObjectPoolingManager::acquireEffect(const EffectSpawnRequest &request) {
+    if (EffectSlot *slot = dequeueInactiveEffect()) {
         if (!slot->object->activate(request)) {
             enqueueInactiveEffect(static_cast<std::size_t>(slot - m_effects.data()));
             return nullptr;
@@ -155,17 +149,17 @@ Effect* ObjectPoolingManager::acquireEffect(const EffectSpawnRequest& request) {
         return nullptr;
     }
     slot.active = true;
-    Effect* result = slot.object.get();
+    Effect *result = slot.object.get();
     m_effects.push_back(std::move(slot));
     return result;
 }
 
-void ObjectPoolingManager::releaseEffect(Effect* effect) {
+void ObjectPoolingManager::releaseEffect(Effect *effect) {
     if (!effect) {
         return;
     }
     for (std::size_t index = 0; index < m_effects.size(); ++index) {
-        EffectSlot& slot = m_effects[index];
+        EffectSlot &slot = m_effects[index];
         if (slot.object.get() == effect && slot.active) {
             slot.active = false;
             enqueueInactiveEffect(index);
@@ -174,19 +168,13 @@ void ObjectPoolingManager::releaseEffect(Effect* effect) {
     }
 }
 
-void ObjectPoolingManager::enqueueInactiveMonster(std::size_t index) {
-    m_inactiveMonsterSlots.push({ index, m_nextAvailableOrder++ });
-}
+void ObjectPoolingManager::enqueueInactiveMonster(std::size_t index) { m_inactiveMonsterSlots.push({index, m_nextAvailableOrder++}); }
 
-void ObjectPoolingManager::enqueueInactiveProjectile(std::size_t index) {
-    m_inactiveProjectileSlots.push({ index, m_nextAvailableOrder++ });
-}
+void ObjectPoolingManager::enqueueInactiveProjectile(std::size_t index) { m_inactiveProjectileSlots.push({index, m_nextAvailableOrder++}); }
 
-void ObjectPoolingManager::enqueueInactiveEffect(std::size_t index) {
-    m_inactiveEffectSlots.push({ index, m_nextAvailableOrder++ });
-}
+void ObjectPoolingManager::enqueueInactiveEffect(std::size_t index) { m_inactiveEffectSlots.push({index, m_nextAvailableOrder++}); }
 
-ObjectPoolingManager::MonsterSlot* ObjectPoolingManager::dequeueInactiveMonster() {
+ObjectPoolingManager::MonsterSlot *ObjectPoolingManager::dequeueInactiveMonster() {
     while (!m_inactiveMonsterSlots.empty()) {
         const std::size_t index = m_inactiveMonsterSlots.top().index;
         m_inactiveMonsterSlots.pop();
@@ -197,7 +185,7 @@ ObjectPoolingManager::MonsterSlot* ObjectPoolingManager::dequeueInactiveMonster(
     return nullptr;
 }
 
-ObjectPoolingManager::ProjectileSlot* ObjectPoolingManager::dequeueInactiveProjectile() {
+ObjectPoolingManager::ProjectileSlot *ObjectPoolingManager::dequeueInactiveProjectile() {
     while (!m_inactiveProjectileSlots.empty()) {
         const std::size_t index = m_inactiveProjectileSlots.top().index;
         m_inactiveProjectileSlots.pop();
@@ -208,7 +196,7 @@ ObjectPoolingManager::ProjectileSlot* ObjectPoolingManager::dequeueInactiveProje
     return nullptr;
 }
 
-ObjectPoolingManager::EffectSlot* ObjectPoolingManager::dequeueInactiveEffect() {
+ObjectPoolingManager::EffectSlot *ObjectPoolingManager::dequeueInactiveEffect() {
     while (!m_inactiveEffectSlots.empty()) {
         const std::size_t index = m_inactiveEffectSlots.top().index;
         m_inactiveEffectSlots.pop();
@@ -219,39 +207,37 @@ ObjectPoolingManager::EffectSlot* ObjectPoolingManager::dequeueInactiveEffect() 
     return nullptr;
 }
 
-void ObjectPoolingManager::forEachActiveProjectile(
-    const std::function<void(Projectile&)>& operation) {
-    for (ProjectileSlot& slot : m_projectiles) {
+void ObjectPoolingManager::forEachActiveProjectile(const std::function<void(Projectile &)> &operation) {
+    for (ProjectileSlot &slot : m_projectiles) {
         if (slot.active && slot.object) {
             operation(*slot.object);
         }
     }
 }
 
-void ObjectPoolingManager::forEachActiveEffect(
-    const std::function<void(Effect&)>& operation) const {
-    for (const EffectSlot& slot : m_effects) {
+void ObjectPoolingManager::forEachActiveEffect(const std::function<void(Effect &)> &operation) const {
+    for (const EffectSlot &slot : m_effects) {
         if (slot.active && slot.object) {
             operation(*slot.object);
         }
     }
 }
 
-void ObjectPoolingManager::render(sf::RenderWindow& window) const {
-    for (const MonsterSlot& slot : m_monsters) {
+void ObjectPoolingManager::render(sf::RenderWindow &window) const {
+    for (const MonsterSlot &slot : m_monsters) {
         if (slot.active && slot.object) {
             slot.object->render(window);
         }
     }
-    for (const ProjectileSlot& slot : m_projectiles) {
+    for (const ProjectileSlot &slot : m_projectiles) {
         if (slot.active && slot.object) {
             slot.object->render(window);
         }
     }
 }
 
-void ObjectPoolingManager::renderBehindTiles(sf::RenderWindow& window) const {
-    for (const ProjectileSlot& slot : m_projectiles) {
+void ObjectPoolingManager::renderBehindTiles(sf::RenderWindow &window) const {
+    for (const ProjectileSlot &slot : m_projectiles) {
         if (slot.active && slot.object) {
             slot.object->renderBehindTiles(window);
         }

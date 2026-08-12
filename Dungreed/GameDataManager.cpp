@@ -9,11 +9,9 @@
 using json = nlohmann::json;
 
 namespace {
-WeaponType parseWeaponType(const std::string& value) {
-    return value == "Ranged" ? WeaponType::Ranged : WeaponType::Melee;
-}
+WeaponType parseWeaponType(const std::string &value) { return value == "Ranged" ? WeaponType::Ranged : WeaponType::Melee; }
 
-ProjectileType parseProjectileType(const std::string& value) {
+ProjectileType parseProjectileType(const std::string &value) {
     if (value == "Fireball") {
         return ProjectileType::Fireball;
     }
@@ -35,7 +33,7 @@ ProjectileType parseProjectileType(const std::string& value) {
     return ProjectileType::Arrow;
 }
 
-MonsterAttackPattern parseAttackPattern(const std::string& value) {
+MonsterAttackPattern parseAttackPattern(const std::string &value) {
     if (value == "Ranged") {
         return MonsterAttackPattern::Ranged;
     }
@@ -51,11 +49,9 @@ MonsterAttackPattern parseAttackPattern(const std::string& value) {
     return MonsterAttackPattern::Standard;
 }
 
-ProjectileTarget parseTarget(const std::string& value) {
-    return value == "Player" ? ProjectileTarget::Player : ProjectileTarget::Monster;
-}
+ProjectileTarget parseTarget(const std::string &value) { return value == "Player" ? ProjectileTarget::Player : ProjectileTarget::Monster; }
 
-RoomType parseRoomType(const std::string& value) {
+RoomType parseRoomType(const std::string &value) {
     if (value == "Monster") {
         return RoomType::Monster;
     }
@@ -68,7 +64,7 @@ RoomType parseRoomType(const std::string& value) {
     return RoomType::Start;
 }
 
-DoorPosition parseDoorPosition(const std::string& value) {
+DoorPosition parseDoorPosition(const std::string &value) {
     if (value == "Up") {
         return DoorPosition::Up;
     }
@@ -81,7 +77,7 @@ DoorPosition parseDoorPosition(const std::string& value) {
     return DoorPosition::Right;
 }
 
-FairyRewardSize parseFairyRewardSize(const std::string& value) {
+FairyRewardSize parseFairyRewardSize(const std::string &value) {
     if (value == "M") {
         return FairyRewardSize::Medium;
     }
@@ -95,9 +91,9 @@ FairyRewardSize parseFairyRewardSize(const std::string& value) {
 }
 
 /// 방 레퍼런스의 자유 배치 장식 정보를 읽습니다. 잘못된 좌표 배열 항목은 건너뜁니다.
-std::vector<DecorativeTileConfig> parseDecorations(const json& decorationsJson) {
+std::vector<DecorativeTileConfig> parseDecorations(const json &decorationsJson) {
     std::vector<DecorativeTileConfig> decorations;
-    for (const auto& decorationJson : decorationsJson) {
+    for (const auto &decorationJson : decorationsJson) {
         DecorativeTileConfig decoration;
         decoration.atlasKey = decorationJson.value("atlasKey", "TileMap");
         decoration.frameName = decorationJson.value("frame", "");
@@ -106,51 +102,39 @@ std::vector<DecorativeTileConfig> parseDecorations(const json& decorationsJson) 
         decoration.isLoop = decorationJson.value("isLoop", true);
         decoration.drawAboveTiles = decorationJson.value("drawAboveTiles", false);
 
-        const std::vector<float> position = decorationJson.value(
-            "position", std::vector<float>{ 0.f, 0.f });
-        const std::vector<float> offset = decorationJson.value(
-            "offset", std::vector<float>{ 0.f, 0.f });
-        const std::vector<float> scale = decorationJson.value(
-            "scale", std::vector<float>{ 1.f, 1.f });
+        const std::vector<float> position = decorationJson.value("position", std::vector<float>{0.f, 0.f});
+        const std::vector<float> offset = decorationJson.value("offset", std::vector<float>{0.f, 0.f});
+        const std::vector<float> scale = decorationJson.value("scale", std::vector<float>{1.f, 1.f});
         if (position.size() != 2 || offset.size() != 2 || scale.size() != 2) {
             continue;
         }
 
-        decoration.position = { position[0], position[1] };
-        decoration.offset = { offset[0], offset[1] };
-        decoration.scale = { scale[0], scale[1] };
+        decoration.position = {position[0], position[1]};
+        decoration.offset = {offset[0], offset[1]};
+        decoration.scale = {scale[0], scale[1]};
         decorations.push_back(std::move(decoration));
     }
     return decorations;
 }
 
-RoomLayout createStyledRoomLayout(const json& layoutJson) {
+RoomLayout createStyledRoomLayout(const json &layoutJson) {
     const unsigned int width = layoutJson.at("width").get<unsigned int>();
     const unsigned int height = layoutJson.at("height").get<unsigned int>();
     const unsigned int outlineWidth = layoutJson.value("outlineWidth", 2u);
     const json passageJson = layoutJson.value("passage", json::object());
-    const unsigned int topBottomPassageWidth =
-        passageJson.value("topBottomWidth", 3u);
+    const unsigned int topBottomPassageWidth = passageJson.value("topBottomWidth", 3u);
     const unsigned int sidePassageHeight = passageJson.value("sideHeight", 3u);
 
-    if (outlineWidth == 0 || topBottomPassageWidth == 0 || sidePassageHeight == 0 ||
-        width < outlineWidth * 2 + topBottomPassageWidth ||
-        height < outlineWidth * 2 + sidePassageHeight + 1) {
+    if (outlineWidth == 0 || topBottomPassageWidth == 0 || sidePassageHeight == 0 || width < outlineWidth * 2 + topBottomPassageWidth || height < outlineWidth * 2 + sidePassageHeight + 1) {
         return {};
     }
 
-    RoomLayout layout{
-        width,
-        height,
-        std::vector<RoomCell>(width * height, RoomCell::Empty)
-    };
+    RoomLayout layout{width, height, std::vector<RoomCell>(width * height, RoomCell::Empty)};
     layout.outlineWidth = outlineWidth;
     layout.topBottomPassageWidth = topBottomPassageWidth;
     layout.sidePassageHeight = sidePassageHeight;
 
-    const auto setCell = [&layout, width](unsigned int x, unsigned int y, RoomCell cell) {
-        layout.cells[x + y * width] = cell;
-    };
+    const auto setCell = [&layout, width](unsigned int x, unsigned int y, RoomCell cell) { layout.cells[x + y * width] = cell; };
 
     const unsigned int left = outlineWidth;
     const unsigned int right = width - outlineWidth - 1;
@@ -174,17 +158,16 @@ RoomLayout createStyledRoomLayout(const json& layoutJson) {
         }
     }
 
-    layout.playerSpawnCell = sf::Vector2u{ left + 4, ground - 1 };
+    layout.playerSpawnCell = sf::Vector2u{left + 4, ground - 1};
 
-    for (const auto& platform : layoutJson.value("platforms", json::array())) {
+    for (const auto &platform : layoutJson.value("platforms", json::array())) {
         const unsigned int platformX = platform.at("x").get<unsigned int>();
         const unsigned int platformY = platform.at("y").get<unsigned int>();
         const unsigned int platformLength = platform.at("length").get<unsigned int>();
 
         for (unsigned int offset = 0; offset < platformLength; ++offset) {
             const unsigned int x = platformX + offset;
-            if (x < width && platformY < height &&
-                layout.cells[x + platformY * width] == RoomCell::BackTile) {
+            if (x < width && platformY < height && layout.cells[x + platformY * width] == RoomCell::BackTile) {
                 setCell(x, platformY, RoomCell::Platform);
             }
         }
@@ -195,18 +178,15 @@ RoomLayout createStyledRoomLayout(const json& layoutJson) {
 
 // 시작마을은 타일 벽을 그리지 않습니다. 바깥 한 줄의 투명 충돌체만 남겨
 // 플레이어가 배경 이미지 바깥으로 나가지 않도록 합니다.
-RoomLayout createOpenVillageLayout(const json& layoutJson) {
+RoomLayout createOpenVillageLayout(const json &layoutJson) {
     const unsigned int width = layoutJson.at("width").get<unsigned int>();
     const unsigned int height = layoutJson.at("height").get<unsigned int>();
     if (width < 3 || height < 3) {
         return {};
     }
 
-    RoomLayout layout{ width, height,
-        std::vector<RoomCell>(width * height, RoomCell::OpenSpace) };
-    const auto setCell = [&layout, width](unsigned int x, unsigned int y, RoomCell cell) {
-        layout.cells[x + y * width] = cell;
-    };
+    RoomLayout layout{width, height, std::vector<RoomCell>(width * height, RoomCell::OpenSpace)};
+    const auto setCell = [&layout, width](unsigned int x, unsigned int y, RoomCell cell) { layout.cells[x + y * width] = cell; };
     for (unsigned int x = 0; x < width; ++x) {
         setCell(x, 0, RoomCell::InvisibleWall);
         setCell(x, height - 1, RoomCell::Ground);
@@ -216,17 +196,15 @@ RoomLayout createOpenVillageLayout(const json& layoutJson) {
         setCell(width - 1, y, RoomCell::InvisibleWall);
     }
 
-    const std::vector<unsigned int> spawn = layoutJson.value(
-        "spawn", std::vector<unsigned int>{ width / 2, height - 2 });
-    if (spawn.size() == 2 && spawn[0] > 0 && spawn[0] + 1 < width &&
-        spawn[1] > 0 && spawn[1] + 1 < height) {
-        layout.playerSpawnCell = sf::Vector2u{ spawn[0], spawn[1] };
+    const std::vector<unsigned int> spawn = layoutJson.value("spawn", std::vector<unsigned int>{width / 2, height - 2});
+    if (spawn.size() == 2 && spawn[0] > 0 && spawn[0] + 1 < width && spawn[1] > 0 && spawn[1] + 1 < height) {
+        layout.playerSpawnCell = sf::Vector2u{spawn[0], spawn[1]};
     }
     return layout;
 }
-}
+} // namespace
 
-bool GameDataManager::loadWeapons(const std::string& path) {
+bool GameDataManager::loadWeapons(const std::string &path) {
     std::ifstream file(path);
     if (!file) {
         return false;
@@ -236,7 +214,7 @@ bool GameDataManager::loadWeapons(const std::string& path) {
     file >> root;
     m_weapons.clear();
 
-    for (const auto& entry : root.at("weapons")) {
+    for (const auto &entry : root.at("weapons")) {
         WeaponData data;
         data.id = entry.at("id").get<std::string>();
         data.atlasKey = entry.value("atlasKey", "");
@@ -247,7 +225,7 @@ bool GameDataManager::loadWeapons(const std::string& path) {
         data.stat.type = parseWeaponType(entry.value("type", "Melee"));
 
         if (entry.contains("projectile")) {
-            const auto& projectile = entry.at("projectile");
+            const auto &projectile = entry.at("projectile");
             ProjectileConfig config;
             config.animationKey = projectile.value("type", "Arrow");
             config.type = parseProjectileType(config.animationKey);
@@ -269,7 +247,7 @@ bool GameDataManager::loadWeapons(const std::string& path) {
     return true;
 }
 
-bool GameDataManager::loadMonsters(const std::string& path) {
+bool GameDataManager::loadMonsters(const std::string &path) {
     std::ifstream file(path);
     if (!file) {
         return false;
@@ -279,19 +257,19 @@ bool GameDataManager::loadMonsters(const std::string& path) {
     file >> root;
     m_monsters.clear();
 
-    for (const auto& entry : root.at("monsters")) {
+    for (const auto &entry : root.at("monsters")) {
         MonsterData data;
         data.id = entry.at("id").get<std::string>();
         data.enabled = entry.value("enabled", true);
         data.atlasKey = entry.value("atlasKey", "Monster");
 
-        const auto& status = entry.at("status");
+        const auto &status = entry.at("status");
         data.status.maxHp = status.value("maxHp", kDefaultMaxHp);
         data.status.tmpHp = data.status.maxHp;
         data.status.power = status.value("power", kDefaultPower);
         data.status.dex = status.value("dex", kDefaultDex);
 
-        const auto& ai = entry.at("ai");
+        const auto &ai = entry.at("ai");
         data.behavior.detectRange = ai.value("detectRange", 100.f);
         data.behavior.attackRange = ai.value("attackRange", 50.f);
         data.behavior.attackWindup = ai.value("attackWindup", 0.35f);
@@ -304,16 +282,14 @@ bool GameDataManager::loadMonsters(const std::string& path) {
         data.behavior.attackActiveTimeout = ai.value("attackActiveTimeout", 1.5f);
         data.behavior.lockAttackFacing = ai.value("lockAttackFacing", false);
         data.behavior.playReleaseAnimation = ai.value("playReleaseAnimation", false);
-        data.behavior.waitForAttackCooldownAfterRelease =
-            ai.value("waitForAttackCooldownAfterRelease", false);
+        data.behavior.waitForAttackCooldownAfterRelease = ai.value("waitForAttackCooldownAfterRelease", false);
         data.behavior.chargeDuration = ai.value("chargeDuration", 0.55f);
         data.behavior.chargeSpeedMultiplier = ai.value("chargeSpeedMultiplier", 3.f);
         data.behavior.stunDuration = ai.value("stunDuration", 0.45f);
-        data.behavior.attackPattern = parseAttackPattern(
-            ai.value("attackPattern", "Standard"));
+        data.behavior.attackPattern = parseAttackPattern(ai.value("attackPattern", "Standard"));
 
         if (entry.contains("movement")) {
-            const auto& movement = entry.at("movement");
+            const auto &movement = entry.at("movement");
             data.behavior.moveSpeed = movement.value("moveSpeed", 300.f);
             data.behavior.gravity = movement.value("gravity", 980.f);
             data.behavior.isFlying = movement.value("mode", "Ground") == "Flying";
@@ -321,7 +297,7 @@ bool GameDataManager::loadMonsters(const std::string& path) {
         }
 
         if (entry.contains("animations")) {
-            for (const auto& [stateName, animation] : entry.at("animations").items()) {
+            for (const auto &[stateName, animation] : entry.at("animations").items()) {
                 MonsterAnimationConfig config;
                 config.isLoop = animation.value("isLoop", true);
                 config.frameDuration = animation.value("frameDuration", 0.2f);
@@ -336,7 +312,7 @@ bool GameDataManager::loadMonsters(const std::string& path) {
     return true;
 }
 
-bool GameDataManager::loadRoomData(const std::string& path) {
+bool GameDataManager::loadRoomData(const std::string &path) {
     std::ifstream file(path);
     if (!file) {
         return false;
@@ -346,29 +322,26 @@ bool GameDataManager::loadRoomData(const std::string& path) {
     file >> root;
     m_floors.clear();
 
-    for (const auto& floorJson : root.at("floors")) {
+    for (const auto &floorJson : root.at("floors")) {
         FloorData floor;
         floor.id = floorJson.at("id").get<std::string>();
         floor.name = floorJson.value("name", floor.id);
 
-        for (const auto& referenceJson : floorJson.at("roomReferences")) {
+        for (const auto &referenceJson : floorJson.at("roomReferences")) {
             RoomReferenceData reference;
             reference.id = referenceJson.at("id").get<std::string>();
             reference.type = parseRoomType(referenceJson.value("roomType", "Start"));
-            const json& layoutJson = referenceJson.at("layout");
+            const json &layoutJson = referenceJson.at("layout");
             const std::string generator = layoutJson.value("generator", "StyledRoom");
-            reference.layout = generator == "OpenVillage"
-                ? createOpenVillageLayout(layoutJson)
-                : createStyledRoomLayout(layoutJson);
+            reference.layout = generator == "OpenVillage" ? createOpenVillageLayout(layoutJson) : createStyledRoomLayout(layoutJson);
             // 장식은 레퍼런스 최상위와 layout 내부 형식을 모두 허용합니다.
             // 레이아웃과 함께 관리하기 쉬운 layout.decorations를 우선 사용합니다.
             if (layoutJson.contains("decorations")) {
                 reference.decorations = parseDecorations(layoutJson.at("decorations"));
             } else {
-                reference.decorations = parseDecorations(
-                    referenceJson.value("decorations", json::array()));
+                reference.decorations = parseDecorations(referenceJson.value("decorations", json::array()));
             }
-            for (const auto& backgroundJson : referenceJson.value("backgrounds", json::array())) {
+            for (const auto &backgroundJson : referenceJson.value("backgrounds", json::array())) {
                 BackgroundLayerConfig background;
                 background.atlasKey = backgroundJson.value("atlasKey", "");
                 background.frameName = backgroundJson.value("frame", "");
@@ -383,7 +356,7 @@ bool GameDataManager::loadRoomData(const std::string& path) {
             floor.roomReferences.emplace(reference.id, std::move(reference));
         }
 
-        for (const auto& roomJson : floorJson.at("rooms")) {
+        for (const auto &roomJson : floorJson.at("rooms")) {
             RoomInstanceData room;
             room.id = roomJson.at("id").get<std::string>();
             room.roomReferenceId = roomJson.at("roomReferenceId").get<std::string>();
@@ -391,61 +364,51 @@ bool GameDataManager::loadRoomData(const std::string& path) {
             room.minDoorCount = roomJson.value("minDoorCount", 0);
             room.maxDoorCount = roomJson.value("maxDoorCount", 0);
 
-            for (const auto& door : roomJson.value("availableDoorPositions", json::array())) {
+            for (const auto &door : roomJson.value("availableDoorPositions", json::array())) {
                 room.availableDoorPositions.push_back(parseDoorPosition(door.get<std::string>()));
             }
 
-            for (const auto& spawn : roomJson.value("monsters", json::array())) {
+            for (const auto &spawn : roomJson.value("monsters", json::array())) {
                 RoomMonsterSpawn monsterSpawn;
                 monsterSpawn.monsterId = spawn.at("monsterId").get<std::string>();
                 monsterSpawn.activationDelay = spawn.value("activationDelay", 1.f);
 
-                const std::vector<float> positionOffset =
-                    spawn.value("positionOffset", std::vector<float>{ 0.f, 0.f });
+                const std::vector<float> positionOffset = spawn.value("positionOffset", std::vector<float>{0.f, 0.f});
                 if (positionOffset.size() == 2) {
-                    monsterSpawn.positionOffset = { positionOffset[0], positionOffset[1] };
+                    monsterSpawn.positionOffset = {positionOffset[0], positionOffset[1]};
                 }
 
                 room.monsterSpawns.push_back(monsterSpawn);
             }
 
             if (roomJson.contains("monster_pool")) {
-                room.monsterPhaseConfig.phaseDelay =
-                    roomJson.value("phaseDelay", 1.2f);
-                room.monsterPhaseConfig.activationDelay =
-                    roomJson.value("activationDelay", 0.9f);
-                for (const auto& phase : roomJson.at("monster_pool")) {
+                room.monsterPhaseConfig.phaseDelay = roomJson.value("phaseDelay", 1.2f);
+                room.monsterPhaseConfig.activationDelay = roomJson.value("activationDelay", 0.9f);
+                for (const auto &phase : roomJson.at("monster_pool")) {
                     std::vector<RoomMonsterPhaseConfig::MonsterCount> phaseEntries;
-                    for (const auto& entry : phase) {
-                        phaseEntries.push_back({
-                            entry.at("monsterId").get<std::string>(),
-                            entry.value("count", 0)
-                        });
+                    for (const auto &entry : phase) {
+                        phaseEntries.push_back({entry.at("monsterId").get<std::string>(), entry.value("count", 0)});
                     }
-                    room.monsterPhaseConfig.monsterPool.push_back(
-                        std::move(phaseEntries));
+                    room.monsterPhaseConfig.monsterPool.push_back(std::move(phaseEntries));
                 }
             }
 
             if (roomJson.contains("clearReward")) {
-                const json& rewardJson = roomJson.at("clearReward");
+                const json &rewardJson = roomJson.at("clearReward");
                 room.clearReward.enabled = true;
-                room.clearReward.fairySize = parseFairyRewardSize(
-                    rewardJson.value("fairy", "S"));
-                room.clearReward.maxHpIncrease = rewardJson.value(
-                    "maxHpIncrease", 0.f);
-                room.clearReward.powerIncrease = rewardJson.value(
-                    "powerIncrease", 0.f);
+                room.clearReward.fairySize = parseFairyRewardSize(rewardJson.value("fairy", "S"));
+                room.clearReward.maxHpIncrease = rewardJson.value("maxHpIncrease", 0.f);
+                room.clearReward.powerIncrease = rewardJson.value("powerIncrease", 0.f);
             }
 
             floor.rooms.emplace(room.id, std::move(room));
         }
 
-        const auto& connection = floorJson.at("connectionGeneration");
+        const auto &connection = floorJson.at("connectionGeneration");
         floor.startRoomId = connection.at("startRoomId").get<std::string>();
         floor.bossRoomId = connection.value("bossRoomId", "");
         floor.randomMonsterRoomCount = connection.value("randomMonsterRoomCount", 0u);
-        for (const auto& roomId : connection.value("shuffleRoomIds", json::array())) {
+        for (const auto &roomId : connection.value("shuffleRoomIds", json::array())) {
             floor.shuffleRoomIds.push_back(roomId.get<std::string>());
         }
 
@@ -455,53 +418,48 @@ bool GameDataManager::loadRoomData(const std::string& path) {
     return !m_floors.empty();
 }
 
-const WeaponData* GameDataManager::findWeapon(const std::string& id) const {
+const WeaponData *GameDataManager::findWeapon(const std::string &id) const {
     const auto it = m_weapons.find(id);
     return it == m_weapons.end() ? nullptr : &it->second;
 }
 
-const MonsterData* GameDataManager::findMonster(const std::string& id) const {
+const MonsterData *GameDataManager::findMonster(const std::string &id) const {
     const auto it = m_monsters.find(id);
     return it == m_monsters.end() ? nullptr : &it->second;
 }
 
-const FloorData* GameDataManager::findFloor(const std::string& id) const {
+const FloorData *GameDataManager::findFloor(const std::string &id) const {
     const auto it = m_floors.find(id);
     return it == m_floors.end() ? nullptr : &it->second;
 }
 
-
 PoolPrewarmPlan GameDataManager::createPoolPrewarmPlan(float reserveRatio) const {
     const float safeReserveRatio = std::max(0.f, reserveRatio);
-    const auto addReserve = [safeReserveRatio](std::size_t count) {
-        return count == 0
-            ? std::size_t{ 0 }
-            : static_cast<std::size_t>(std::ceil(count * (1.f + safeReserveRatio)));
-    };
+    const auto addReserve = [safeReserveRatio](std::size_t count) { return count == 0 ? std::size_t{0} : static_cast<std::size_t>(std::ceil(count * (1.f + safeReserveRatio))); };
 
     std::unordered_map<std::string, std::size_t> monsterCounts;
     std::size_t projectileSpawnCount = 0;
-    for (const auto& [floorId, floor] : m_floors) {
-        for (const auto& [roomId, room] : floor.rooms) {
+    for (const auto &[floorId, floor] : m_floors) {
+        for (const auto &[roomId, room] : floor.rooms) {
             if (room.monsterPhaseConfig.isEnabled()) {
-                for (const auto& phase : room.monsterPhaseConfig.monsterPool) {
+                for (const auto &phase : room.monsterPhaseConfig.monsterPool) {
                     std::unordered_map<std::string, std::size_t> phaseMonsterCounts;
                     std::size_t phaseProjectileCount = 0;
-                    for (const RoomMonsterPhaseConfig::MonsterCount& entry : phase) {
-                        const MonsterData* monsterData = findMonster(entry.monsterId);
+                    for (const RoomMonsterPhaseConfig::MonsterCount &entry : phase) {
+                        const MonsterData *monsterData = findMonster(entry.monsterId);
                         if (!monsterData || !monsterData->enabled || entry.count <= 0) {
                             continue;
                         }
 
                         const std::size_t count = static_cast<std::size_t>(entry.count);
                         phaseMonsterCounts[monsterData->id] += count;
-                        const WeaponData* weaponData = findWeapon(monsterData->weaponId);
+                        const WeaponData *weaponData = findWeapon(monsterData->weaponId);
                         if (weaponData && weaponData->stat.projectile) {
                             phaseProjectileCount += count * weaponData->stat.projectile->count;
                         }
                     }
 
-                    for (const auto& [monsterId, count] : phaseMonsterCounts) {
+                    for (const auto &[monsterId, count] : phaseMonsterCounts) {
                         monsterCounts[monsterId] = std::max(monsterCounts[monsterId], count);
                     }
                     projectileSpawnCount = std::max(projectileSpawnCount, phaseProjectileCount);
@@ -509,14 +467,14 @@ PoolPrewarmPlan GameDataManager::createPoolPrewarmPlan(float reserveRatio) const
                 continue;
             }
 
-            for (const RoomMonsterSpawn& spawn : room.monsterSpawns) {
-                const MonsterData* monsterData = findMonster(spawn.monsterId);
+            for (const RoomMonsterSpawn &spawn : room.monsterSpawns) {
+                const MonsterData *monsterData = findMonster(spawn.monsterId);
                 if (!monsterData || !monsterData->enabled) {
                     continue;
                 }
 
                 ++monsterCounts[monsterData->id];
-                const WeaponData* weaponData = findWeapon(monsterData->weaponId);
+                const WeaponData *weaponData = findWeapon(monsterData->weaponId);
                 if (weaponData && weaponData->stat.projectile) {
                     projectileSpawnCount += weaponData->stat.projectile->count;
                 }
@@ -525,33 +483,26 @@ PoolPrewarmPlan GameDataManager::createPoolPrewarmPlan(float reserveRatio) const
     }
 
     PoolPrewarmPlan plan;
-    for (const auto& [monsterId, count] : monsterCounts) {
-        const MonsterData* monsterData = findMonster(monsterId);
+    for (const auto &[monsterId, count] : monsterCounts) {
+        const MonsterData *monsterData = findMonster(monsterId);
         if (!monsterData) {
             continue;
         }
 
-        plan.monsters.push_back({
-            monsterData->id,
-            monsterData->status,
-            monsterData->atlasKey,
-            monsterData->behavior,
-            addReserve(count)
-        });
+        plan.monsters.push_back({monsterData->id, monsterData->status, monsterData->atlasKey, monsterData->behavior, addReserve(count)});
     }
 
     std::size_t configuredProjectileBurstCount = 0;
-    for (const auto& [weaponId, weapon] : m_weapons) {
+    for (const auto &[weaponId, weapon] : m_weapons) {
         if (weapon.stat.projectile) {
             configuredProjectileBurstCount += weapon.stat.projectile->count;
         }
     }
-    plan.projectileCount = addReserve(std::max(projectileSpawnCount,
-        configuredProjectileBurstCount));
+    plan.projectileCount = addReserve(std::max(projectileSpawnCount, configuredProjectileBurstCount));
     return plan;
 }
-std::shared_ptr<Equip> GameDataManager::createEquip(const std::string& weaponId) const {
-    const WeaponData* data = findWeapon(weaponId);
+std::shared_ptr<Equip> GameDataManager::createEquip(const std::string &weaponId) const {
+    const WeaponData *data = findWeapon(weaponId);
     if (!data) {
         return nullptr;
     }
