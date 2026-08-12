@@ -1,51 +1,49 @@
-#pragma once
+﻿#pragma once
 #include <SFML/Graphics.hpp>
-#include <optional> 
-#include <string>   
+#include <optional>
+#include <string>
 //-----------------------------------------------
 #include "Animator.h"
 #include "ResourceManager.h"
 #include "Collision.h"
 #include "Equip.h"
-
+#include "EntityId.h"
 class Equip;
 
-constexpr float kDefaultMaxHp = 100.0f;
-constexpr float kDefaultPower = 10.0f;
-constexpr float kDefaultDex = 1.0f;
-
 struct MovementData {
-    sf::Vector2f velocity{ 0.f, 0.f };
-    sf::Vector2f acceleration{ 0.f, 0.f };
+    sf::Vector2f velocity{0.f, 0.f};
+    sf::Vector2f acceleration{0.f, 0.f};
     float moveSpeed = 300.f;
     float jumpForce = -500.f;
     float gravity = 980.f;
     bool isGrounded = false;
 };
 
-class Actor
-{
-public:
+class Actor {
+  public:
     struct Status {
         float maxHp;
         float tmpHp;
-        float power;//공격력
-        float dex;//회피 및 치명타 확률
+        float power; // 공격력
+        float dex;   // 회피 및 치명타 확률
     };
-    /// 기본 능력치로 액터를 생성하고, 이후 init으로 아틀라스 스프라이트를 준비합니다.
-    Actor();
     /// 지정한 능력치로 액터를 생성합니다. 파생 클래스 생성자에서 초기 능력치를 넘길 때 사용합니다.
-    Actor(Status initialStatus) : status(initialStatus) {};
+    explicit Actor(Status initialStatus) : status(initialStatus) {};
 
     virtual ~Actor() = default;
 
     /// 아틀라스 키로 기본 스프라이트와 충돌 상자를 초기화합니다. 파생 클래스는 애니메이션 등록 후 호출합니다.
-    virtual void init(const std::string& atlasKey);
+    virtual void init(const std::string &atlasKey);
     /// 풀에서 재사용할 때 능력치·물리·피격 상태를 초기화합니다.
     virtual void resetForReuse(Status newStatus);
     /// 월드 좌표만큼 이동시키고 이동 직후 피격 상자를 동기화합니다. 물리 보정 없이 순간 이동할 때 사용합니다.
-    inline void move(float dx, float dy) { if (sprite) { sprite->move({ dx,dy }); col.updateHitbox(sprite->getGlobalBounds()); } }
-    inline void setPosition(const sf::Vector2f& position) {
+    inline void move(float dx, float dy) {
+        if (sprite) {
+            sprite->move({dx, dy});
+            col.updateHitbox(sprite->getGlobalBounds());
+        }
+    }
+    inline void setPosition(const sf::Vector2f &position) {
         if (sprite) {
             sprite->setPosition(position);
             m_previousGlobalBounds = sprite->getGlobalBounds();
@@ -63,10 +61,9 @@ public:
     /// 공격자 위치를 모를 때 체력과 피격 효과만 적용합니다.
     virtual void takeDamage(float damage);
     /// 공격자 위치를 이용해 반대 방향 넉백과 피격 효과를 함께 적용합니다.
-    virtual void takeDamage(float damage, const sf::Vector2f& attackerPosition);
+    virtual void takeDamage(float damage, const sf::Vector2f &attackerPosition);
     /// 공격자 위치와 넉백 배율을 이용해 피해·피격 효과를 적용합니다.
-    virtual void takeDamage(float damage, const sf::Vector2f& attackerPosition,
-        float knockbackMultiplier);
+    virtual void takeDamage(float damage, const sf::Vector2f &attackerPosition, float knockbackMultiplier);
     /// 피격 색상/넉백 타이머가 남아 있는지 반환합니다. 피격 중복 처리 제한에 사용합니다.
     inline bool isHit() const { return m_hitTimer > 0.f; }
     /// 지면 위일 때만 위쪽 초기 속도를 부여합니다. 점프가 실제로 시작되면 true를 반환합니다.
@@ -90,27 +87,30 @@ public:
     inline EntityId getId() const { return m_entityId; }
 
     /// 현재 스프라이트의 기준 위치를 반환합니다. 스프라이트가 없으면 원점을 반환합니다.
-    inline sf::Vector2f getPosition() const { return sprite ? sprite->getPosition() : sf::Vector2f{ 0.f, 0.f }; }
+    inline sf::Vector2f getPosition() const { return sprite ? sprite->getPosition() : sf::Vector2f{0.f, 0.f}; }
     /// 현재 스프라이트의 월드 경계를 반환합니다. 맵 충돌 검사에서 사용합니다.
     inline sf::FloatRect getGlobalBounds() const { return sprite ? sprite->getGlobalBounds() : sf::FloatRect{}; }
-    inline const sf::FloatRect& getPreviousGlobalBounds() const { return m_previousGlobalBounds; }
+    inline const sf::FloatRect &getPreviousGlobalBounds() const { return m_previousGlobalBounds; }
     /// 속도·중력·착지 상태를 수정할 수 있는 이동 데이터를 반환합니다. 충돌 해결기에서 사용합니다.
-    inline MovementData& getMovement() { return movement; }
+    inline MovementData &getMovement() { return movement; }
     /// 현재 피격 상자를 읽기 전용으로 반환합니다. 공격 충돌 검사에서 사용합니다.
-    inline const Collision& getCollision() const { return col; }
+    inline const Collision &getCollision() const { return col; }
 
     /// 물리, 피격 효과, 애니메이션을 순서대로 갱신합니다. 파생 클래스의 공통 프레임 처리로 호출합니다.
     virtual void update(float dt);
     /// 본체 스프라이트와 장착 장비를 창에 그립니다.
-    virtual void render(sf::RenderWindow& window);
-
-protected:
+    virtual void render(sf::RenderWindow &window);
+    inline bool isAnimationFinished(std::string_view animationName) const {
+        return animator.getCurrentAnimation() == animationName &&
+            animator.isFinished();
+    }
+  protected:
     Status status;
     std::optional<sf::Sprite> sprite;
     Animator animator;
     MovementData movement;
-    // std::list<Item> Inventory;       
-    std::shared_ptr<Equip> equipment; 
+    // std::list<Item> Inventory;
+    std::shared_ptr<Equip> equipment;
     Collision col;
     sf::FloatRect m_previousGlobalBounds;
     /// 중력·일반 속도·넉백 속도를 합쳐 이동하고 피격 상자를 갱신합니다.
@@ -120,22 +120,21 @@ protected:
     std::string m_currentAnimation;
 
     /// 현재 재생 중인 이름과 다를 때만 애니메이션을 재시작합니다.
-    void playAnimation(const std::string& animationName);
+    void playAnimation(const std::string &animationName);
     /// 피격 색상 및 넉백 지속 시간을 감소시키고 종료 상태를 복구합니다.
     void updateHitFeedback(float dt);
-
+    void playSound(const std::string &soundName);
     float m_hitTimer = 0.f;
     float m_knockbackTimer = 0.f;
-    sf::Vector2f m_knockbackVelocity{ 0.f, 0.f };
+    sf::Vector2f m_knockbackVelocity{0.f, 0.f};
     static constexpr float kHitColorDuration = 1.f;
     static constexpr float kKnockbackDuration = 0.12f;
     static constexpr float kKnockbackSpeed = 350.f;
 
-private:
+  private:
     inline static EntityId s_nextEntityId = 1;
     EntityId m_entityId = s_nextEntityId++;
 
     /// 발밑 중앙을 스프라이트 원점으로 설정해 위치와 충돌 기준을 통일합니다.
     void setBottomCenterOrigin();
 };
-

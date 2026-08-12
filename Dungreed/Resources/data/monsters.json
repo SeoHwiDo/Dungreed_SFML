@@ -8,7 +8,8 @@
       "movement": {
         "mode": "Flying",
         "gravity": 0.0,
-        "moveSpeed": 80
+        "moveSpeed": 80,
+        "ignoresWalls": false
       },
       "status": {
         "maxHp": 42.0,
@@ -18,8 +19,6 @@
       "ai": {
         "detectRange": 220,
         "attackRange": 160,
-        "attackWindup": 0.55,
-        "attackPattern": "RadialProjectile",
         "idleDuration": 2.0,
         "patrolDuration": 1.0,
         "patrolSpeedMultiplier": 0.2,
@@ -48,7 +47,8 @@
         "moveSpeed": 150,
         "patrol": true,
         "chase": true,
-        "fallbackAnimation": "Bat_Idle"
+        "fallbackAnimation": "Bat_Idle",
+        "ignoresWalls": false
       },
       "status": {
         "maxHp": 22.0,
@@ -82,7 +82,8 @@
       "movement": {
         "mode": "Ground",
         "gravity": 980.0,
-        "moveSpeed": 65
+        "moveSpeed": 65,
+        "ignoresWalls": false
       },
       "status": {
         "maxHp": 62.0,
@@ -92,8 +93,6 @@
       "ai": {
         "detectRange": 180,
         "attackRange": 65,
-        "attackWindup": 0.55,
-        "attackPattern": "Standard",
         "idleDuration": 2.0,
         "patrolDuration": 1.0,
         "patrolSpeedMultiplier": 0.2,
@@ -133,8 +132,6 @@
       "ai": {
         "detectRange": 180,
         "attackRange": 55,
-        "attackWindup": 0.45,
-        "attackPattern": "GhostTouch",
         "idleDuration": 2.0,
         "patrolDuration": 1.0,
         "patrolSpeedMultiplier": 0.2,
@@ -160,7 +157,8 @@
       "movement": {
         "mode": "Ground",
         "gravity": 980.0,
-        "moveSpeed": 80
+        "moveSpeed": 80,
+        "ignoresWalls": false
       },
       "status": {
         "maxHp": 82.0,
@@ -170,11 +168,6 @@
       "ai": {
         "detectRange": 440,
         "attackRange": 70,
-        "attackWindup": 0.45,
-        "attackPattern": "ChargeCombo",
-        "chargeDuration": 0.65,
-        "chargeSpeedMultiplier": 3.2,
-        "stunDuration": 0.4,
         "idleDuration": 2.0,
         "patrolDuration": 1.0,
         "patrolSpeedMultiplier": 0.2,
@@ -185,6 +178,12 @@
         "lockAttackFacing": true,
         "playReleaseAnimation": false,
         "waitForAttackCooldownAfterRelease": false
+      },
+      "chargeCombo": {
+        "windup": 0.45,
+        "duration": 0.65,
+        "speedMultiplier": 3.2,
+        "stunDuration": 0.4
       },
       "animations": {
         "AttackReady": { "isLoop": false, "frameDuration": 0.3 },
@@ -201,7 +200,8 @@
       "movement": {
         "mode": "Ground",
         "gravity": 980.0,
-        "moveSpeed": 75
+        "moveSpeed": 75,
+        "ignoresWalls": false
       },
       "status": {
         "maxHp": 21.0,
@@ -211,8 +211,6 @@
       "ai": {
         "detectRange": 130,
         "attackRange": 45,
-        "attackWindup": 0.3,
-        "attackPattern": "Standard",
         "idleDuration": 2.0,
         "patrolDuration": 1.0,
         "patrolSpeedMultiplier": 0.2,

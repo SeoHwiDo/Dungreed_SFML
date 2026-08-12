@@ -75,6 +75,9 @@
     <ClCompile Include="DebugManager.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="LogManager.cpp">
+      <Filter>소스 파일</Filter>
+    </ClCompile>
     <ClCompile Include="DeathScene.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
@@ -165,6 +168,9 @@
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="DebugManager.h">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="LogManager.h">
       <Filter>헤더 파일</Filter>
     </ClInclude>
     <ClInclude Include="DeathScene.h">

@@ -17,10 +17,10 @@ struct InputData {
 };
 
 class Controller {
-public:
-    InputData getInput(const sf::RenderWindow& window, const sf::Vector2f& actorCenter);
+  public:
+    InputData getInput(const sf::RenderWindow &window, const sf::Vector2f &actorCenter);
 
-private:
+  private:
     bool m_prevMouseLeftPressed = false;
     bool m_prevKeyboardDashPressed = false;
     bool m_prevMouseDashPressed = false;

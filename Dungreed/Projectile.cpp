@@ -1,17 +1,21 @@
 ﻿#include "Projectile.h"
 #include "ResourceManager.h"
 
+#include "LogManager.h"
+
 #include <algorithm>
 #include <cmath>
 #include <iostream>
 
-void Projectile::activate(const ProjectileSpawnRequest& request) {
+void Projectile::activate(const ProjectileSpawnRequest &request) {
     m_active = true;
     m_isPlayingReturnTrail = false;
     m_isEmbedded = false;
     m_damageEnabled = request.damageActiveOnSpawn;
+    m_hasDamagedTarget = false;
     m_isRangedWeapon = request.isRangedWeapon;
-    m_type = request.type;
+    m_externallyManaged = request.externallyManaged;
+    m_renderBehindTilesWhenEmbedded = request.renderBehindTilesWhenEmbedded;
     m_animationKey = request.animationKey;
     m_returnAnimationKey = request.returnAnimationKey;
     m_rotateToDirection = request.rotateToDirection;
@@ -28,14 +32,13 @@ void Projectile::activate(const ProjectileSpawnRequest& request) {
     m_animationFrame = 0;
 
     m_shape.setPosition(request.position);
-    m_shape.setOrigin({ 4.f, 4.f });
+    m_shape.setOrigin({4.f, 4.f});
 
     if (m_isRangedWeapon) {
         if (m_animationKey.empty()) {
-            std::cerr << "[Projectile] 원거리 투사체 애니메이션 키가 비어 있습니다.\n";
+            LogManager::getInstance().error("Projectile", "원거리 투사체 애니메이션 키가 비어 있습니다.");
         } else if (!loadVisual(m_animationKey)) {
-            std::cerr << "[Projectile] 투사체 리소스를 찾을 수 없습니다: "
-                      << m_animationKey << '\n';
+            LogManager::getInstance().error("Projectile", "투사체 리소스를 찾을 수 없습니다: " + m_animationKey);
         }
     }
 
@@ -103,23 +106,18 @@ void Projectile::update(float dt) {
 }
 
 bool Projectile::beginReturnTrail() {
-    if (!m_active || m_isPlayingReturnTrail || !m_isRangedWeapon ||
-        m_animationKey.empty() || !m_sprite) {
+    if (!m_active || m_isPlayingReturnTrail || !m_isRangedWeapon || m_animationKey.empty() || !m_sprite) {
         return false;
     }
 
-    const std::string trailAnimation = m_returnAnimationKey.empty()
-        ? m_animationKey + "_Trail"
-        : m_returnAnimationKey;
-    const std::vector<sf::IntRect>* trailFrames =
-        ResourceManager::getInstance().getAnimationFrames(
-            "Projectile", trailAnimation);
+    const std::string trailAnimation = m_returnAnimationKey.empty() ? m_animationKey + "_Trail" : m_returnAnimationKey;
+    const std::vector<sf::IntRect> *trailFrames = ResourceManager::getInstance().getAnimationFrames("Projectile", trailAnimation);
     if (!trailFrames || trailFrames->empty()) {
         return false;
     }
 
     m_isPlayingReturnTrail = true;
-    m_velocity = { 0.f, 0.f };
+    m_velocity = {0.f, 0.f};
     m_damage = 0.f;
     m_lifetime = 0.f;
     m_animationFrames = trailFrames;
@@ -127,7 +125,7 @@ bool Projectile::beginReturnTrail() {
     m_animationFrame = 0;
     m_sprite->setTextureRect((*m_animationFrames)[m_animationFrame]);
     const sf::FloatRect trailBounds = m_sprite->getLocalBounds();
-    m_sprite->setOrigin({ trailBounds.size.x * 0.5f, trailBounds.size.y * 0.5f });
+    m_sprite->setOrigin({trailBounds.size.x * 0.5f, trailBounds.size.y * 0.5f});
     m_collision.updateHitbox({});
     return true;
 }
@@ -137,11 +135,14 @@ void Projectile::deactivate() {
     m_isPlayingReturnTrail = false;
     m_isEmbedded = false;
     m_damageEnabled = true;
+    m_hasDamagedTarget = false;
     m_isRangedWeapon = false;
+    m_externallyManaged = false;
+    m_renderBehindTilesWhenEmbedded = false;
     m_animationKey.clear();
     m_returnAnimationKey.clear();
-    m_direction = { 1.f, 0.f };
-    m_velocity = { 0.f, 0.f };
+    m_direction = {1.f, 0.f};
+    m_velocity = {0.f, 0.f};
     m_rotateToDirection = false;
     m_rotationOffsetRadian = 0.f;
     m_damage = 0.f;
@@ -153,62 +154,54 @@ void Projectile::deactivate() {
     m_collision.updateHitbox({});
 }
 
-bool Projectile::checkHit(const sf::FloatRect& targetBounds) const {
-    return isDamageActive() && m_collision.checkHit(targetBounds).has_value();
-}
+bool Projectile::checkHit(const sf::FloatRect &targetBounds) const { return isDamageActive() && !m_hasDamagedTarget && m_collision.checkHit(targetBounds).has_value(); }
 
-sf::FloatRect Projectile::getGlobalBoundsAt(const sf::Vector2f& position) const {
+sf::FloatRect Projectile::getGlobalBoundsAt(const sf::Vector2f &position) const {
     sf::FloatRect bounds = getGlobalBounds();
     bounds.position += position - getPosition();
     return bounds;
 }
 
-sf::FloatRect Projectile::getGlobalBounds() const {
-    return m_sprite ? m_sprite->getGlobalBounds() : m_shape.getGlobalBounds();
-}
+sf::FloatRect Projectile::getGlobalBounds() const { return m_sprite ? m_sprite->getGlobalBounds() : m_shape.getGlobalBounds(); }
 
-sf::Vector2f Projectile::getPosition() const {
-    return m_sprite ? m_sprite->getPosition() : m_shape.getPosition();
-}
+sf::Vector2f Projectile::getPosition() const { return m_sprite ? m_sprite->getPosition() : m_shape.getPosition(); }
 
-void Projectile::setPosition(const sf::Vector2f& position) {
+void Projectile::setPosition(const sf::Vector2f &position) {
     m_shape.setPosition(position);
     if (m_sprite) {
         m_sprite->setPosition(position);
     }
 }
 
-void Projectile::setDirection(const sf::Vector2f& direction, float speed) {
+void Projectile::setDirection(const sf::Vector2f &direction, float speed) {
     const float length = std::sqrt(direction.x * direction.x + direction.y * direction.y);
-    m_direction = length > 0.001f ? direction / length : sf::Vector2f{ 0.f, 1.f };
+    m_direction = length > 0.001f ? direction / length : sf::Vector2f{0.f, 1.f};
     m_velocity = m_direction * speed;
     updateSpriteRotation();
 }
 
 void Projectile::updateSpriteRotation() {
     if (m_sprite && m_rotateToDirection) {
-        const float angle = std::atan2(m_direction.y, m_direction.x) +
-            m_rotationOffsetRadian;
+        const float angle = std::atan2(m_direction.y, m_direction.x) + m_rotationOffsetRadian;
         m_sprite->setRotation(sf::radians(angle));
     }
 }
 
-bool Projectile::loadVisual(const std::string& animationKey) {
-    auto& resources = ResourceManager::getInstance();
-    const sf::Texture* texture = resources.getAtlasTexture("Projectile");
+bool Projectile::loadVisual(const std::string &animationKey) {
+    auto &resources = ResourceManager::getInstance();
+    const sf::Texture *texture = resources.getAtlasTexture("Projectile");
     if (!texture) {
         return false;
     }
 
     std::string resolvedAnimation = animationKey + "_Fly";
-    const std::vector<sf::IntRect>* frames =
-        resources.getAnimationFrames("Projectile", resolvedAnimation);
+    const std::vector<sf::IntRect> *frames = resources.getAnimationFrames("Projectile", resolvedAnimation);
     if (!frames || frames->empty()) {
         resolvedAnimation = animationKey;
         frames = resources.getAnimationFrames("Projectile", resolvedAnimation);
     }
 
-    const sf::IntRect* frame = nullptr;
+    const sf::IntRect *frame = nullptr;
     if (frames && !frames->empty()) {
         frame = &frames->front();
         m_animationFrames = frames;
@@ -230,14 +223,14 @@ bool Projectile::loadVisual(const std::string& animationKey) {
         m_sprite->setTexture(*texture);
     }
     m_sprite->setTextureRect(*frame);
-    m_sprite->setOrigin({ frame->size.x * 0.5f, frame->size.y * 0.5f });
+    m_sprite->setOrigin({frame->size.x * 0.5f, frame->size.y * 0.5f});
     m_animationTime = 0.f;
     m_animationFrame = 0;
     updateSpriteRotation();
     return true;
 }
 
-void Projectile::setAnimation(const std::string& animationKey) {
+void Projectile::setAnimation(const std::string &animationKey) {
     m_animationKey = animationKey;
     loadVisual(animationKey);
 }
@@ -247,34 +240,31 @@ void Projectile::embedInWall(float duration, float overlapPixels) {
         return;
     }
     setPosition(getPosition() + m_direction * std::max(0.f, overlapPixels));
-    m_velocity = { 0.f, 0.f };
+    m_velocity = {0.f, 0.f};
     m_damageEnabled = false;
     m_isEmbedded = true;
     m_lifetime = std::max(0.f, duration);
 }
 
-float Projectile::getRotationRadian() const {
-    return m_sprite ? m_sprite->getRotation().asRadians() : 0.f;
-}
+float Projectile::getRotationRadian() const { return m_sprite ? m_sprite->getRotation().asRadians() : 0.f; }
 
-void Projectile::render(sf::RenderWindow& window) const {
+void Projectile::render(sf::RenderWindow &window) const {
     if (!m_active) {
         return;
     }
 
     if (m_sprite) {
-        if (m_isEmbedded && m_type == ProjectileType::BossSword) {
+        if (m_isEmbedded && m_renderBehindTilesWhenEmbedded) {
             return;
         }
         window.draw(*m_sprite);
-    }
-    else {
+    } else {
         window.draw(m_shape);
     }
 }
 
-void Projectile::renderBehindTiles(sf::RenderWindow& window) const {
-    if (!m_active || !m_isEmbedded || m_type != ProjectileType::BossSword || !m_sprite) {
+void Projectile::renderBehindTiles(sf::RenderWindow &window) const {
+    if (!m_active || !m_isEmbedded || !m_renderBehindTilesWhenEmbedded || !m_sprite) {
         return;
     }
     window.draw(*m_sprite);

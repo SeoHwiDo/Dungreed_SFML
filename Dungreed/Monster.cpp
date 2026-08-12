@@ -1,5 +1,6 @@
 ﻿#include "Monster.h"
 
+#include "AudioManager.h"
 #include "Player.h"
 #include "ResourceManager.h"
 
@@ -10,37 +11,44 @@
 #include <iostream>
 
 namespace {
-const char* toString(MonsterState state) {
+const char *toString(MonsterState state) {
     switch (state) {
-    case MonsterState::Idle: return "Idle";
-    case MonsterState::Patrol: return "Patrol";
-    case MonsterState::Chase: return "Chase";
-    case MonsterState::Charge: return "Charge";
-    case MonsterState::Attack: return "Attack";
-    case MonsterState::Dead: return "Dead";
+    case MonsterState::Idle:
+        return "Idle";
+    case MonsterState::Patrol:
+        return "Patrol";
+    case MonsterState::Chase:
+        return "Chase";
+    case MonsterState::Charge:
+        return "Charge";
+    case MonsterState::Attack:
+        return "Attack";
+    case MonsterState::Dead:
+        return "Dead";
     }
     return "Unknown";
 }
-}
+} // namespace
 
-void Monster::init(const std::string& atlasKey) {
+void Monster::init(const std::string &atlasKey) {
     if (m_isFlying) {
-        movement.velocity = { 0.f, 0.f };
+        movement.velocity = {0.f, 0.f};
         movement.isGrounded = false;
     }
     Actor::init(atlasKey);
+    // 재사용한 몬스터에 이전 아틀라스의 프레임 포인터가 남지 않게 합니다.
+    animator = Animator{};
 
-    auto& resources = ResourceManager::getInstance();
+    auto &resources = ResourceManager::getInstance();
     const std::vector<std::string> animationNames = resources.getAnimationNames(atlasKey);
-    const std::vector<sf::IntRect>* fallbackDeathFrames = nullptr;
+    const std::vector<sf::IntRect> *fallbackDeathFrames = nullptr;
 
-    for (const std::string& animationName : animationNames) {
-        const auto* frames = resources.getAnimationFrames(atlasKey, animationName);
+    for (const std::string &animationName : animationNames) {
+        const auto *frames = resources.getAnimationFrames(atlasKey, animationName);
         if (!frames) {
             continue;
         }
-        if (!fallbackDeathFrames && animationName.size() >= 4 &&
-            animationName.compare(animationName.size() - 4, 4, "_Die") == 0) {
+        if (!fallbackDeathFrames && animationName.size() >= 4 && animationName.compare(animationName.size() - 4, 4, "_Die") == 0) {
             fallbackDeathFrames = frames;
         }
         if (animationName.find(m_type) == std::string::npos && animationName != "Monster_Die") {
@@ -48,31 +56,20 @@ void Monster::init(const std::string& atlasKey) {
         }
 
         const std::string typePrefix = m_type + "_";
-        const std::string stateName = animationName.compare(0, typePrefix.size(), typePrefix) == 0
-            ? animationName.substr(typePrefix.size())
-            : "Die";
+        const std::string stateName = animationName.compare(0, typePrefix.size(), typePrefix) == 0 ? animationName.substr(typePrefix.size()) : "Die";
         const auto configIt = m_behavior.animations.find(stateName);
-        const MonsterAnimationConfig animationConfig =
-            configIt == m_behavior.animations.end()
-            ? MonsterAnimationConfig{}
-            : configIt->second;
-        animator.addAnimation(animationName, AnimationClip(frames,
-            animationConfig.frameDuration, animationConfig.isLoop));
+        const MonsterAnimationConfig animationConfig = configIt == m_behavior.animations.end() ? MonsterAnimationConfig{} : configIt->second;
+        animator.addAnimation(animationName, AnimationClip(frames, animationConfig.frameDuration, animationConfig.isLoop));
     }
 
     if (!animator.hasAnimation("Monster_Die") && fallbackDeathFrames) {
         const auto deathConfigIt = m_behavior.animations.find("Die");
-        const MonsterAnimationConfig deathConfig =
-            deathConfigIt == m_behavior.animations.end()
-            ? MonsterAnimationConfig{}
-            : deathConfigIt->second;
-        animator.addAnimation("Monster_Die", AnimationClip(fallbackDeathFrames,
-            deathConfig.frameDuration, deathConfig.isLoop));
+        const MonsterAnimationConfig deathConfig = deathConfigIt == m_behavior.animations.end() ? MonsterAnimationConfig{} : deathConfigIt->second;
+        animator.addAnimation("Monster_Die", AnimationClip(fallbackDeathFrames, deathConfig.frameDuration, deathConfig.isLoop));
     }
 
-    const auto* typeDeathFrames = resources.getAnimationFrames(atlasKey, m_type + "_Die");
-    m_preferGenericDeathAnimation = typeDeathFrames && typeDeathFrames->size() <= 1 &&
-        animator.hasAnimation("Monster_Die");
+    const auto *typeDeathFrames = resources.getAnimationFrames(atlasKey, m_type + "_Die");
+    m_preferGenericDeathAnimation = typeDeathFrames && typeDeathFrames->size() <= 1 && animator.hasAnimation("Monster_Die");
 
     if (animator.hasAnimation(m_type + "_Idle")) {
         animator.play(m_type + "_Idle");
@@ -102,13 +99,12 @@ void Monster::resetForReuse(Status newStatus, MonsterBehaviorConfig behavior) {
     m_spawnEffectDuration = 0.f;
     m_spawnRevealTimer = 0.f;
     if (m_isFlying) {
-        movement.velocity = { 0.f, 0.f };
+        movement.velocity = {0.f, 0.f};
         movement.isGrounded = false;
     }
 }
 
-void Monster::resetForReuse(const std::string& type, Status newStatus,
-    const std::string& atlasKey, MonsterBehaviorConfig behavior) {
+void Monster::resetForReuse(const std::string &type, Status newStatus, const std::string &atlasKey, MonsterBehaviorConfig behavior) {
     m_type = type;
     resetForReuse(newStatus, behavior);
     init(atlasKey);
@@ -123,7 +119,7 @@ void Monster::setBehavior(MonsterBehaviorConfig behavior) {
     m_isFlying = behavior.isFlying;
 }
 
-bool Monster::isTargetInAttackRange(const sf::Vector2f& targetPosition) const {
+bool Monster::isTargetInAttackRange(const sf::Vector2f &targetPosition) const {
     const sf::Vector2f delta = targetPosition - getBodyCenterPosition();
     return delta.x * delta.x + delta.y * delta.y <= fsm.attackRange * fsm.attackRange;
 }
@@ -132,10 +128,7 @@ sf::FloatRect Monster::getFrontAttackBounds() const {
     sf::FloatRect frontBounds = getCollision().getHitbox();
     const float halfWidth = frontBounds.size.x * 0.5f;
     constexpr float frontAttackPadding = 3.f;
-    const float facingDirection = m_behavior.lockAttackFacing &&
-        state == MonsterState::Attack
-        ? m_attackFacingDirection
-        : fsm.facingDirection;
+    const float facingDirection = m_behavior.lockAttackFacing && state == MonsterState::Attack ? m_attackFacingDirection : fsm.facingDirection;
     // 월드 X축의 양의 방향은 오른쪽입니다. 오른쪽을 볼 때는 몸체의 오른쪽 절반을 사용합니다.
     if (facingDirection > 0.f) {
         frontBounds.position.x += halfWidth;
@@ -146,13 +139,9 @@ sf::FloatRect Monster::getFrontAttackBounds() const {
     return frontBounds;
 }
 
-bool Monster::isTargetInFrontContact(const sf::FloatRect& targetBounds) const {
-    return getFrontAttackBounds().findIntersection(targetBounds).has_value();
-}
+bool Monster::isTargetInFrontContact(const sf::FloatRect &targetBounds) const { return getFrontAttackBounds().findIntersection(targetBounds).has_value(); }
 
-void Monster::beginAttack() {
-    changeState(MonsterState::Attack);
-}
+void Monster::beginAttack() { changeState(MonsterState::Attack); }
 
 void Monster::beginSpawn(float duration, float revealDelay) {
     m_spawnEffectDuration = std::max(0.f, duration);
@@ -164,9 +153,7 @@ void Monster::beginSpawn(float duration, float revealDelay) {
     }
 }
 
-bool Monster::canStartAttack() const {
-    return m_attackCooldown <= 0.f;
-}
+bool Monster::canStartAttack() const { return m_attackCooldown <= 0.f; }
 
 void Monster::startAttackCooldown() {
     const auto weapon = getEquipment();
@@ -176,9 +163,7 @@ void Monster::startAttackCooldown() {
     m_attackActionReady = false;
 }
 
-void Monster::updateAttackCooldown(float dt) {
-    m_attackCooldown = std::max(0.f, m_attackCooldown - dt);
-}
+void Monster::updateAttackCooldown(float dt) { m_attackCooldown = std::max(0.f, m_attackCooldown - dt); }
 
 void Monster::playAttackAnimation() {
     if (animator.hasAnimation(m_type + "_Attack")) {
@@ -216,29 +201,29 @@ bool Monster::consumeChargeImpact() {
 }
 
 float Monster::getChargeDistance() const {
-    const float chargeSpeed = movement.moveSpeed * m_behavior.chargeSpeedMultiplier;
-    return std::max(0.f, chargeSpeed * m_behavior.chargeDuration);
+    if (!m_behavior.chargeCombo) {
+        return 0.f;
+    }
+    const float chargeSpeed = movement.moveSpeed *
+        m_behavior.chargeCombo->speedMultiplier;
+    return std::max(0.f, chargeSpeed * m_behavior.chargeCombo->duration);
 }
 
 bool Monster::isChargeImpactActive() const {
-    return state == MonsterState::Charge &&
-        fsm.stateTimer >= m_behavior.attackWindup &&
-        fsm.stateTimer < m_behavior.attackWindup + m_behavior.chargeDuration;
+    return m_behavior.chargeCombo && state == MonsterState::Charge &&
+        fsm.stateTimer >= m_behavior.chargeCombo->windup &&
+        fsm.stateTimer < m_behavior.chargeCombo->windup +
+            m_behavior.chargeCombo->duration;
 }
 
-bool Monster::readyForPoolRelease() const {
-    return dead() && state == MonsterState::Dead && animator.isFinished();
-}
+bool Monster::readyForPoolRelease() const { return dead() && state == MonsterState::Dead && animator.isFinished(); }
 
 void Monster::changeState(MonsterState newState) {
     if (state == MonsterState::Dead) {
         return;
     }
     if (state != newState) {
-        std::cout << "[MonsterFSM] type=" << m_type
-                  << ", id=" << getId()
-                  << ", " << toString(state)
-                  << " -> " << toString(newState) << '\n';
+        std::cout << "[MonsterFSM] type=" << m_type << ", id=" << getId() << ", " << toString(state) << " -> " << toString(newState) << '\n';
     }
 
     const MonsterState previousState = state;
@@ -284,6 +269,9 @@ void Monster::changeState(MonsterState newState) {
         movement.velocity.y = 0.f;
         m_chargeDirection = fsm.facingDirection;
         m_chargeImpactConsumed = false;
+        if (previousState != MonsterState::Charge) {
+            AudioManager::getInstance().playSfx(getId(), m_type + "_Charge");
+        }
         if (animator.hasAnimation(m_type + "_Charge")) {
             animator.play(m_type + "_Charge");
         } else if (animator.hasAnimation(m_type + "_Run")) {
@@ -296,13 +284,11 @@ void Monster::changeState(MonsterState newState) {
         if (m_isFlying) {
             movement.velocity.y = 0.f;
         }
-        m_attackFacingDirection = previousState == MonsterState::Charge
-            ? m_chargeDirection
-            : fsm.facingDirection;
+        m_attackFacingDirection = previousState == MonsterState::Charge ? m_chargeDirection : fsm.facingDirection;
         m_attackWasInterruptedByHit = false;
         m_attackReleasePlayed = false;
         if (m_behavior.lockAttackFacing && sprite) {
-            sprite->setScale({ m_attackFacingDirection, 1.f });
+            sprite->setScale({m_attackFacingDirection, 1.f});
         }
         startAttackCooldown();
         if (animator.hasAnimation(m_type + "_AttackReady")) {
@@ -333,7 +319,7 @@ void Monster::changeState(MonsterState newState) {
     }
 }
 
-void Monster::handleFSM(float dt, const Player& player) {
+void Monster::handleFSM(float dt, const Player &player) {
     if (status.tmpHp <= 0.f && state != MonsterState::Dead) {
         changeState(MonsterState::Dead);
         return;
@@ -342,8 +328,7 @@ void Monster::handleFSM(float dt, const Player& player) {
         return;
     }
     if (player.dead()) {
-        if (state == MonsterState::Chase || state == MonsterState::Charge ||
-            state == MonsterState::Attack) {
+        if (state == MonsterState::Chase || state == MonsterState::Charge || state == MonsterState::Attack) {
             changeState(MonsterState::Idle);
         }
         return;
@@ -371,22 +356,19 @@ void Monster::handleFSM(float dt, const Player& player) {
     const auto moveTowardPlayer = [this, dx, dy, distance, directionX]() {
         if (m_isFlying && distance > 0.01f) {
             const float speedScale = movement.moveSpeed / distance;
-            movement.velocity = { dx * speedScale, dy * speedScale };
+            movement.velocity = {dx * speedScale, dy * speedScale};
         } else {
             setHorizontalInput(directionX);
         }
         if (sprite) {
-            sprite->setScale({ directionX, 1.f });
+            sprite->setScale({directionX, 1.f});
         }
     };
-    const bool usesChargeCombo =
-        m_behavior.attackPattern == MonsterAttackPattern::ChargeCombo;
+    const bool usesChargeCombo = m_behavior.chargeCombo.has_value();
     const bool isWithinChargeDistance = horizontalDistance <= getChargeDistance();
     const auto weapon = getEquipment();
-    const bool isMeleeAttack = weapon &&
-        weapon->getStat().type == WeaponType::Melee;
-    const bool isInMeleeAttackContact =
-        isTargetInFrontContact(player.getGlobalBounds());
+    const bool isMeleeAttack = weapon && weapon->getStat().type == WeaponType::Melee;
+    const bool isInMeleeAttackContact = isTargetInFrontContact(player.getGlobalBounds());
 
     switch (state) {
     case MonsterState::Idle:
@@ -404,11 +386,10 @@ void Monster::handleFSM(float dt, const Player& player) {
     case MonsterState::Patrol:
         setHorizontalInput(fsm.patrolDirection * m_behavior.patrolSpeedMultiplier);
         if (m_isFlying) {
-            movement.velocity.y = fsm.patrolVerticalDirection * movement.moveSpeed *
-                m_behavior.patrolSpeedMultiplier;
+            movement.velocity.y = fsm.patrolVerticalDirection * movement.moveSpeed * m_behavior.patrolSpeedMultiplier;
         }
         if (sprite) {
-            sprite->setScale({ fsm.patrolDirection, 1.f });
+            sprite->setScale({fsm.patrolDirection, 1.f});
         }
         if (distance <= fsm.detectRange) {
             if (usesChargeCombo && canStartAttack() && isWithinChargeDistance) {
@@ -427,8 +408,7 @@ void Monster::handleFSM(float dt, const Player& player) {
         } else if (usesChargeCombo && canStartAttack() && isWithinChargeDistance) {
             stopMovement();
             changeState(MonsterState::Charge);
-        } else if (!usesChargeCombo && distance <= fsm.attackRange &&
-            (!isMeleeAttack || isInMeleeAttackContact)) {
+        } else if (!usesChargeCombo && distance <= fsm.attackRange && (!isMeleeAttack || isInMeleeAttackContact)) {
             stopMovement();
             if (canStartAttack()) {
                 changeState(MonsterState::Attack);
@@ -439,15 +419,17 @@ void Monster::handleFSM(float dt, const Player& player) {
         break;
 
     case MonsterState::Charge:
-        if (fsm.stateTimer < m_behavior.attackWindup) {
+        if (!m_behavior.chargeCombo) {
+            changeState(MonsterState::Chase);
+        } else if (fsm.stateTimer < m_behavior.chargeCombo->windup) {
             stopMovement();
-        } else if (fsm.stateTimer <
-            m_behavior.attackWindup + m_behavior.chargeDuration) {
+        } else if (fsm.stateTimer < m_behavior.chargeCombo->windup +
+            m_behavior.chargeCombo->duration) {
             movement.velocity.x = m_chargeDirection * movement.moveSpeed *
-                m_behavior.chargeSpeedMultiplier;
+                m_behavior.chargeCombo->speedMultiplier;
             movement.velocity.y = 0.f;
             if (sprite) {
-                sprite->setScale({ m_chargeDirection, 1.f });
+                sprite->setScale({m_chargeDirection, 1.f});
             }
         } else {
             stopMovement();
@@ -516,7 +498,7 @@ void Monster::handleFSM(float dt, const Player& player) {
     }
 }
 
-void Monster::update(float dt, Player& player) {
+void Monster::update(float dt, Player &player) {
     updateAttackCooldown(dt);
     if (dead()) {
         handleFSM(dt, player);
@@ -537,7 +519,7 @@ void Monster::update(float dt, Player& player) {
     Actor::update(dt);
 }
 
-void Monster::render(sf::RenderWindow& window) {
+void Monster::render(sf::RenderWindow &window) {
     // 매직서클 전반부에는 몬스터 본체를 숨겨 이펙트만 먼저 보이게 합니다.
     if (m_spawnRevealTimer > 0.f) {
         return;

@@ -431,3 +431,8 @@ FodyWeavers.xsd
 Dungreed/External
 Dungreed/resources
 Dungreed/docs
+!Dungreed/resources/
+!Dungreed/resources/data/
+Dungreed/resources/audios
+Dungreed/resources/Font
+Dungreed/resources/images
