@@ -5,6 +5,8 @@
 #include <initializer_list>
 #include <utility>
 
+#include "LogManager.h"
+
 namespace {
 struct PlatformSpec {
     unsigned int x;
@@ -318,6 +320,7 @@ Room *Room::getDoorNext(DoorPosition position) const {
 /// 방 셀의 논리 타입을 타일 프레임·충돌 타입으로 바꾸며, 주변 벽을 검사해 알맞은 그림자 백타일도 선택합니다.
 bool Room::buildTileMap(TileMap &tileMap, const std::string &tileAtlasKey, const RoomTileSet &tileSet) const {
     if (info.layout.width == 0 || info.layout.height == 0 || info.layout.cells.size() != info.layout.width * info.layout.height) {
+        LogManager::getInstance().error("Room", "Invalid room layout while building tile map for atlas: " + tileAtlasKey);
         return false;
     }
 
@@ -530,6 +533,7 @@ bool Room::buildTileMap(TileMap &tileMap, const std::string &tileAtlasKey, const
         }
     }
     if (!tileMap.load(tileAtlasKey, grid, info.layout.width, info.layout.height, info.decorations)) {
+        LogManager::getInstance().error("Room", "Failed to create tile map for atlas: " + tileAtlasKey);
         return false;
     }
     if (!info.backgroundLayers.empty()) {

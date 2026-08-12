@@ -1,7 +1,9 @@
 ﻿#include "SkelBoss.h"
 
+#include "AudioManager.h"
 #include "EffectManager.h"
 #include "GameDataManager.h"
+#include "LogManager.h"
 #include "ObjectPoolingManager.h"
 #include "Player.h"
 #include "ResourceManager.h"
@@ -51,10 +53,10 @@ void SkelBoss::configurePatternWeapons() {
     m_swordWeapon = gameData.createEquip("SkelBossSword");
 
     if (!m_bulletWeapon) {
-        std::cerr << "[SkelBoss] Bullet weapon could not be created\n";
+        LogManager::getInstance().error("SkelBoss", "Bullet 패턴 장비를 생성하지 못했습니다.");
     }
     if (!m_swordWeapon) {
-        std::cerr << "[SkelBoss] Sword weapon could not be created\n";
+        LogManager::getInstance().error("SkelBoss", "Sword 패턴 장비를 생성하지 못했습니다.");
     }
 }
 
@@ -258,6 +260,7 @@ void SkelBoss::startPattern(SkelBossPattern pattern, const Player &player, Objec
     m_patternTimer = 0.f;
     markPatternUsed(pattern);
     animator.play("SkellBoss_Attack");
+    AudioManager::getInstance().playSfx(getId(), "SkellBoss_Attack");
 
     switch (pattern) {
     case SkelBossPattern::HandLaser:
@@ -384,12 +387,12 @@ void SkelBoss::markPatternUsed(SkelBossPattern pattern) {
 
 void SkelBoss::fireRotatingCross(ObjectPoolingManager &objectPool) {
     if (!m_bulletWeapon) {
-        std::cerr << "[SkelBoss] Bullet pattern skipped: bullet weapon is unavailable\n";
+        LogManager::getInstance().error("SkelBoss", "Bullet 패턴을 실행할 수 없습니다: 장비가 없습니다.");
         return;
     }
 
     if (!m_bulletWeapon->getStat().projectile) {
-        std::cerr << "[SkelBoss] Bullet pattern skipped: bullet projectile config is unavailable\n";
+        LogManager::getInstance().error("SkelBoss", "Bullet 패턴을 실행할 수 없습니다: 투사체 설정이 없습니다.");
         return;
     }
 
@@ -398,7 +401,7 @@ void SkelBoss::fireRotatingCross(ObjectPoolingManager &objectPool) {
     m_bulletWeapon->attack();
     const std::vector<ProjectileSpawnRequest> &requests = m_bulletWeapon->consumeProjectileRequests();
     if (requests.empty()) {
-        std::cerr << "[SkelBoss] Bullet pattern produced no projectile requests\n";
+        LogManager::getInstance().error("SkelBoss", "Bullet 패턴이 투사체 생성 요청을 만들지 못했습니다.");
         return;
     }
 
@@ -434,10 +437,11 @@ void SkelBoss::updateRotatingBullets(float dt, ObjectPoolingManager &objectPool)
 
 void SkelBoss::summonSwordFan(ObjectPoolingManager &objectPool) {
     if (!m_swordWeapon || !m_swordWeapon->getStat().projectile) {
-        std::cerr << "[SkelBoss] SwordFan skipped: sword projectile config is unavailable\n";
+        LogManager::getInstance().error("SkelBoss", "SwordFan 패턴을 실행할 수 없습니다: 투사체 설정이 없습니다.");
         return;
     }
 
+    AudioManager::getInstance().playSfx(getId(), "SkellBoss_Summon");
     const ProjectileConfig &config = *m_swordWeapon->getStat().projectile;
     const unsigned int swordCount = std::max(1u, config.count);
     stopSwordChargeEffects(objectPool);
@@ -462,19 +466,19 @@ void SkelBoss::summonSwordFan(ObjectPoolingManager &objectPool) {
 
 void SkelBoss::spawnSword(const sf::Vector2f &position, ObjectPoolingManager &objectPool) {
     if (!m_swordWeapon) {
-        std::cerr << "[SkelBoss] SwordFan skipped: sword weapon is unavailable\n";
+        LogManager::getInstance().error("SkelBoss", "SwordFan 패턴을 실행할 수 없습니다: 장비가 없습니다.");
         return;
     }
     const EquipStat swordStat = m_swordWeapon->getStat();
     if (!swordStat.projectile) {
-        std::cerr << "[SkelBoss] SwordFan skipped: sword projectile config is unavailable\n";
+        LogManager::getInstance().error("SkelBoss", "SwordFan 패턴을 실행할 수 없습니다: 투사체 설정이 없습니다.");
         return;
     }
     m_swordWeapon->update(0.f, position, kPi * 0.5f);
     m_swordWeapon->attack();
     const std::vector<ProjectileSpawnRequest> &requests = m_swordWeapon->consumeProjectileRequests(1);
     if (requests.empty()) {
-        std::cerr << "[SkelBoss] SwordFan produced no projectile request\n";
+        LogManager::getInstance().error("SkelBoss", "SwordFan 패턴이 투사체 생성 요청을 만들지 못했습니다.");
         return;
     }
 
@@ -566,6 +570,9 @@ void SkelBoss::update(float dt, Player &player, ObjectPoolingManager &objectPool
     updateHands(dt, tileMap);
 
     if (dead()) {
+        if (m_state != State::Dead) {
+            AudioManager::getInstance().playSfx(getId(), "SkellBoss_Death");
+        }
         m_state = State::Dead;
         m_laserActive = false;
         stopSwordChargeEffects(objectPool);

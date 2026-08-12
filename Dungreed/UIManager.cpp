@@ -1,6 +1,7 @@
 ﻿#include "UIManager.h"
 
 #include "Boss.h"
+#include "LogManager.h"
 #include "Player.h"
 #include "ResourceManager.h"
 
@@ -18,7 +19,7 @@ bool UIManager::init(sf::RenderWindow &window) {
     auto &resourceManager = ResourceManager::getInstance();
     m_texture = resourceManager.getAtlasTexture("UI");
     if (!m_texture) {
-        std::cerr << "[UIManager] UI 아틀라스를 불러오지 못했습니다.\n";
+        LogManager::getInstance().error("UIManager", "UI 아틀라스를 불러오지 못했습니다.");
         return false;
     }
 
@@ -26,16 +27,16 @@ bool UIManager::init(sf::RenderWindow &window) {
     m_lifeBase.emplace(*m_texture);
     m_cursor.emplace(*m_texture);
     if (!setSpriteFrame(*m_lifeBack, "PlayerLifeBack.png") || !setSpriteFrame(*m_lifeBase, "PlayerLifeBase.png") || !setSpriteFrame(*m_cursor, "ShootingCursor2.png")) {
-        std::cerr << "[UIManager] 던전 HUD 프레임을 불러오지 못했습니다.\n";
+        LogManager::getInstance().error("UIManager", "던전 HUD 프레임을 불러오지 못했습니다.");
         return false;
     }
 
     if (!createScaledLifeBarTexture()) {
-        std::cerr << "[UIManager] 확대 체력바 텍스처를 만들지 못했습니다.\n";
+        LogManager::getInstance().error("UIManager", "확대 체력바 텍스처를 만들지 못했습니다.");
         return false;
     }
     if (!createDashCountFlashTexture()) {
-        std::cerr << "[UIManager] 대시 충전 반짝임 텍스처를 만들지 못했습니다.\n";
+        LogManager::getInstance().error("UIManager", "대시 충전 반짝임 텍스처를 만들지 못했습니다.");
         return false;
     }
 
@@ -44,7 +45,7 @@ bool UIManager::init(sf::RenderWindow &window) {
     for (int index = 0; index <= 6; ++index) {
         m_lifeWaves.emplace_back(*m_texture);
         if (!setSpriteFrame(m_lifeWaves.back(), "LifeWave" + std::to_string(index) + ".png")) {
-            std::cerr << "[UIManager] 체력바 물결 프레임을 불러오지 못했습니다.\n";
+            LogManager::getInstance().error("UIManager", "체력바 물결 프레임을 불러오지 못했습니다.");
             return false;
         }
     }
@@ -53,7 +54,7 @@ bool UIManager::init(sf::RenderWindow &window) {
     m_dashSlots.reserve(3);
     m_dashRightEnd.emplace(*m_texture);
     if (!setSpriteFrame(*m_dashRightEnd, "DashBaseRightEnd.png")) {
-        std::cerr << "[UIManager] 대시 게이지 오른쪽 끝 프레임을 불러오지 못했습니다.\n";
+        LogManager::getInstance().error("UIManager", "대시 게이지 오른쪽 끝 프레임을 불러오지 못했습니다.");
         return false;
     }
     m_previousDashCharges = -1;
@@ -63,7 +64,7 @@ bool UIManager::init(sf::RenderWindow &window) {
         DashSlot &dashSlot = m_dashSlots.back();
         const std::optional<sf::Vector2f> basePivot = resourceManager.getFramePivot("UI", baseFrameName);
         if (!setSpriteFrame(dashSlot.base, baseFrameName) || !basePivot || !setSpriteFrame(dashSlot.count, "DashCount.png")) {
-            std::cerr << "[UIManager] 대시 횟수 프레임을 불러오지 못했습니다.\n";
+            LogManager::getInstance().error("UIManager", "대시 횟수 프레임을 불러오지 못했습니다.");
             return false;
         }
         dashSlot.count.setOrigin(dashSlot.count.getLocalBounds().getCenter());
@@ -84,7 +85,7 @@ bool UIManager::init(sf::RenderWindow &window) {
 
     const sf::Font *defaultFont = resourceManager.getDefaultFont();
     if (!defaultFont) {
-        std::cerr << "[UIManager] ResourceManager의 기본 게임 폰트를 찾을 수 없습니다.\n";
+        LogManager::getInstance().error("UIManager", "ResourceManager의 기본 게임 폰트를 찾을 수 없습니다.");
         return false;
     }
     m_playerHealthText.emplace(*defaultFont, "", 18);
@@ -100,7 +101,7 @@ bool UIManager::init(sf::RenderWindow &window) {
     m_bossPortrait.emplace(*m_texture);
     const sf::IntRect *bossLifeBackFrame = resourceManager.getFrameRect("UI", "BossLifeBack.png");
     if (!bossLifeBackFrame || !setSpriteFrame(*m_bossLifeFill, "LifeBar.png") || !setSpriteFrame(*m_bossLifeBase, "BossLifeBase.png") || !setSpriteFrame(*m_bossPortrait, "BossSkellPortrait.png")) {
-        std::cerr << "[UIManager] 보스 HUD 프레임을 불러오지 못했습니다.\n";
+        LogManager::getInstance().error("UIManager", "보스 HUD 프레임을 불러오지 못했습니다.");
         return false;
     }
     m_bossLifeBackFrame = *bossLifeBackFrame;

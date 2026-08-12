@@ -8,6 +8,7 @@
 
 #include "Monster.h"
 #include "GameDataManager.h"
+#include "LogManager.h"
 #include "MapManager.h"
 #include "ObjectPoolingManager.h"
 #include "Player.h"
@@ -97,6 +98,7 @@ DebugCommand DebugManager::readConsoleCommand(const GameDataManager &gameData) c
 bool DebugManager::spawnRoom(const std::string &floorId, const std::string &roomId, const GameDataManager &gameData, MapManager &mapManager, const std::string &tileAtlasKey, const RoomTileSet &tileSet) const {
     const FloorData *floor = gameData.findFloor(floorId);
     if (!floor || floor->rooms.find(roomId) == floor->rooms.end()) {
+        LogManager::getInstance().warning("DebugManager", "디버그 생성 대상 층 또는 방을 찾을 수 없습니다: " + floorId + '/' + roomId);
         return false;
     }
 
@@ -154,17 +156,20 @@ bool DebugManager::buildRoomPreviews(const std::vector<const Room *> &rooms, con
 
     m_roomPreviews.clear();
     if (rooms.empty()) {
+        LogManager::getInstance().warning("DebugManager", "미리 보기로 만들 방 목록이 비어 있습니다.");
         return false;
     }
 
     for (const Room *room : rooms) {
         if (!room) {
+            LogManager::getInstance().warning("DebugManager", "방 미리 보기 목록에 null 방이 포함되어 있습니다.");
             m_roomPreviews.clear();
             return false;
         }
 
         auto preview = std::make_unique<TileMap>();
         if (!room->buildTileMap(*preview, tileAtlasKey, tileSet)) {
+            LogManager::getInstance().warning("DebugManager", "방 미리 보기용 타일맵 생성에 실패했습니다.");
             m_roomPreviews.clear();
             return false;
         }

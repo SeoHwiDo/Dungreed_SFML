@@ -7,6 +7,7 @@
 #include <utility>
 
 #include "GameDataManager.h"
+#include "LogManager.h"
 #include "MonsterManager.h"
 #include "ObjectPoolingManager.h"
 
@@ -64,6 +65,7 @@ Room &MapManager::createCurrentRoom(RoomType type, DoorPositions doorPositions, 
 bool MapManager::createCurrentRoomFromData(const FloorData &floor, const std::string &roomId) {
     const bool hasBossRoom = !floor.bossRoomId.empty();
     if (floor.rooms.find(roomId) == floor.rooms.end() || floor.rooms.find(floor.startRoomId) == floor.rooms.end() || (hasBossRoom && floor.rooms.find(floor.bossRoomId) == floor.rooms.end())) {
+        LogManager::getInstance().error("MapManager", "층 방 구성에 현재 방, 시작 방 또는 보스 방 정보가 없습니다: " + floor.id);
         return false;
     }
 
@@ -79,6 +81,7 @@ bool MapManager::createCurrentRoomFromData(const FloorData &floor, const std::st
     for (const auto &[instanceId, roomData] : floor.rooms) {
         const auto referenceIt = floor.roomReferences.find(roomData.roomReferenceId);
         if (referenceIt == floor.roomReferences.end()) {
+            LogManager::getInstance().error("MapManager", "방 레퍼런스를 찾을 수 없습니다: " + roomData.roomReferenceId);
             m_floorRooms.clear();
             return false;
         }
@@ -155,6 +158,7 @@ bool MapManager::createCurrentRoomFromData(const FloorData &floor, const std::st
         DoorPosition fromDoor = DoorPosition::Up;
         DoorPosition toDoor = DoorPosition::Down;
         if (!selectConnectionDoors(*instanceData.at(fromId), *instanceData.at(toId), doorPositions.at(fromId), doorPositions.at(toId), fromDoor, toDoor)) {
+            LogManager::getInstance().error("MapManager", "방 연결에 사용할 수 있는 통로 방향이 없습니다: " + fromId + " -> " + toId);
             m_floorRooms.clear();
             return false;
         }
@@ -187,6 +191,7 @@ bool MapManager::createCurrentRoomFromData(const FloorData &floor, const std::st
         Room *fromRoom = m_floorRooms.at(connection.fromId).room.get();
         Room *toRoom = m_floorRooms.at(connection.toId).room.get();
         if (fromRoom == toRoom || fromRoom->getDoorNext(connection.fromDoor) || toRoom->getDoorNext(connection.toDoor)) {
+            LogManager::getInstance().error("MapManager", "방 연결 정보가 중복되었거나 자기 자신을 가리킵니다.");
             m_floorRooms.clear();
             m_currentRoom = nullptr;
             return false;
@@ -200,12 +205,14 @@ bool MapManager::createCurrentRoomFromData(const FloorData &floor, const std::st
 }
 bool MapManager::preloadFloorTileMaps(const std::string &tileAtlasKey, const RoomTileSet &tileSet) {
     if (!m_currentRoom || m_floorRooms.empty()) {
+        LogManager::getInstance().error("MapManager", "타일맵을 미리 만들 현재 방 또는 층 방 목록이 없습니다.");
         return false;
     }
 
     for (auto &[instanceId, managedRoom] : m_floorRooms) {
         auto tileMap = std::make_unique<TileMap>();
         if (!managedRoom.room->buildTileMap(*tileMap, tileAtlasKey, tileSet)) {
+            LogManager::getInstance().error("MapManager", "방 타일맵 생성에 실패했습니다: " + instanceId);
             for (auto &[clearInstanceId, clearManagedRoom] : m_floorRooms) {
                 clearManagedRoom.tileMap.reset();
             }
@@ -216,7 +223,11 @@ bool MapManager::preloadFloorTileMaps(const std::string &tileAtlasKey, const Roo
     }
 
     m_currentTileMap = findFloorTileMap(m_currentRoom);
-    return m_currentTileMap != nullptr;
+    if (!m_currentTileMap) {
+        LogManager::getInstance().error("MapManager", "현재 방의 타일맵을 찾지 못했습니다.");
+        return false;
+    }
+    return true;
 }
 
 bool MapManager::moveCurrentRoom(DoorPosition doorPosition) {

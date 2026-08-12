@@ -1,4 +1,6 @@
 #include "TileMap.h"
+#include "LogManager.h"
+
 #include <array>
 #include <iostream>
 #include <utility>
@@ -7,10 +9,14 @@
 bool TileMap::load(const std::string &tileAtlasKey, const std::vector<TileConfig> &grid, unsigned int width, unsigned int height, const std::vector<DecorativeTileConfig> &decorations) {
     auto &resMgr = ResourceManager::getInstance();
     m_tileset = resMgr.getAtlasTexture(tileAtlasKey);
-    if (!m_tileset)
+    if (!m_tileset) {
+        LogManager::getInstance().error("TileMap", "타일맵 아틀라스를 찾을 수 없습니다: " + tileAtlasKey);
         return false;
-    if (grid.size() != width * height)
+    }
+    if (grid.size() != width * height) {
+        LogManager::getInstance().error("TileMap", "타일맵 격자 크기가 방 크기와 일치하지 않습니다.");
         return false;
+    }
     m_width = width;
     m_height = height;
 
@@ -20,14 +26,14 @@ bool TileMap::load(const std::string &tileAtlasKey, const std::vector<TileConfig
         if (!config.frameName.empty()) {
             sourceSize = resMgr.getFrameSourceSize(tileAtlasKey, config.frameName);
             if (!sourceSize) {
-                std::cerr << "[TileMap] sourceSize를 찾을 수 없습니다: " << config.frameName << std::endl;
+                LogManager::getInstance().error("TileMap", "타일 sourceSize를 찾을 수 없습니다: " + config.frameName);
                 return false;
             }
             break;
         }
     }
     if (!sourceSize || sourceSize->x == 0 || sourceSize->y == 0) {
-        std::cerr << "[TileMap] 유효한 타일 셀 크기가 없습니다." << std::endl;
+        LogManager::getInstance().error("TileMap", "유효한 타일 셀 크기가 없습니다.");
         return false;
     }
     m_tileSize = {static_cast<float>(sourceSize->x), static_cast<float>(sourceSize->y)};
@@ -53,7 +59,7 @@ bool TileMap::load(const std::string &tileAtlasKey, const std::vector<TileConfig
             const auto appendTile = [&](sf::VertexArray &vertices, const std::string &frameName, sf::Color tileColor, int rotationQuarterTurns) {
                 const sf::IntRect *rect = resMgr.getFrameRect(tileAtlasKey, frameName);
                 if (!rect) {
-                    std::cerr << "[TileMap] frame을 찾을 수 없습니다: " << frameName << std::endl;
+                    LogManager::getInstance().error("TileMap", "타일 프레임을 찾을 수 없습니다: " + frameName);
                     return false;
                 }
 
@@ -116,7 +122,7 @@ bool TileMap::createDecorations(const std::string &defaultAtlasKey, const std::v
         const std::string &atlasKey = config.atlasKey.empty() ? defaultAtlasKey : config.atlasKey;
         const sf::Texture *texture = resMgr.getAtlasTexture(atlasKey);
         if (!texture) {
-            std::cerr << "[TileMap] 장식 타일 아틀라스를 찾을 수 없습니다: " << atlasKey << std::endl;
+            LogManager::getInstance().error("TileMap", "장식 타일 아틀라스를 찾을 수 없습니다: " + atlasKey);
             return false;
         }
 
@@ -124,14 +130,14 @@ bool TileMap::createDecorations(const std::string &defaultAtlasKey, const std::v
         const bool isAnimated = !config.animationName.empty();
         const std::string &initialFrame = isAnimated ? config.animationName : config.frameName;
         if (initialFrame.empty()) {
-            std::cerr << "[TileMap] 장식 타일에는 frame 또는 animation이 필요합니다." << std::endl;
+            LogManager::getInstance().error("TileMap", "장식 타일에는 frame 또는 animation이 필요합니다.");
             return false;
         }
 
         if (isAnimated) {
             const std::vector<sf::IntRect> *frames = resMgr.getAnimationFrames(atlasKey, config.animationName);
             if (!frames || frames->empty()) {
-                std::cerr << "[TileMap] 장식 애니메이션을 찾을 수 없습니다: " << config.animationName << std::endl;
+                LogManager::getInstance().error("TileMap", "장식 애니메이션을 찾을 수 없습니다: " + config.animationName);
                 return false;
             }
             decoration.sprite.setTextureRect(frames->front());
@@ -141,7 +147,7 @@ bool TileMap::createDecorations(const std::string &defaultAtlasKey, const std::v
         } else {
             const sf::IntRect *frame = resMgr.getFrameRect(atlasKey, config.frameName);
             if (!frame) {
-                std::cerr << "[TileMap] 장식 프레임을 찾을 수 없습니다: " << config.frameName << std::endl;
+                LogManager::getInstance().error("TileMap", "장식 프레임을 찾을 수 없습니다: " + config.frameName);
                 return false;
             }
             decoration.sprite.setTextureRect(*frame);
@@ -174,7 +180,7 @@ bool TileMap::configureDoorAnimations(const std::string &atlasKey, const std::ve
     const std::vector<sf::IntRect> *idleFrames = resourceManager.getAnimationFrames(atlasKey, "IdleDoor");
     const std::vector<sf::IntRect> *openFrames = resourceManager.getAnimationFrames(atlasKey, "OpenDoor");
     if (!texture || !closeFrames || closeFrames->empty() || !idleFrames || idleFrames->empty() || !openFrames || openFrames->empty()) {
-        std::cerr << "[TileMap] 문 애니메이션 프레임을 불러오지 못했습니다.\n";
+        LogManager::getInstance().error("TileMap", "문 애니메이션 프레임을 불러오지 못했습니다.");
         return false;
     }
 
