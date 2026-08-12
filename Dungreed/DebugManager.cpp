@@ -43,6 +43,26 @@ void drawCircularRange(sf::RenderWindow &window, const sf::Vector2f &center, flo
 
 DebugManager::~DebugManager() = default;
 
+std::optional<DebugCommand> DebugManager::handleEvent(const sf::Event &event,
+    const GameDataManager &gameData) const {
+    const auto *key = event.getIf<sf::Event::KeyPressed>();
+    if (!key) {
+        return std::nullopt;
+    }
+
+    if (key->code == sf::Keyboard::Key::F6) {
+        return readConsoleCommand(gameData);
+    }
+
+#if defined(_DEBUG)
+    if (key->code == sf::Keyboard::Key::F7) {
+        return DebugCommand{DebugCommandType::ApplyEasyMode};
+    }
+#endif
+
+    return std::nullopt;
+}
+
 DebugCommand DebugManager::readConsoleCommand(const GameDataManager &gameData) const {
     while (true) {
         std::cout << "\n========== DEBUG MENU ==========\n"
@@ -136,7 +156,7 @@ void DebugManager::renderCombatBounds(sf::RenderWindow &window, const Player &pl
             // 빨간 상자: 근접 공격이 실제로 유효한 몬스터 전면 충돌 영역입니다.
             drawBounds(window, monster.getFrontAttackBounds(), isAttackActive ? sf::Color(255, 70, 70, 230) : sf::Color(255, 70, 70, 90), isAttackActive ? 2.f : 1.5f);
         }
-        if (monster.getAttackPattern() == MonsterAttackPattern::ChargeCombo && monster.state == MonsterState::Charge) {
+        if (monster.hasChargeCombo() && monster.state == MonsterState::Charge) {
             // 돌진 공격의 실제 판정은 몸체 충돌이므로 주황색 상자로 표시합니다.
             drawBounds(window, monster.getCollision().getHitbox(), sf::Color(255, 160, 0), 2.f);
         }

@@ -1,10 +1,12 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
 #include <SFML/Graphics/RenderWindow.hpp>
+#include <SFML/Window/Event.hpp>
 
 #include "TileMap.h"
 
@@ -15,7 +17,7 @@ struct RoomTileSet;
 class GameDataManager;
 class MapManager;
 
-enum class DebugCommandType { None, SpawnRoom, ToggleCombatBounds };
+enum class DebugCommandType { None, SpawnRoom, ToggleCombatBounds, ApplyEasyMode };
 
 struct DebugCommand {
     DebugCommandType type = DebugCommandType::None;
@@ -33,6 +35,8 @@ class DebugManager {
 
     DebugManager(const DebugManager &) = delete;
     DebugManager &operator=(const DebugManager &) = delete;
+    std::optional<DebugCommand> handleEvent(const sf::Event &event,
+        const GameDataManager &gameData) const;
     /// F6 메뉴를 콘솔에 출력하고 선택한 디버그 명령을 반환합니다.
     /// 입력을 기다리는 동안 게임 루프는 일시 정지됩니다.
     DebugCommand readConsoleCommand(const GameDataManager &gameData) const;
