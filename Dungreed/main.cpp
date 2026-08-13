@@ -57,10 +57,10 @@ int main() {
     if (!scenes.init()) {
         return 1;
     }
-    auto& objectPool = ObjectPoolingManager::getInstance();
-    objectPool.prewarmFromGameData(gameData);
-    constexpr std::size_t kBossProjectilePoolCapacity = 384;
-    objectPool.prewarmProjectiles(kBossProjectilePoolCapacity);
+    //auto& objectPool = ObjectPoolingManager::getInstance();
+    //objectPool.prewarmFromGameData(gameData);
+    //constexpr std::size_t kBossProjectilePoolCapacity = 384;
+    //objectPool.prewarmProjectiles(kBossProjectilePoolCapacity);
     sf::Clock clock;
     while (window.isOpen()) {
         while (const std::optional<sf::Event> event = window.pollEvent()) {

@@ -30,7 +30,7 @@
 namespace {
 constexpr float kGameplayCameraZoom = 3.5f;
 constexpr float kBossCinematicCameraZoom = 5.2f;
-
+constexpr std::size_t kBossProjectilePoolCapacity = 384;
 
 RoomTileSet createRoomTileSet() { return {"Wall_Outter.png", "Wall_Top.png", "Wall_Ground.png", "Wall_Left.png", "Wall_Right.png", "Wall_H0.png", "Wall_H2.png", "Wall_H6.png", "Wall_H8.png", "Wall_TopLCorner.png", "Wall_TopRCorner.png", "Wall_BotLCorner.png", "Wall_BotRCorner.png", "Back_Inner.png", "Back_Top.png", "Back_Ground.png", "Back_Left.png", "Back_Right.png", "Back_TopLcorner.png", "Back_TopRCorner.png", "BackBotLCorner.png", "Back_BotRCorner.png", "Back_DoorTopL.png", "Back_DoorTopR.png", "Back_DoorBotL.png", "Back_DoorBotR.png", "Platform.png"}; }
 
@@ -70,9 +70,9 @@ bool DungeonScene::enter(unsigned int floorNumber) {
         LogManager::getInstance().error("DungeonScene", "던전 시작 방 또는 타일맵 초기화에 실패했습니다.");
         return false;
     }
-//아예 사전 풀링을 위한 이동
-    //objectPool.prewarmFromGameData(gameData);
-    //objectPool.prewarmProjectiles(kBossProjectilePoolCapacity);
+
+    objectPool.prewarmFromGameData(gameData);
+    objectPool.prewarmProjectiles(kBossProjectilePoolCapacity);
     if (!rewardChestManager.init() || !uiManager.init(m_window)) {
         LogManager::getInstance().error("DungeonScene", "던전 UI 또는 보상 상자 초기화에 실패했습니다.");
         return false;
@@ -199,14 +199,19 @@ void DungeonScene::render() {
     if (!isReady()) {
         return;
     }
+    auto& debugManager = DebugManager::getInstance();
 
+    if (debugManager.hasRoomPreviews()) {
+        m_window.setView(m_window.getDefaultView());
+        debugManager.renderRoomPreviews(m_window);
+        return;
+    }
     auto &mapManager = MapManager::getInstance();
     auto &objectPool = ObjectPoolingManager::getInstance();
     auto &effectManager = EffectManager::getInstance();
     auto &rewardChestManager = RewardChestManager::getInstance();
     auto &uiManager = UIManager::getInstance();
-    auto &debugManager = DebugManager::getInstance();
-
+    
     Camera *camera = m_gameplay.getCamera();
     Player *player = m_gameplay.getPlayer();
     m_window.setView(camera->getView());
@@ -239,6 +244,25 @@ bool DungeonScene::spawnDebugRoom(const std::string &floorId, const std::string 
     auto &effectManager = EffectManager::getInstance();
     const RoomTileSet roomTiles = createRoomTileSet();
 
+    if (roomId == "all") {
+        const FloorData* floor = gameData.findFloor(floorId);
+        if (!floor) {
+            return false;
+        }
+
+        // 실제 층 구성 생성
+        if (!mapManager.createCurrentRoomFromData(*floor, floor->startRoomId)) {
+            return false;
+        }
+
+        // 생성된 층의 Room들을 가져와 전체 프리뷰 생성
+        return debugManager.buildRoomPreviews(
+            mapManager.getFloorRoomsInDataOrder(),
+            "TileMap",
+            roomTiles,
+            m_window.getSize()
+        );
+    }
     if (!debugManager.spawnRoom(floorId, roomId, gameData, mapManager, "TileMap", roomTiles)) {
         return false;
     }

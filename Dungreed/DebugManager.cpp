@@ -1,4 +1,4 @@
-#include "DebugManager.h"
+﻿#include "DebugManager.h"
 
 #include <algorithm>
 #include <iostream>
@@ -92,18 +92,19 @@ DebugCommand DebugManager::readConsoleCommand(const GameDataManager &gameData) c
                     std::cin.clear();
                     return {};
                 }
+                const FloorData* floor = gameData.findFloor(command.floorId);
+                if (!floor) {
+                    std::cout << "Unknown Floor ID. Try again.\n";
+                    continue;
+                }
+
                 std::cout << "Room ID: " << std::flush;
                 if (!std::getline(std::cin, command.roomId)) {
                     std::cin.clear();
                     return {};
                 }
-
-                const FloorData *floor = gameData.findFloor(command.floorId);
-                if (!floor) {
-                    std::cout << "Unknown Floor ID. Try again.\n";
-                    continue;
-                }
-                if (floor->rooms.find(command.roomId) == floor->rooms.end()) {
+                if (command.roomId != "all" &&
+                    floor->rooms.find(command.roomId) == floor->rooms.end()) {
                     std::cout << "Unknown Room ID for this floor. Try again.\n";
                     continue;
                 }

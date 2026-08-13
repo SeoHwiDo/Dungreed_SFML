@@ -29,7 +29,7 @@ class DungeonScene {
     inline const SkelBoss* getActiveBoss() const { return m_activeBoss.get(); }
   private:
     bool placePlayerAtCurrentRoom();
-
+    
     sf::RenderWindow &m_window;
     GameplayContext &m_gameplay;
     std::unique_ptr<SkelBoss> m_activeBoss;
