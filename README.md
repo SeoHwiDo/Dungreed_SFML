@@ -6,6 +6,12 @@ SFML과 C++17로 구현한 2D 액션 로그라이크 모작 프로젝트입니�
 
 > 개인 학습 및 클라이언트 프로그래머 포트폴리오 목적의 모작 프로젝트입니다.
 
+## 시연 영상
+
+[![시연 영상](https://img.youtube.com/vi/4aZb9-7kNUE/0.jpg)](https://youtu.be/4aZb9-7kNUE)
+
+https://youtu.be/4aZb9-7kNUE
+
 ![프로젝트 클래스 다이어그램](class.png)
 
 ## 기술 스택
