@@ -6,13 +6,30 @@
 #include <cmath>
 #include <filesystem>
 #include <fstream>
+#include <string_view>
 
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
 
 namespace {
-std::string makeGameDataPath(std::string_view fileName) { return (std::filesystem::path(__FILE__).parent_path() / "Resources" / "data" / std::string(fileName)).string(); }
+// 패키지(exe 옆 resources/data)를 우선하고, 개발 환경(__FILE__ 기준)을 폴백으로 사용합니다.
+// 기존 __FILE__ 절대경로만 사용하면 다른 PC의 패키지에서 데이터 로드에 실패합니다.
+std::string makeGameDataPath(std::string_view fileName) {
+    const std::string name(fileName);
+    const std::filesystem::path candidates[] = {
+        std::filesystem::path("resources") / "data" / name,
+        std::filesystem::path("Resources") / "data" / name,
+        std::filesystem::path(__FILE__).parent_path() / "Resources" / "data" / name,
+    };
+    for (const auto &candidate : candidates) {
+        std::error_code ec;
+        if (std::filesystem::exists(candidate, ec)) {
+            return candidate.string();
+        }
+    }
+    return candidates[0].string();
+}
 
 WeaponType parseWeaponType(const std::string &value) { return value == "Ranged" ? WeaponType::Ranged : WeaponType::Melee; }
 
